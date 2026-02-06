@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: sumbagsel-db-staging
+    environment:
+      POSTGRES_USER: ${DB_USER:-sumbagsel_staging}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sumbagsel_staging}
+      POSTGRES_DB: ${DB_NAME:-sumbagsel_staging}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sumbagsel_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./sumbagsel-be
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: staging
+    container_name: sumbagsel-api-staging
+    environment:
+      PORT: 3000
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${DB_USER:-sumbagsel_staging}:${DB_PASSWORD:-sumbagsel_staging}@db:5432/${DB_NAME:-sumbagsel_staging}
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3002}
+    ports:
+      - "3001:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./sumbagsel-be:/app
+      - /app/node_modules
+    command: npm run start:dev
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./sumbagsel-fe
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: staging
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    container_name: sumbagsel-frontend-staging
+    environment:
+      PORT: 3001
+      NODE_ENV: staging
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    ports:
+      - "3002:3001"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data_staging:
+
