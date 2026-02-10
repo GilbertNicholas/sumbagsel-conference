@@ -20,6 +20,14 @@ export class UsersService {
     });
   }
 
+  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
+    const profile = await this.profilesRepository.findOne({
+      where: { phoneNumber },
+      relations: ['user'],
+    });
+    return profile?.user || null;
+  }
+
   async findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { id },

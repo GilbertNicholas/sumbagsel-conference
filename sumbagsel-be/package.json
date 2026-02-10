@@ -24,7 +24,8 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
     "seed:dev": "ts-node src/seeders/dev.seeder.ts",
-    "seed:participants": "ts-node src/seeders/participants.seeder.ts"
+    "seed:participants": "ts-node src/seeders/participants.seeder.ts",
+    "seed:admin": "ts-node src/seeders/admin.seeder.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -23,8 +23,8 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  email: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'password_hash' })
   passwordHash: string | null;

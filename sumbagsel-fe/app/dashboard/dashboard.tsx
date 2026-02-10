@@ -49,7 +49,32 @@ export function DashboardPage() {
           apiClient.getMyArrivalSchedule().catch(() => null),
         ]);
         
-        setProfile(profileData);
+        // Check if profile has valid data but isCompleted might be wrong
+        if (profileData) {
+          const hasValidFullName = profileData.fullName && 
+            profileData.fullName.trim() !== '' && 
+            profileData.fullName !== 'Belum diisi';
+          const hasValidChurchName = profileData.churchName && 
+            profileData.churchName.trim() !== '' && 
+            profileData.churchName !== 'Belum diisi';
+          const isProfileValid = hasValidFullName && hasValidChurchName;
+          
+          // If profile has valid data but isCompleted is false, fix it
+          if (isProfileValid && !profileData.isCompleted) {
+            try {
+              await apiClient.fixProfile();
+              // Reload profile after fix
+              const fixedProfile = await apiClient.getMyProfile();
+              setProfile(fixedProfile);
+            } catch (fixError) {
+              // If fix fails, continue with existing profile
+              setProfile(profileData);
+            }
+          } else {
+            setProfile(profileData);
+          }
+        }
+        
         setRegistration(registrationData);
         setArrivalSchedule(arrivalData);
       } catch (error) {

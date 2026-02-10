@@ -6,7 +6,7 @@ export interface AuthResponse {
   accessToken: string;
   user: {
     id: string;
-    email: string;
+    email: string | null;
     isEmailVerified: boolean;
     status: string;
   };
@@ -154,17 +154,10 @@ class ApiClient {
   }
 
   // Auth endpoints
-  async signup(email: string, password: string): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  async login(email: string, password: string): Promise<AuthResponse> {
+  async loginWithPhone(phoneNumber: string): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ phoneNumber }),
     });
   }
 
@@ -184,6 +177,12 @@ class ApiClient {
     return this.request<ProfileResponse>('/profiles/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  }
+
+  async fixProfile(): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>('/profiles/me/fix', {
+      method: 'POST',
     });
   }
 

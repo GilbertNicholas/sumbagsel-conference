@@ -51,5 +51,21 @@ export class ProfilesController {
   ): Promise<ProfileResponseDto> {
     return this.profilesService.update(user.id, updateProfileDto);
   }
+
+  @Post('me/fix')
+  @HttpCode(HttpStatus.OK)
+  async fixMyProfile(
+    @CurrentUser() user: User,
+  ): Promise<ProfileResponseDto> {
+    // Endpoint to fix profile by recalculating isCompleted
+    // Useful for fixing profiles that have incorrect isCompleted status
+    const profile = await this.profilesService.findOneByUserId(user.id);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    
+    // Trigger update with empty object to force recalculation
+    return this.profilesService.update(user.id, {});
+  }
 }
 

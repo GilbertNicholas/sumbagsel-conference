@@ -7,16 +7,14 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { User } from '../entities/user.entity';
-import { UserIdentity } from '../entities/user-identity.entity';
+import { Profile } from '../entities/profile.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { LocalStrategy } from './strategies/local.strategy';
-import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    TypeOrmModule.forFeature([User, UserIdentity]),
+    TypeOrmModule.forFeature([User, Profile]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -32,10 +30,6 @@ import { GoogleStrategy } from './strategies/google.strategy';
   providers: [
     AuthService,
     JwtStrategy,
-    LocalStrategy,
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [GoogleStrategy]
-      : []),
   ],
   exports: [AuthService],
 })

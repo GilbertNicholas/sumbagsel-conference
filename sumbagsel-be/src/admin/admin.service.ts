@@ -78,24 +78,34 @@ export class AdminService {
   }
 
   async getAllParticipants(): Promise<ParticipantResponseDto[]> {
-    const registrations = await this.registrationsRepository.find({
-      relations: ['user', 'user.profile'],
-      order: { createdAt: 'DESC' },
-    });
+    // Get all users with profiles (not just those with registrations)
+    // Use query builder to properly filter profiles
+    const users = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.profile', 'profile')
+      .leftJoinAndSelect('user.registration', 'registration')
+      .where('profile.fullName IS NOT NULL')
+      .andWhere('profile.fullName != :placeholder', { placeholder: 'Belum diisi' })
+      .andWhere('profile.churchName IS NOT NULL')
+      .andWhere('profile.churchName != :placeholder', { placeholder: 'Belum diisi' })
+      .orderBy('user.createdAt', 'DESC')
+      .getMany();
 
-    return registrations.map((registration) => {
-      const profile = registration.user?.profile;
+    return users.map((user) => {
+      const profile = user.profile;
+      const registration = user.registration;
+      
       return {
-        id: registration.id,
-        userId: registration.userId,
+        id: registration?.id || user.id, // Use registration id if exists, otherwise user id
+        userId: user.id,
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
         phoneNumber: profile?.phoneNumber || null,
-        email: registration.user?.email || '-',
-        status: registration.status,
-        paymentProofUrl: registration.paymentProofUrl,
-        createdAt: registration.createdAt.toISOString(),
-        updatedAt: registration.updatedAt.toISOString(),
+        email: user.email || '-',
+        status: registration?.status || 'Belum terdaftar',
+        paymentProofUrl: registration?.paymentProofUrl || null,
+        createdAt: registration?.createdAt?.toISOString() || user.createdAt.toISOString(),
+        updatedAt: registration?.updatedAt?.toISOString() || user.updatedAt.toISOString(),
       };
     });
   }

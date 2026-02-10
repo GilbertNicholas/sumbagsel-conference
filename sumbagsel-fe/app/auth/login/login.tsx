@@ -10,8 +10,10 @@ import { apiClient } from '@/lib/api-client';
 import { setAuthToken } from '@/lib/auth';
 
 const loginSchema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(1, 'Password harus diisi'),
+  phoneNumber: z
+    .string()
+    .min(1, 'Nomor WhatsApp harus diisi')
+    .regex(/^(\+62|0)[0-9]{9,12}$/, 'Nomor WhatsApp harus dalam format Indonesia (08xx atau +628xx)'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -33,7 +35,7 @@ export function LoginPage() {
     try {
       setError(null);
       setIsLoading(true);
-      const response = await apiClient.login(data.email, data.password);
+      const response = await apiClient.loginWithPhone(data.phoneNumber);
       setAuthToken(response.accessToken);
 
       // Redirect based on profile status
@@ -64,16 +66,10 @@ export function LoginPage() {
             />
           </div>
           <h2 className="mt-6 lg:mt-8 text-center text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
-            Masuk ke akun Anda
+            Masuk dengan WhatsApp
           </h2>
           <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
-            Atau{' '}
-            <a
-              href="/auth/signup"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              buat akun baru
-            </a>
+            Masukkan nomor WhatsApp Anda untuk masuk
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -84,36 +80,19 @@ export function LoginPage() {
           )}
           <div className="space-y-4 lg:space-y-5 rounded-md shadow-sm">
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email
+              <label htmlFor="phoneNumber" className="sr-only">
+                Nomor WhatsApp
               </label>
               <input
-                {...register('email')}
-                type="email"
-                autoComplete="email"
+                {...register('phoneNumber')}
+                type="tel"
+                autoComplete="tel"
                 className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 text-sm lg:text-base xl:text-lg"
-                placeholder="Email"
+                placeholder="Nomor WhatsApp (08xx atau +628xx)"
               />
-              {errors.email && (
+              {errors.phoneNumber && (
                 <p className="mt-1 text-sm lg:text-base text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                {...register('password')}
-                type="password"
-                autoComplete="current-password"
-                className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 text-sm lg:text-base xl:text-lg"
-                placeholder="Password"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm lg:text-base text-red-600">
-                  {errors.password.message}
+                  {errors.phoneNumber.message}
                 </p>
               )}
             </div>

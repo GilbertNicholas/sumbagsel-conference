@@ -56,7 +56,16 @@ export function ProfileSetupPage() {
     async function checkProfile() {
       try {
         const profile = await apiClient.getMyProfile();
-        if (profile.isCompleted) {
+        // Check if profile has valid data (not placeholder)
+        const hasValidFullName = profile.fullName && 
+          profile.fullName.trim() !== '' && 
+          profile.fullName !== 'Belum diisi';
+        const hasValidChurchName = profile.churchName && 
+          profile.churchName.trim() !== '' && 
+          profile.churchName !== 'Belum diisi';
+        const isProfileValid = hasValidFullName && hasValidChurchName;
+        
+        if (isProfileValid) {
           router.push('/dashboard');
         }
       } catch (error) {
@@ -88,7 +97,9 @@ export function ProfileSetupPage() {
         await apiClient.createProfile(profileData);
       }
 
-      router.push('/dashboard');
+      // Backend automatically sets isCompleted to true when fullName and churchName are valid
+      // Use window.location for hard redirect to ensure fresh data is loaded
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan profil');
     } finally {

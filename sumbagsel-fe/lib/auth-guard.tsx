@@ -21,9 +21,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
       const isLandingPage = pathname === '/';
       const isAdminPage = pathname?.startsWith('/admin');
 
-      // Allow access to landing page, auth pages, and admin pages if no token
+      // ALWAYS allow landing page - no auth check needed
+      // Landing page is public and user can choose to login or not
+      if (isLandingPage) {
+        setIsChecking(false);
+        return;
+      }
+
+      // Allow access to auth pages and admin pages if no token
       if (!token) {
-        if (isLandingPage || isAuthPage || isAdminPage) {
+        if (isAuthPage || isAdminPage) {
           setIsChecking(false);
           return;
         }
@@ -42,9 +49,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
       try {
         const profile = await apiClient.getMyProfile();
         
+        // Check if profile has valid data (not placeholder)
+        const hasValidFullName = profile.fullName && 
+          profile.fullName.trim() !== '' && 
+          profile.fullName !== 'Belum diisi';
+        const hasValidChurchName = profile.churchName && 
+          profile.churchName.trim() !== '' && 
+          profile.churchName !== 'Belum diisi';
+        const isProfileValid = hasValidFullName && hasValidChurchName;
+        
         // If on auth page but logged in, redirect based on profile status
         if (isAuthPage) {
-          if (!profile.isCompleted) {
+          if (!isProfileValid) {
             router.push('/profile/setup');
             return;
           }
@@ -52,14 +68,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
           return;
         }
 
-        // If profile not completed and not on setup page, redirect to setup
-        if (!profile.isCompleted && pathname !== '/profile/setup') {
+        // If profile not valid and not on setup page, redirect to setup
+        if (!isProfileValid && pathname !== '/profile/setup') {
           router.push('/profile/setup');
           return;
         }
 
-        // If profile completed and on setup page, redirect to dashboard
-        if (profile.isCompleted && pathname === '/profile/setup') {
+        // If profile valid and on setup page, redirect to dashboard
+        if (isProfileValid && pathname === '/profile/setup') {
           router.push('/dashboard');
           return;
         }

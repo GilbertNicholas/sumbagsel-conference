@@ -57,7 +57,10 @@ export class ProfilesService {
     const { fullName, churchName, contactEmail, phoneNumber, photoUrl, specialNotes } = createProfileDto;
 
     // Determine if profile is completed
-    const isCompleted = !!(fullName && churchName);
+    // Profile is completed if both fullName and churchName exist and are not placeholder values
+    const hasValidFullName = fullName && fullName.trim() !== '' && fullName !== 'Belum diisi';
+    const hasValidChurchName = churchName && churchName.trim() !== '' && churchName !== 'Belum diisi';
+    const isCompleted = !!(hasValidFullName && hasValidChurchName);
     const completedAt = isCompleted ? new Date() : null;
 
     // Create profile
@@ -119,29 +122,24 @@ export class ProfilesService {
       profile.specialNotes = updateProfileDto.specialNotes?.trim() || null;
     }
 
-    // Handle isCompleted logic
-    if (updateProfileDto.isCompleted !== undefined) {
-      // If explicitly set to true
-      if (updateProfileDto.isCompleted) {
-        profile.isCompleted = true;
-        profile.completedAt = new Date();
-      } else {
-        // If set to false, recalculate based on fullName and churchName
-        profile.isCompleted = !!(profile.fullName && profile.churchName);
-        profile.completedAt = profile.isCompleted ? new Date() : null;
-      }
-    } else {
-      // Auto-calculate isCompleted based on fullName and churchName
-      const wasCompleted = profile.isCompleted;
-      profile.isCompleted = !!(profile.fullName && profile.churchName);
-      
-      if (profile.isCompleted && !wasCompleted) {
-        // Just became completed
-        profile.completedAt = new Date();
-      } else if (!profile.isCompleted && wasCompleted) {
-        // No longer completed
-        profile.completedAt = null;
-      }
+    // Always recalculate isCompleted based on current fullName and churchName values
+    // This ensures isCompleted is always correct after any update
+    const wasCompleted = profile.isCompleted;
+    const hasValidFullName = profile.fullName && 
+      profile.fullName.trim() !== '' && 
+      profile.fullName !== 'Belum diisi';
+    const hasValidChurchName = profile.churchName && 
+      profile.churchName.trim() !== '' && 
+      profile.churchName !== 'Belum diisi';
+    
+    profile.isCompleted = !!(hasValidFullName && hasValidChurchName);
+    
+    if (profile.isCompleted && !wasCompleted) {
+      // Just became completed
+      profile.completedAt = new Date();
+    } else if (!profile.isCompleted && wasCompleted) {
+      // No longer completed
+      profile.completedAt = null;
     }
 
     const updatedProfile = await this.profilesRepository.save(profile);
