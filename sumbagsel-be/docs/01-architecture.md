@@ -16,7 +16,7 @@ Backend
 - Google OAuth 2.0
 
 Database
-- PostgreSQL
+- MySQL
 
 Infra Local Dev
 - Docker

@@ -15,10 +15,9 @@ export class MoveSpecialNotesToProfiles1700000005000 implements MigrationInterfa
     // Migrate data from registrations to profiles
     await queryRunner.query(`
       UPDATE profiles p
-      SET special_notes = r.special_notes
-      FROM registrations r
-      WHERE p.user_id = r.user_id
-      AND r.special_notes IS NOT NULL
+      INNER JOIN registrations r ON p.user_id = r.user_id
+      SET p.special_notes = r.special_notes
+      WHERE r.special_notes IS NOT NULL
     `);
 
     // Drop special_notes column from registrations table
@@ -39,10 +38,9 @@ export class MoveSpecialNotesToProfiles1700000005000 implements MigrationInterfa
     // Migrate data back from profiles to registrations
     await queryRunner.query(`
       UPDATE registrations r
-      SET special_notes = p.special_notes
-      FROM profiles p
-      WHERE r.user_id = p.user_id
-      AND p.special_notes IS NOT NULL
+      INNER JOIN profiles p ON r.user_id = p.user_id
+      SET r.special_notes = p.special_notes
+      WHERE p.special_notes IS NOT NULL
     `);
 
     // Drop special_notes column from profiles table

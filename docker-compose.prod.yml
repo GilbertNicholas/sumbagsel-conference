@@ -2,18 +2,19 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:16
+    image: mysql:8.0
     container_name: sumbagsel-db-prod
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-sumbagsel_prod}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-sumbagsel_prod}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5434:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - mysql_data_prod:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +30,7 @@ services:
     environment:
       PORT: ${PORT:-3000}
       NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME:-sumbagsel_prod}
+      DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@db:3306/${DB_NAME:-sumbagsel_prod}
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -63,5 +64,5 @@ services:
     # No volume mount in production - use built image only
 
 volumes:
-  postgres_data_prod:
+  mysql_data_prod:
 

@@ -7,7 +7,7 @@ Sistem pendaftaran konferensi dengan manajemen peserta dan jadwal kedatangan.
 ### Backend
 - **Framework**: NestJS 11
 - **Language**: TypeScript 5.7
-- **Database**: PostgreSQL 16
+- **Database**: MySQL 8.0
 - **ORM**: TypeORM 0.3
 - **Authentication**: Passport.js + JWT
 - **Validation**: class-validator, class-transformer
@@ -23,7 +23,7 @@ Sistem pendaftaran konferensi dengan manajemen peserta dan jadwal kedatangan.
 
 - **Node.js** 20+ dan npm
 - **Docker** & **Docker Compose** (opsional, untuk development dengan Docker)
-- **PostgreSQL** 16+ (jika tidak menggunakan Docker)
+- **MySQL** 8.0+ (jika tidak menggunakan Docker)
 - **Git**
 
 ## 🛠️ Quick Start
@@ -82,7 +82,7 @@ docker exec -it sumbagsel-api-dev npm run seed:participants
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:3000
 - **Health Check**: http://localhost:3000/health
-- **Database**: localhost:5432
+- **Database**: localhost:3306
 
 ### Opsi 2: Instalasi Manual (Tanpa Docker)
 
@@ -93,17 +93,18 @@ git clone https://github.com/yourusername/sumbagsel-project.git
 cd sumbagsel-project
 ```
 
-#### 2. Setup Database PostgreSQL
+#### 2. Setup Database MySQL
 
 ```bash
-# Login ke PostgreSQL
-sudo -u postgres psql
+# Login ke MySQL
+mysql -u root -p
 
 # Buat database dan user
 CREATE DATABASE sumbagsel_dev;
-CREATE USER sumbagsel_dev WITH PASSWORD 'sumbagsel_dev';
-GRANT ALL PRIVILEGES ON DATABASE sumbagsel_dev TO sumbagsel_dev;
-\q
+CREATE USER 'sumbagsel_dev'@'localhost' IDENTIFIED BY 'sumbagsel_dev';
+GRANT ALL PRIVILEGES ON sumbagsel_dev.* TO 'sumbagsel_dev'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 ```
 
 #### 3. Setup Backend
@@ -118,7 +119,7 @@ npm install
 cp env.example .env.development
 
 # Edit .env.development dengan database credentials lokal
-# DATABASE_URL=postgresql://sumbagsel_dev:sumbagsel_dev@localhost:5432/sumbagsel_dev
+# DATABASE_URL=mysql://sumbagsel_dev:sumbagsel_dev@localhost:3306/sumbagsel_dev
 
 # Run migrations
 npm run migration:run
@@ -259,7 +260,7 @@ docker exec -it sumbagsel-api-dev bash
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ |
+| `DATABASE_URL` | MySQL connection string | ✅ |
 | `JWT_SECRET` | Secret untuk JWT tokens | ✅ |
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID | ❌ |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | ❌ |
@@ -321,11 +322,11 @@ docker compose -f docker-compose.dev.yml logs db
 
 **Tanpa Docker:**
 ```bash
-# Check PostgreSQL status
-sudo systemctl status postgresql
+# Check MySQL status
+sudo systemctl status mysql
 
 # Check connection
-psql -U sumbagsel_dev -d sumbagsel_dev -h localhost
+mysql -u sumbagsel_dev -p -h localhost sumbagsel_dev
 ```
 
 ### Migration Error

@@ -16,7 +16,7 @@ config({ path: '.env.local' });
 config({ path: '.env' });
 
 export default new DataSource({
-  type: 'postgres',
+  type: 'mysql',
   url: process.env.DATABASE_URL,
   entities: [User, UserIdentity, Profile, Registration, ArrivalSchedule, Admin],
   migrations: [

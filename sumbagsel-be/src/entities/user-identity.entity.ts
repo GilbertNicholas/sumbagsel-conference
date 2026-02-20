@@ -31,7 +31,7 @@ export class UserIdentity {
   @Column({ type: 'varchar', length: 255, name: 'provider_user_id' })
   providerUserId: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 
   // Relations

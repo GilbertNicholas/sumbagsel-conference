@@ -70,7 +70,7 @@ function getRandomEmail(firstName: string, lastName: string): string {
 
 async function seedParticipants() {
   const dataSource = new DataSource({
-    type: 'postgres',
+    type: 'mysql',
     url: process.env.DATABASE_URL,
     entities: [User, UserIdentity, Profile, Registration, ArrivalSchedule, Admin],
     synchronize: false,

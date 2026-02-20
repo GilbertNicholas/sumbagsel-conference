@@ -1,18 +1,18 @@
 # Database Schema v1
-PostgreSQL with UUID.
+MySQL 8.0 with UUID.
 
 ## Table users
 Purpose
 Akun utama dan status autentikasi.
 
 Columns
-- id uuid PK default gen_random_uuid()
+- id uuid PK default UUID()
 - email varchar(255) unique not null
 - password_hash text null
 - is_email_verified boolean not null default false
 - status varchar(20) not null default 'active'
-- created_at timestamptz not null default now()
-- updated_at timestamptz not null default now()
+- created_at datetime not null default CURRENT_TIMESTAMP
+- updated_at datetime not null default CURRENT_TIMESTAMP
 
 Notes
 - password_hash null untuk user yang hanya login lewat Google.
@@ -22,7 +22,7 @@ Purpose
 Menyimpan daftar metode login untuk 1 user.
 
 Columns
-- id uuid PK default gen_random_uuid()
+- id uuid PK default UUID()
 - user_id uuid not null FK users(id) on delete cascade
 - provider varchar(30) not null
 - provider_user_id varchar(255) not null
@@ -41,16 +41,16 @@ Purpose
 Data profile user yang diisi setelah login.
 
 Columns
-- id uuid PK default gen_random_uuid()
+- id uuid PK default UUID()
 - user_id uuid not null FK users(id) on delete cascade unique
 - full_name varchar(150) not null
 - church_name varchar(150) not null
 - contact_email varchar(255) null
 - photo_url text null
 - is_completed boolean not null default false
-- completed_at timestamptz null
-- created_at timestamptz not null default now()
-- updated_at timestamptz not null default now()
+- completed_at datetime null
+- created_at datetime not null default CURRENT_TIMESTAMP
+- updated_at datetime not null default CURRENT_TIMESTAMP
 
 Notes
 - contact_email dapat diset default sama dengan users.email saat create profile.

@@ -6,12 +6,10 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
-  Unique,
 } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('profiles')
-@Unique(['userId'])
 export class Profile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -40,13 +38,13 @@ export class Profile {
   @Column({ type: 'boolean', default: false, name: 'is_completed' })
   isCompleted: boolean;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'completed_at' })
+  @Column({ type: 'datetime', nullable: true, name: 'completed_at' })
   completedAt: Date | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt: Date;
 
   // Relations

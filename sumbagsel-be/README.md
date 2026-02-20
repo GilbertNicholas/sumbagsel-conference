@@ -6,7 +6,7 @@ NestJS backend API untuk sistem pendaftaran konferensi.
 
 - **Framework**: NestJS 11
 - **Language**: TypeScript 5.7
-- **Database**: PostgreSQL 16
+- **Database**: MySQL 8.0
 - **ORM**: TypeORM 0.3
 - **Authentication**: Passport.js + JWT
 - **Validation**: class-validator, class-transformer

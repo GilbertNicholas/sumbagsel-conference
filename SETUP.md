@@ -8,7 +8,7 @@ Pastikan sudah terinstall:
 - **Node.js** 20 atau lebih tinggi
 - **npm** atau **yarn**
 - **Docker** & **Docker Compose** (jika menggunakan Docker)
-- **PostgreSQL** 16+ (jika tidak menggunakan Docker)
+- **MySQL** 8.0+ (jika tidak menggunakan Docker)
 - **Git**
 
 ## Metode Instalasi
@@ -75,17 +75,18 @@ git clone https://github.com/yourusername/sumbagsel-project.git
 cd sumbagsel-project
 ```
 
-#### Langkah 2: Setup PostgreSQL Database
+#### Langkah 2: Setup MySQL Database
 
 ```bash
-# Login sebagai postgres user
-sudo -u postgres psql
+# Login ke MySQL
+mysql -u root -p
 
-# Di dalam PostgreSQL console:
+# Di dalam MySQL console:
 CREATE DATABASE sumbagsel_dev;
-CREATE USER sumbagsel_dev WITH PASSWORD 'sumbagsel_dev';
-GRANT ALL PRIVILEGES ON DATABASE sumbagsel_dev TO sumbagsel_dev;
-\q
+CREATE USER 'sumbagsel_dev'@'localhost' IDENTIFIED BY 'sumbagsel_dev';
+GRANT ALL PRIVILEGES ON sumbagsel_dev.* TO 'sumbagsel_dev'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 ```
 
 #### Langkah 3: Setup Backend
@@ -101,7 +102,7 @@ cp env.example .env.development
 
 # Edit .env.development
 # Pastikan DATABASE_URL menggunakan localhost:
-# DATABASE_URL=postgresql://sumbagsel_dev:sumbagsel_dev@localhost:5432/sumbagsel_dev
+# DATABASE_URL=mysql://sumbagsel_dev:sumbagsel_dev@localhost:3306/sumbagsel_dev
 
 # Run migrations
 npm run migration:run
@@ -174,9 +175,9 @@ psql -U sumbagsel_dev -d sumbagsel_dev -h localhost
 - Pastikan `DATABASE_URL` menggunakan hostname `db` bukan `localhost`
 
 **Manual:**
-- Pastikan PostgreSQL service running: `sudo systemctl status postgresql`
+- Pastikan MySQL service running: `sudo systemctl status mysql`
 - Check database credentials di `.env.development`
-- Test connection: `psql -U sumbagsel_dev -d sumbagsel_dev -h localhost`
+- Test connection: `mysql -u sumbagsel_dev -p -h localhost sumbagsel_dev`
 
 ### Port sudah digunakan
 
@@ -188,9 +189,9 @@ psql -U sumbagsel_dev -d sumbagsel_dev -h localhost
 - Cek proses: `lsof -i :3001`
 - Ubah port di `package.json` script atau `.env.local`
 
-**Database (port 5432):**
-- Cek: `lsof -i :5432`
-- Ubah port di `docker-compose.dev.yml` atau PostgreSQL config
+**Database (port 3306):**
+- Cek: `lsof -i :3306`
+- Ubah port di `docker-compose.dev.yml` atau MySQL config
 
 ### Migration error
 

@@ -197,7 +197,7 @@ export class AdminService {
 
       if (filter?.search && filter.search.trim()) {
         queryBuilder.andWhere(
-          '(profile.fullName ILIKE :search OR user.email ILIKE :search OR profile.phoneNumber ILIKE :search)',
+          '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
           { search: `%${filter.search.trim()}%` },
         );
       }
@@ -278,7 +278,7 @@ export class AdminService {
 
         if (filter?.search && filter.search.trim()) {
           query.andWhere(
-            '(profile.fullName ILIKE :search OR user.email ILIKE :search OR profile.phoneNumber ILIKE :search)',
+            '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
             { search: `%${filter.search.trim()}%` },
           );
         }

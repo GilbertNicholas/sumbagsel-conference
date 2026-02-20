@@ -2,18 +2,19 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:16
+    image: mysql:8.0
     container_name: sumbagsel-db-staging
     environment:
-      POSTGRES_USER: ${DB_USER:-sumbagsel_staging}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-sumbagsel_staging}
-      POSTGRES_DB: ${DB_NAME:-sumbagsel_staging}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-sumbagsel_staging}
+      MYSQL_DATABASE: ${DB_NAME:-sumbagsel_staging}
+      MYSQL_USER: ${DB_USER:-sumbagsel_staging}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-sumbagsel_staging}
     ports:
-      - "5433:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data_staging:/var/lib/postgresql/data
+      - mysql_data_staging:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sumbagsel_staging}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u ${DB_USER:-sumbagsel_staging} -p${DB_PASSWORD:-sumbagsel_staging}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +29,7 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: staging
-      DATABASE_URL: postgresql://${DB_USER:-sumbagsel_staging}:${DB_PASSWORD:-sumbagsel_staging}@db:5432/${DB_NAME:-sumbagsel_staging}
+      DATABASE_URL: mysql://${DB_USER:-sumbagsel_staging}:${DB_PASSWORD:-sumbagsel_staging}@db:3306/${DB_NAME:-sumbagsel_staging}
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -64,5 +65,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data_staging:
+  mysql_data_staging:
 

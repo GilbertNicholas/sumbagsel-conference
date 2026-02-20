@@ -2,7 +2,7 @@
 
 ## Setup
 
-Migrations menggunakan TypeORM dan sudah dikonfigurasi untuk bekerja dengan PostgreSQL.
+Migrations menggunakan TypeORM dan sudah dikonfigurasi untuk bekerja dengan MySQL.
 
 ## Menjalankan Migrations
 

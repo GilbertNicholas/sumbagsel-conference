@@ -10,7 +10,7 @@ export class CreateAdminsTable1700000007000 implements MigrationInterface {
             name: 'id',
             type: 'uuid',
             isPrimary: true,
-            default: 'gen_random_uuid()',
+            default: '(UUID())',
           },
           {
             name: 'code',
@@ -33,14 +33,14 @@ export class CreateAdminsTable1700000007000 implements MigrationInterface {
           },
           {
             name: 'created_at',
-            type: 'timestamptz',
-            default: 'now()',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
             isNullable: false,
           },
           {
             name: 'updated_at',
-            type: 'timestamptz',
-            default: 'now()',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
             isNullable: false,
           },
         ],

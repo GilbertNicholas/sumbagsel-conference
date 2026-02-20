@@ -35,7 +35,7 @@ import { AdminModule } from './admin/admin.module';
         const isStaging = nodeEnv === 'staging';
         
         return {
-        type: 'postgres',
+        type: 'mysql',
         url: configService.get<string>('DATABASE_URL'),
           entities: [User, UserIdentity, Profile, Registration, ArrivalSchedule, Admin],
           migrations: ['dist/migrations/*.js'],

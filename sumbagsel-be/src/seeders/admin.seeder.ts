@@ -11,7 +11,7 @@ config({ path: '.env' });
 
 async function seed() {
   const dataSource = new DataSource({
-    type: 'postgres',
+    type: 'mysql',
     url: process.env.DATABASE_URL,
     entities: [Admin],
     synchronize: false,
