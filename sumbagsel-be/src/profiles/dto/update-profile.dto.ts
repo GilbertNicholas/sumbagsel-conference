@@ -1,4 +1,5 @@
-import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean, IsIn } from 'class-validator';
+import { MINISTRY_OPTIONS } from './create-profile.dto';
 
 export class UpdateProfileDto {
   @IsString()
@@ -10,6 +11,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @MaxLength(150)
   churchName?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(MINISTRY_OPTIONS, { message: 'Ministry must be one of: Teens/Campus, Single/S2, Married' })
+  ministry?: string;
 
   @IsEmail()
   @IsOptional()

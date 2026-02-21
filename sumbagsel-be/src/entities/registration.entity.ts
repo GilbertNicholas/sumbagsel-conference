@@ -6,8 +6,10 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { RegistrationChild } from './registration-child.entity';
 
 export enum RegistrationStatus {
   BELUM_TERDAFTAR = 'Belum terdaftar',
@@ -34,6 +36,15 @@ export class Registration {
   })
   status: RegistrationStatus;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, name: 'unique_code' })
+  uniqueCode: string | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, name: 'total_amount' })
+  totalAmount: number | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, name: 'base_amount' })
+  baseAmount: number | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 
@@ -46,4 +57,7 @@ export class Registration {
   })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @OneToMany(() => RegistrationChild, (child) => child.registration)
+  children: RegistrationChild[];
 }

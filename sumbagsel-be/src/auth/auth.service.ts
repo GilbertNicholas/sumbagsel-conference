@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User, UserStatus } from '../entities/user.entity';
 import { Profile } from '../entities/profile.entity';
 import { UsersService } from '../users/users.service';
+import { OtpService } from '../otp/otp.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class AuthService {
     private profilesRepository: Repository<Profile>,
     private usersService: UsersService,
     private jwtService: JwtService,
+    private otpService: OtpService,
   ) {}
 
   /**
@@ -40,6 +42,25 @@ export class AuthService {
     }
     
     return normalized;
+  }
+
+  /**
+   * Request OTP to be sent via WhatsApp.
+   * Rate limited per phone number.
+   */
+  async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+    return this.otpService.create(phoneNumber);
+  }
+
+  /**
+   * Verify OTP and login. Returns JWT on success.
+   */
+  async verifyOtpAndLogin(
+    phoneNumber: string,
+    otp: string,
+  ): Promise<AuthResponseDto> {
+    await this.otpService.verify(phoneNumber, otp);
+    return this.loginWithPhone(phoneNumber);
   }
 
   async loginWithPhone(phoneNumber: string): Promise<AuthResponseDto> {

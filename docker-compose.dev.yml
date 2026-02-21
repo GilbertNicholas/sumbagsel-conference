@@ -33,6 +33,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      GKDI_API_URL: ${GKDI_API_URL:-https://ticketapi.gkdi.org/api/v2}
     ports:
       - "3000:3000"
     depends_on:

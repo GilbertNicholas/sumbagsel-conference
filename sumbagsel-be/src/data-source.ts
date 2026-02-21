@@ -7,6 +7,8 @@ import { Profile } from './entities/profile.entity';
 import { Registration } from './entities/registration.entity';
 import { ArrivalSchedule } from './entities/arrival-schedule.entity';
 import { Admin } from './entities/admin.entity';
+import { OtpVerification } from './entities/otp-verification.entity';
+import { RegistrationChild } from './entities/registration-child.entity';
 
 // Load environment variables
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -18,7 +20,7 @@ config({ path: '.env' });
 export default new DataSource({
   type: 'mysql',
   url: process.env.DATABASE_URL,
-  entities: [User, UserIdentity, Profile, Registration, ArrivalSchedule, Admin],
+  entities: [User, UserIdentity, Profile, Registration, RegistrationChild, ArrivalSchedule, Admin, OtpVerification],
   migrations: [
     join(__dirname, '..', 'migrations', '*.{ts,js}'),
   ],
