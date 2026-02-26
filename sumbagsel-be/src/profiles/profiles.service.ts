@@ -54,13 +54,13 @@ export class ProfilesService {
       throw new NotFoundException('User not found');
     }
 
-    const { fullName, churchName, contactEmail, phoneNumber, photoUrl, specialNotes } = createProfileDto;
+    const { fullName, churchName, ministry, contactEmail, phoneNumber, photoUrl, specialNotes } = createProfileDto;
 
     // Determine if profile is completed
-    // Profile is completed if both fullName and churchName exist and are not placeholder values
     const hasValidFullName = fullName && fullName.trim() !== '' && fullName !== 'Belum diisi';
     const hasValidChurchName = churchName && churchName.trim() !== '' && churchName !== 'Belum diisi';
-    const isCompleted = !!(hasValidFullName && hasValidChurchName);
+    const hasValidMinistry = ministry && ministry.trim() !== '';
+    const isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry);
     const completedAt = isCompleted ? new Date() : null;
 
     // Create profile
@@ -68,6 +68,7 @@ export class ProfilesService {
       userId,
       fullName,
       churchName,
+      ministry: ministry || null,
       contactEmail: contactEmail || user.email,
       phoneNumber: phoneNumber || null,
       photoUrl: photoUrl || null,
@@ -109,6 +110,9 @@ export class ProfilesService {
     if (updateProfileDto.churchName !== undefined) {
       profile.churchName = updateProfileDto.churchName;
     }
+    if (updateProfileDto.ministry !== undefined) {
+      profile.ministry = updateProfileDto.ministry || null;
+    }
     if (updateProfileDto.contactEmail !== undefined) {
       profile.contactEmail = updateProfileDto.contactEmail || user.email;
     }
@@ -122,8 +126,7 @@ export class ProfilesService {
       profile.specialNotes = updateProfileDto.specialNotes?.trim() || null;
     }
 
-    // Always recalculate isCompleted based on current fullName and churchName values
-    // This ensures isCompleted is always correct after any update
+    // Always recalculate isCompleted based on current fullName, churchName, and ministry
     const wasCompleted = profile.isCompleted;
     const hasValidFullName = profile.fullName && 
       profile.fullName.trim() !== '' && 
@@ -131,8 +134,9 @@ export class ProfilesService {
     const hasValidChurchName = profile.churchName && 
       profile.churchName.trim() !== '' && 
       profile.churchName !== 'Belum diisi';
+    const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
     
-    profile.isCompleted = !!(hasValidFullName && hasValidChurchName);
+    profile.isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry);
     
     if (profile.isCompleted && !wasCompleted) {
       // Just became completed
@@ -152,6 +156,7 @@ export class ProfilesService {
       id: profile.id,
       fullName: profile.fullName,
       churchName: profile.churchName,
+      ministry: profile.ministry,
       contactEmail: profile.contactEmail,
       phoneNumber: profile.phoneNumber,
       photoUrl: profile.photoUrl,

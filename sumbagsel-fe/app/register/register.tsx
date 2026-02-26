@@ -7,35 +7,57 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 
 type RegistrationStatus = ApiRegistrationStatus;
 
+interface ChildInput {
+  id: string;
+  name: string;
+  age: number;
+}
+
 export function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [registration, setRegistration] = useState<RegistrationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [registrationStatus, setRegistrationStatus] = useState<RegistrationStatus>('Belum terdaftar');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [children, setChildren] = useState<ChildInput[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [registration, setRegistration] = useState<RegistrationResponse | null>(null);
+
+  const hasRegistration = !!registration;
+  const canAddChildren = profile?.ministry === 'Single/S2' || profile?.ministry === 'Married';
+  const childrenEditable = !hasRegistration || registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang';
 
   useEffect(() => {
     async function loadData() {
       try {
         const profileData = await apiClient.getMyProfile();
-        setProfile(profileData);
-        
-        // Try to load registration data
-        try {
-          const registrationData = await apiClient.getMyRegistration();
-          if (registrationData) {
-            setRegistration(registrationData);
-            setRegistrationStatus(registrationData.status);
-          }
-        } catch (regError) {
-          // Registration not found, that's fine
+        // Profile null = no profile, redirect to setup (auth-guard should have caught this, but handle defensively)
+        if (!profileData) {
+          router.push('/profile/setup');
+          return;
         }
-      } catch (error) {
-        router.push('/profile/setup');
+        setProfile(profileData);
+
+        const registrationData = await apiClient.getMyRegistration();
+        if (registrationData) {
+          setRegistration(registrationData);
+          if (
+            (registrationData.status === 'Belum terdaftar' || registrationData.status === 'Daftar ulang') &&
+            registrationData.children?.length > 0
+          ) {
+            setChildren(
+              registrationData.children.map((c) => ({
+                id: c.id,
+                name: c.name,
+                age: c.age,
+              })),
+            );
+          }
+        }
+      } catch (err) {
+        // Don't redirect to setup on error - could be transient. Auth-guard already validated profile.
+        setError(err instanceof Error ? err.message : 'Gagal memuat data');
       } finally {
         setIsLoading(false);
       }
@@ -43,111 +65,166 @@ export function RegisterPage() {
     loadData();
   }, [router]);
 
-  // Check for profile update success message
   useEffect(() => {
     const profileUpdated = searchParams.get('profileUpdated');
     if (profileUpdated === 'true') {
       setSuccess('Data diri berhasil diperbarui');
-      // Remove query parameter from URL
       router.replace('/register', { scroll: false });
-      // Reload data to show updated profile
       async function reloadData() {
         try {
           const profileData = await apiClient.getMyProfile();
           setProfile(profileData);
-          
-          try {
-            const registrationData = await apiClient.getMyRegistration();
-            if (registrationData) {
-              setRegistration(registrationData);
-              setRegistrationStatus(registrationData.status);
-            }
-          } catch (regError) {
-            // Registration not found, that's fine
-          }
-        } catch (error) {
-          // Ignore errors
-        }
+          const registrationData = await apiClient.getMyRegistration();
+          if (registrationData) setRegistration(registrationData);
+        } catch {}
       }
       reloadData();
-      
-      // Auto-hide success message after 5 seconds
-      const timer = setTimeout(() => {
-        setSuccess(null);
-      }, 5000);
-      
+      const timer = setTimeout(() => setSuccess(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [searchParams, router]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
+  const addChild = () => {
+    setChildren((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name: '', age: 7 },
+    ]);
+  };
+
+  const removeChild = (id: string) => {
+    setChildren((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const updateChild = (id: string, field: 'name' | 'age', value: string | number) => {
+    setChildren((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, [field]: value } : c
+      )
+    );
+  };
+
+  const handleLakukanPembayaran = async () => {
+    if (hasRegistration && !childrenEditable) {
+      router.push('/register/payment');
+      return;
+    }
+
+    try {
+      setError(null);
+      setIsSubmitting(true);
+
+      const childrenPayload = children
+        .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12)
+        .map((c) => ({ name: c.name.trim(), age: c.age }));
+
+      if (canAddChildren && children.some((c) => !c.name.trim() || c.age < 7 || c.age > 12)) {
+        setError('Semua data anak harus lengkap (nama, usia 7-12 tahun)');
+        setIsSubmitting(false);
+        return;
+      }
+
+      let updated: RegistrationResponse;
+      if (hasRegistration) {
+        updated = await apiClient.updateRegistrationWithChildren(childrenPayload);
+      } else {
+        updated = await apiClient.createRegistrationWithChildren(childrenPayload);
+      }
+
+      setRegistration(updated);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('registrationFromRegister', JSON.stringify(updated));
+      }
+      router.push('/register/payment?t=' + Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memproses pendaftaran');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const handleRemoveFile = () => {
-    setUploadedFile(null);
-  };
-
 
   const getStatusDisplay = (status: RegistrationStatus): string => {
-    if (status === 'Pending') {
-      return 'Menunggu verifikasi admin';
-    }
+    if (status === 'Pending') return 'Menunggu verifikasi admin';
     return status;
   };
 
   const getStatusColor = (status: RegistrationStatus) => {
     switch (status) {
-      case 'Belum terdaftar':
-        return 'text-red-600';
-      case 'Terdaftar':
-        return 'text-green-600';
-      case 'Pending':
-        return 'text-yellow-600';
-      case 'Daftar ulang':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
+      case 'Belum terdaftar': return 'text-red-600';
+      case 'Terdaftar': return 'text-green-600';
+      case 'Pending': return 'text-yellow-600';
+      case 'Daftar ulang': return 'text-red-600';
+      default: return 'text-gray-600';
     }
   };
 
-  return (
-    <DashboardLayout>
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <DashboardLayout>
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <div className="inline-block h-8 w-8 lg:h-12 lg:w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+            <div className="inline-block h-8 w-8 lg:h-12 lg:w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
             <p className="mt-4 text-sm lg:text-base xl:text-lg text-gray-600">Loading...</p>
           </div>
         </div>
-      ) : (
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl">
-        {/* Judul */}
+      </DashboardLayout>
+    );
+  }
+
+  // Error loading profile - show error with retry (don't redirect to setup, auth-guard already validated)
+  if (error && !profile) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-lg bg-red-50 border border-red-200 p-6">
+            <p className="text-sm lg:text-base text-red-800 mb-4">{error}</p>
+            <button
+              onClick={async () => {
+                setError(null);
+                setIsLoading(true);
+                try {
+                  const p = await apiClient.getMyProfile();
+                  if (!p) router.push('/profile/setup');
+                  else setProfile(p);
+                  const r = await apiClient.getMyRegistration();
+                  if (r) setRegistration(r);
+                } catch {
+                  setError('Gagal memuat data');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Coba lagi
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-12 sm:pb-16 lg:pb-0">
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
           Pendaftaran Konferensi
         </h1>
 
-        {/* Status */}
-        <div className="mb-8 lg:mb-10 text-center lg:text-left">
-          <span className="text-sm lg:text-base xl:text-lg font-medium text-gray-700 mr-3">
-            Status:
-          </span>
-          <span className={`text-sm lg:text-base xl:text-lg font-semibold ${getStatusColor(registrationStatus)}`}>
-            {getStatusDisplay(registrationStatus)}
-          </span>
-        </div>
+        {hasRegistration && (
+          <div className="mb-8 lg:mb-10 text-center lg:text-left">
+            <span className="text-sm lg:text-base xl:text-lg font-medium text-gray-700 mr-3">Status:</span>
+            <span className={`text-sm lg:text-base xl:text-lg font-semibold ${getStatusColor(registration!.status)}`}>
+              {getStatusDisplay(registration!.status)}
+            </span>
+          </div>
+        )}
 
-        {/* Success Message */}
         {success && (
           <div className="mb-6 lg:mb-8 rounded-lg bg-green-50 border border-green-200 p-4">
             <p className="text-sm lg:text-base text-green-800">{success}</p>
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 lg:mb-8 rounded-lg bg-red-50 border border-red-200 p-4">
             <p className="text-sm lg:text-base text-red-800">{error}</p>
@@ -160,7 +237,6 @@ export function RegisterPage() {
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4 sm:mb-0">
               Data Diri
             </h2>
-            {/* Desktop Button */}
             <div className="hidden lg:block">
               <button
                 onClick={() => router.push('/profile/me?edit=true&returnTo=/register')}
@@ -170,62 +246,32 @@ export function RegisterPage() {
               </button>
             </div>
           </div>
-
-          {/* Display Data */}
           <div className="space-y-5 lg:space-y-6">
-            {/* Nama */}
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Nama
-              </label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900">
-                {profile?.fullName || '-'}
-              </p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Nama</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.fullName || '-'}</p>
             </div>
-
-            {/* Gereja Asal */}
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Asal Gereja
-              </label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900">
-                {profile?.churchName || '-'}
-              </p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Asal Gereja</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.churchName || '-'}</p>
             </div>
-
-
-            {/* Email */}
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Email
-              </label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900">
-                {profile?.contactEmail || '-'}
-              </p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Ministry</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.ministry || '-'}</p>
             </div>
-
-            {/* No. Telp */}
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                No. Telp
-              </label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900">
-                {profile?.phoneNumber || '-'}
-              </p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Email</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.contactEmail || '-'}</p>
             </div>
-
-            {/* Catatan Khusus */}
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Catatan Khusus
-              </label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900 whitespace-pre-wrap">
-                {profile?.specialNotes || '-'}
-              </p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">No. Telp</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.phoneNumber || '-'}</p>
+            </div>
+            <div>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Catatan Khusus (Alergi/Penyakit/Catatan lainnya)</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900 whitespace-pre-wrap">{profile?.specialNotes || '-'}</p>
             </div>
           </div>
-
-          {/* Mobile Edit Button */}
           <div className="mt-6 lg:hidden w-full">
             <button
               onClick={() => router.push('/profile/me?edit=true&returnTo=/register')}
@@ -236,129 +282,85 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Upload Bukti Pembayaran */}
-        <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10">
-          <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
-            Upload Bukti Pembayaran
-          </h2>
-
-          {!uploadedFile ? (
-            <div className={`border-2 border-dashed rounded-lg p-8 lg:p-12 text-center ${
-              registrationStatus === 'Pending' || registrationStatus === 'Terdaftar'
-                ? 'border-gray-200 bg-gray-50'
-                : 'border-gray-300'
-            }`}>
-              <input
-                type="file"
-                id="paymentProof"
-                accept="image/*,.pdf"
-                onChange={handleFileUpload}
-                disabled={registrationStatus === 'Pending' || registrationStatus === 'Terdaftar'}
-                className="hidden"
-              />
-              <label
-                htmlFor="paymentProof"
-                className={`flex flex-col items-center ${
-                  registrationStatus === 'Pending' || registrationStatus === 'Terdaftar'
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'cursor-pointer'
-                }`}
-              >
-                <svg className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span className="text-sm lg:text-base xl:text-lg text-gray-600 mb-2">
-                  Klik untuk upload atau drag & drop
-                </span>
-                <span className="text-xs lg:text-sm text-gray-500">
-                  Format: JPG, PNG, atau PDF (Max 5MB)
-                </span>
-              </label>
-            </div>
-          ) : (
-            <div className="border border-gray-300 rounded-lg p-4 lg:p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <svg className="w-8 h-8 lg:w-10 lg:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <div>
-                    <p className="text-sm lg:text-base xl:text-lg font-medium text-gray-900">
-                      {uploadedFile.name}
-                    </p>
-                    <p className="text-xs lg:text-sm text-gray-500">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
+        {/* Daftarkan anak - for Single/S2 and Married, editable when status allows */}
+        {canAddChildren && childrenEditable && (
+          <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
+            <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
+              Daftarkan anak (Usia 7-12 tahun)
+            </h2>
+            <p className="text-sm lg:text-base text-gray-600 mb-6">
+              Opsional. Tambahkan anak yang akan ikut konferensi.
+            </p>
+            {children.map((child) => (
+              <div key={child.id} className="flex flex-wrap gap-4 items-end mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block mb-1 text-sm font-medium text-gray-700">Nama</label>
+                  <input
+                    type="text"
+                    value={child.name}
+                    onChange={(e) => updateChild(child.id, 'name', e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
+                    placeholder="Nama anak"
+                  />
+                </div>
+                <div className="w-24">
+                  <label className="block mb-1 text-sm font-medium text-gray-700">Usia</label>
+                  <input
+                    type="number"
+                    min={7}
+                    max={12}
+                    value={child.age}
+                    onChange={(e) => updateChild(child.id, 'age', parseInt(e.target.value, 10) || 7)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
+                  />
                 </div>
                 <button
-                  onClick={handleRemoveFile}
-                  disabled={registrationStatus === 'Pending' || registrationStatus === 'Terdaftar'}
-                  className={`rounded-md px-4 py-2 text-sm lg:text-base font-medium text-white transition-colors ${
-                    registrationStatus === 'Pending' || registrationStatus === 'Terdaftar'
-                      ? 'bg-gray-400 cursor-not-allowed opacity-60'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
+                  type="button"
+                  onClick={() => removeChild(child.id)}
+                  className="rounded-md px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
                 >
                   Hapus
                 </button>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Tombol Daftar Konferensi */}
-        {registrationStatus !== 'Terdaftar' && (
-          <div className="mt-8 lg:mt-10 flex justify-center">
+            ))}
             <button
-              onClick={async () => {
-                if (registrationStatus === 'Pending') return;
-                try {
-                  setError(null);
-                  
-                  // First, create or update registration with all data (special notes + payment proof)
-                  // Upload file if exists
-                  let paymentProofUrl: string | undefined = undefined;
-                  if (uploadedFile) {
-                    // In a real app, you would upload the file to a storage service
-                    // For now, we'll create a data URL (not recommended for production)
-                    // TODO: Implement proper file upload to storage service
-                    paymentProofUrl = URL.createObjectURL(uploadedFile);
-                  }
-                  
-                  // Create or update registration with payment proof
-                  await apiClient.createRegistration({
-                    paymentProofUrl: paymentProofUrl,
-                  });
-                  
-                  // Then submit the registration
-                  await apiClient.submitRegistration();
-                  
-                  // Reload registration data
-                  const updatedRegistration = await apiClient.getMyRegistration();
-                  if (updatedRegistration) {
-                    setRegistration(updatedRegistration);
-                    setRegistrationStatus(updatedRegistration.status);
-                    setSuccess('Pendaftaran berhasil dikirim!');
-                  }
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Gagal mendaftar');
-                }
-              }}
-              disabled={registrationStatus === 'Pending'}
-              className={`rounded-full px-8 py-3 lg:px-12 lg:py-4 xl:px-16 xl:py-5 text-base lg:text-lg xl:text-xl font-bold text-white transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed ${
-                registrationStatus === 'Pending'
-                  ? 'bg-gray-400'
-                  : 'bg-[#C84343] hover:bg-[#A73535] hover:shadow-xl'
-              }`}
+              type="button"
+              onClick={addChild}
+              className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
             >
-              Daftar konferensi
+              Tambah anak
             </button>
           </div>
         )}
 
-        {/* Tombol Atur Jadwal Kedatangan - Muncul jika Terdaftar */}
-        {registrationStatus === 'Terdaftar' && (
+        {/* Data Anak - read-only when status doesn't allow editing */}
+        {hasRegistration && !childrenEditable && registration?.children && registration.children.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
+            <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
+              Data Anak
+            </h2>
+            <ul className="space-y-2">
+              {registration.children.map((c) => (
+                <li key={c.id} className="text-sm lg:text-base text-gray-900">
+                  {c.name} (usia {c.age} tahun)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Main action button */}
+        <div className="mt-8 lg:mt-10 flex justify-center">
+          <button
+            onClick={handleLakukanPembayaran}
+            disabled={isSubmitting}
+            className="rounded-full px-8 py-3 lg:px-12 lg:py-4 xl:px-16 xl:py-5 text-base lg:text-lg xl:text-xl font-bold text-white transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed bg-[#C84343] hover:bg-[#A73535] hover:shadow-xl"
+          >
+            {isSubmitting ? 'Memproses...' : hasRegistration ? 'Lihat Status Pembayaran' : 'Lakukan Pembayaran'}
+          </button>
+        </div>
+
+        {registration?.status === 'Terdaftar' && (
           <div className="mt-8 lg:mt-10 flex justify-center">
             <button
               onClick={() => router.push('/schedule/arrival')}
@@ -369,7 +371,6 @@ export function RegisterPage() {
           </div>
         )}
       </div>
-      )}
     </DashboardLayout>
   );
 }

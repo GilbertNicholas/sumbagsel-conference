@@ -1,7 +1,9 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res, ForbiddenException } from '@nestjs/common';
 import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { AdminRequestOtpDto } from './dto/admin-request-otp.dto';
+import { AdminVerifyOtpDto } from './dto/admin-verify-otp.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
@@ -18,6 +20,28 @@ export class AdminController {
   @Post('login')
   async login(@Body() loginDto: AdminLoginDto): Promise<AdminAuthResponseDto> {
     return this.adminService.login(loginDto);
+  }
+
+  @Post('request-otp')
+  async requestOtp(@Body() dto: AdminRequestOtpDto): Promise<{ sent: boolean }> {
+    return this.adminService.requestOtp(dto.phoneNumber);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: AdminVerifyOtpDto): Promise<AdminAuthResponseDto> {
+    return this.adminService.verifyOtpAndLogin(dto.phoneNumber, dto.otp);
+  }
+
+  /**
+   * Bypass OTP - direct login with phone. Only works when OTP_BYPASS_DEV=true.
+   * For development/testing only.
+   */
+  @Post('login-with-phone')
+  async loginWithPhone(@Body() dto: AdminRequestOtpDto): Promise<AdminAuthResponseDto> {
+    if (process.env.OTP_BYPASS_DEV !== 'true') {
+      throw new ForbiddenException('OTP bypass hanya tersedia di mode development');
+    }
+    return this.adminService.loginWithPhone(dto.phoneNumber);
   }
 
   @Get('me')
@@ -46,6 +70,18 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   async approveRegistration(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
     return this.adminService.approveRegistration(id);
+  }
+
+  @Patch('participants/:id/reject')
+  @UseGuards(AdminAuthGuard)
+  async rejectRegistration(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.rejectRegistration(id);
+  }
+
+  @Patch('participants/:id/check-in')
+  @UseGuards(AdminAuthGuard)
+  async checkInParticipant(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.checkInParticipant(id);
   }
 
   @Get('arrival-schedules')

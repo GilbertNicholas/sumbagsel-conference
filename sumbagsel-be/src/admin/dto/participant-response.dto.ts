@@ -7,6 +7,7 @@ export class ParticipantResponseDto {
   email: string;
   status: string;
   paymentProofUrl: string | null;
+  checkedInAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

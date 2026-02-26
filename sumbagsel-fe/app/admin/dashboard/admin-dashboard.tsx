@@ -6,6 +6,7 @@ import { apiClient, ParticipantResponse } from '@/lib/api-client';
 
 type SortOption = 'none' | 'date-desc' | 'status';
 type FilterOption = 'none' | 'Pending' | 'Terdaftar' | 'Belum terdaftar';
+type CheckInFilterOption = 'none' | 'checked-in' | 'not-checked-in';
 
 export function AdminDashboardPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('none');
   const [filterBy, setFilterBy] = useState<FilterOption>('none');
+  const [checkInFilter, setCheckInFilter] = useState<CheckInFilterOption>('none');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -83,6 +85,13 @@ export function AdminDashboardPage() {
       result = result.filter((p) => p.status === filterBy);
     }
 
+    // Apply check-in filter
+    if (checkInFilter === 'checked-in') {
+      result = result.filter((p) => !!p.checkedInAt);
+    } else if (checkInFilter === 'not-checked-in') {
+      result = result.filter((p) => p.status === 'Terdaftar' && !p.checkedInAt);
+    }
+
     // Apply sort
     if (sortBy === 'date-desc') {
       result.sort((a, b) => {
@@ -105,7 +114,7 @@ export function AdminDashboardPage() {
     }
 
     return result;
-  }, [participants, filterBy, sortBy, searchQuery]);
+  }, [participants, filterBy, checkInFilter, sortBy, searchQuery]);
 
   if (isLoading) {
     return (
@@ -200,6 +209,28 @@ export function AdminDashboardPage() {
                     <option value="Pending" style={{ fontSize: '16px', padding: '12px' }}>Status Pending</option>
                     <option value="Terdaftar" style={{ fontSize: '16px', padding: '12px' }}>Status Terdaftar</option>
                     <option value="Belum terdaftar" style={{ fontSize: '16px', padding: '12px' }}>Status Belum terdaftar</option>
+                  </select>
+                </div>
+
+                {/* Check-in Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="checkInFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                    Check-in
+                  </label>
+                  <select
+                    id="checkInFilter"
+                    value={checkInFilter}
+                    onChange={(e) => setCheckInFilter(e.target.value as CheckInFilterOption)}
+                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="none" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    <option value="checked-in" style={{ fontSize: '16px', padding: '12px' }}>Sudah check-in</option>
+                    <option value="not-checked-in" style={{ fontSize: '16px', padding: '12px' }}>Belum check-in</option>
                   </select>
                 </div>
 
@@ -312,9 +343,14 @@ export function AdminDashboardPage() {
                         {participant.email}
                       </td>
                       <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap overflow-hidden text-ellipsis">
-                        <span className={`text-base lg:text-lg xl:text-xl font-medium ${getStatusColor(participant.status)}`}>
-                          {getStatusDisplay(participant.status)}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-base lg:text-lg xl:text-xl font-medium ${getStatusColor(participant.status)}`}>
+                            {getStatusDisplay(participant.status)}
+                          </span>
+                          {participant.status === 'Terdaftar' && participant.checkedInAt && (
+                            <span className="text-xs lg:text-sm font-medium text-green-600">✓ Check-in</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl font-medium">
                         <button

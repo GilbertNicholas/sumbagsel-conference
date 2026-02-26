@@ -49,6 +49,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
       try {
         const profile = await apiClient.getMyProfile();
         
+        // Profile null (404) = no profile yet, need setup
+        if (!profile) {
+          if (pathname !== '/profile/setup') {
+            router.push('/profile/setup');
+            return;
+          }
+          setIsChecking(false);
+          return;
+        }
+        
         // Check if profile has valid data (not placeholder)
         const hasValidFullName = profile.fullName && 
           profile.fullName.trim() !== '' && 
@@ -56,7 +66,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
         const hasValidChurchName = profile.churchName && 
           profile.churchName.trim() !== '' && 
           profile.churchName !== 'Belum diisi';
-        const isProfileValid = hasValidFullName && hasValidChurchName;
+        const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry;
         
         // If on auth page but logged in, redirect based on profile status
         if (isAuthPage) {
@@ -80,17 +91,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
           return;
         }
       } catch (error) {
-        // If profile doesn't exist or error
+        // If profile fetch fails, don't redirect to setup (avoids redirect loop).
+        // Let the page load - it will handle the error (e.g. show retry).
         if (isAuthPage) {
-          // If on auth page, allow to continue (they'll be redirected after login)
           setIsChecking(false);
           return;
         }
-        // If not on setup page, redirect to setup
-        if (pathname !== '/profile/setup') {
-          router.push('/profile/setup');
-          return;
-        }
+        // Allow page to load; register/payment pages will show error state
+        setIsChecking(false);
+        return;
       }
 
       setIsChecking(false);

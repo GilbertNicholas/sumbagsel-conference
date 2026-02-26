@@ -30,9 +30,16 @@ async function seed() {
     });
 
     if (existingAdmin) {
-      console.log('✅ Admin dengan kode ADMIN123 sudah ada');
+      if (!existingAdmin.phoneNumber) {
+        existingAdmin.phoneNumber = '087780271525';
+        await adminRepository.save(existingAdmin);
+        console.log('✅ Admin phone number updated to 087780271525');
+      } else {
+        console.log('✅ Admin dengan kode ADMIN123 sudah ada');
+      }
       console.log(`   Code: ${existingAdmin.code}`);
       console.log(`   Name: ${existingAdmin.name || 'N/A'}`);
+      console.log(`   Phone: ${existingAdmin.phoneNumber || 'N/A'}`);
       console.log(`   Active: ${existingAdmin.isActive}`);
       await dataSource.destroy();
       return;
@@ -42,6 +49,7 @@ async function seed() {
     const admin = adminRepository.create({
       code: 'ADMIN123',
       name: 'Admin Default',
+      phoneNumber: '087780271525',
       isActive: true,
     });
 

@@ -18,6 +18,7 @@ export interface ProfileResponse {
   id: string;
   fullName: string;
   churchName: string;
+  ministry: string | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   photoUrl: string | null;
@@ -28,6 +29,7 @@ export interface ProfileResponse {
 export interface CreateProfileDto {
   fullName: string;
   churchName: string;
+  ministry?: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -37,6 +39,7 @@ export interface CreateProfileDto {
 export interface UpdateProfileDto {
   fullName?: string;
   churchName?: string;
+  ministry?: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -45,11 +48,21 @@ export interface UpdateProfileDto {
 
 export type RegistrationStatus = 'Belum terdaftar' | 'Pending' | 'Terdaftar' | 'Daftar ulang';
 
+export interface RegistrationChildResponse {
+  id: string;
+  name: string;
+  age: number;
+}
+
 export interface RegistrationResponse {
   id: string;
   userId: string;
   paymentProofUrl: string | null;
   status: RegistrationStatus;
+  uniqueCode: string | null;
+  totalAmount: number | null;
+  baseAmount: number | null;
+  children: RegistrationChildResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -127,15 +140,27 @@ class ApiClient {
         
         let errorMessage = 'An error occurred';
         try {
-          const error = await response.json();
-          errorMessage = error.message || error.error || response.statusText;
+          const text = await response.text();
+          if (text) {
+            const error = JSON.parse(text);
+            const msg = error.message || error.error || response.statusText;
+            errorMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+          }
         } catch {
           errorMessage = response.statusText || `HTTP ${response.status}`;
         }
         throw new Error(errorMessage);
       }
 
-      return response.json();
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        return null as T;
+      }
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        throw new Error('Invalid JSON response from server');
+      }
     } catch (error) {
       // Handle network errors (CORS, connection refused, etc.)
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -154,6 +179,21 @@ class ApiClient {
   }
 
   // Auth endpoints
+  async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+    return this.request<{ sent: boolean }>('/auth/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
+  async verifyOtp(phoneNumber: string, otp: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, otp }),
+    });
+  }
+
+  /** @deprecated Use requestOtp + verifyOtp flow instead */
   async loginWithPhone(phoneNumber: string): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
@@ -188,7 +228,9 @@ class ApiClient {
 
   // Registration endpoints
   async getMyRegistration(): Promise<RegistrationResponse | null> {
-    return this.request<RegistrationResponse | null>('/registrations/me');
+    return this.request<RegistrationResponse | null>('/registrations/me', {
+      cache: 'no-store',
+    });
   }
 
   async createRegistration(data: CreateRegistrationDto): Promise<RegistrationResponse> {
@@ -203,6 +245,51 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async createRegistrationWithChildren(children: { name: string; age: number }[]): Promise<RegistrationResponse> {
+    return this.request<RegistrationResponse>('/registrations/with-children', {
+      method: 'POST',
+      body: JSON.stringify({ children }),
+      cache: 'no-store',
+    });
+  }
+
+  async updateRegistrationWithChildren(children: { name: string; age: number }[]): Promise<RegistrationResponse> {
+    return this.request<RegistrationResponse>('/registrations/me/with-children', {
+      method: 'PATCH',
+      body: JSON.stringify({ children }),
+      cache: 'no-store',
+    });
+  }
+
+  async uploadPaymentProof(file: File): Promise<{ url: string }> {
+    const token = this.getToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.baseUrl}/uploads/payment-proof`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      let err: { message?: string; error?: string } = {};
+      try {
+        if (text) err = JSON.parse(text);
+      } catch {}
+      throw new Error(err.message || err.error || response.statusText || 'Upload failed');
+    }
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Empty response from server');
+    }
+    return JSON.parse(text) as { url: string };
   }
 
   async submitRegistration(): Promise<RegistrationResponse> {
@@ -235,6 +322,36 @@ class ApiClient {
     const response = await this.request<AdminAuthResponse>('/admin/login', {
       method: 'POST',
       body: JSON.stringify({ code }),
+    });
+    if (response.accessToken) {
+      localStorage.setItem('admin_token', response.accessToken);
+    }
+    return response;
+  }
+
+  async adminRequestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+    return this.request<{ sent: boolean }>('/admin/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
+  /** Bypass OTP - direct login. Only when NEXT_PUBLIC_OTP_BYPASS_DEV=true */
+  async adminLoginWithPhone(phoneNumber: string): Promise<AdminAuthResponse> {
+    const response = await this.request<AdminAuthResponse>('/admin/login-with-phone', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+    if (response.accessToken) {
+      localStorage.setItem('admin_token', response.accessToken);
+    }
+    return response;
+  }
+
+  async adminVerifyOtp(phoneNumber: string, otp: string): Promise<AdminAuthResponse> {
+    const response = await this.request<AdminAuthResponse>('/admin/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, otp }),
     });
     if (response.accessToken) {
       localStorage.setItem('admin_token', response.accessToken);
@@ -284,6 +401,32 @@ class ApiClient {
       throw new Error('No admin token found');
     }
     return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/approve`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async rejectRegistration(id: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async checkInParticipant(id: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/check-in`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -385,8 +528,15 @@ export interface ParticipantResponse {
   email: string;
   status: string;
   paymentProofUrl: string | null;
+  checkedInAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ParticipantDetailChild {
+  id: string;
+  name: string;
+  age: number;
 }
 
 export interface ParticipantDetailResponse {
@@ -394,11 +544,17 @@ export interface ParticipantDetailResponse {
   userId: string;
   fullName: string;
   churchName: string;
+  ministry?: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;
   status: string;
   paymentProofUrl: string | null;
+  children?: ParticipantDetailChild[];
+  baseAmount: number | null;
+  totalAmount: number | null;
+  uniqueCode: string | null;
+  checkedInAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

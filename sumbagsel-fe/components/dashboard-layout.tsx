@@ -2,6 +2,7 @@
 
 import { useState, memo, useCallback, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { Sidebar, SidebarItem } from '@/components/sidebar';
 import { removeAuthToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -29,8 +30,8 @@ const navItems: SidebarItem[] = [
     label: 'Jadwal Kedatangan',
     path: '/schedule/arrival',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
       </svg>
     ),
   },
@@ -55,13 +56,6 @@ const navItems: SidebarItem[] = [
   },
 ];
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/register': 'Pendaftaran',
-  '/schedule/arrival': 'Jadwal Kedatangan',
-  '/profile/me': 'Profil Saya',
-};
-
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -84,7 +78,6 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
     setIsSidebarOpen(false);
   }, []);
 
-  const pageTitle = useMemo(() => pageTitles[pathname || ''] || 'Dashboard', [pathname]);
   const bgColor = useMemo(() => pathname === '/dashboard' ? 'bg-[#F5F5F0]' : 'bg-gray-50', [pathname]);
 
   return (
@@ -105,7 +98,15 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
               )}
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">{pageTitle}</h1>
+          <div className="flex-1 flex justify-center">
+            <Image
+              src="/images/sumbagsel-logo.png"
+              alt="Sumbagsel Conference"
+              width={140}
+              height={36}
+              className="h-8 w-auto object-contain"
+            />
+          </div>
           <div className="w-10"></div> {/* Spacer untuk centering */}
         </div>
       </nav>
@@ -121,7 +122,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-64 min-h-screen overflow-x-hidden overflow-y-auto transition-all duration-300 flex items-center">
-        <div className="w-full pt-16 lg:py-8 p-4 sm:p-6 lg:p-8">
+        <div className="w-full pt-24 lg:pt-8 lg:py-8 p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </div>
