@@ -41,5 +41,7 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Uploaded files
+# Uploaded files (folder where payment proofs are stored)
 uploads/
+# Jangan abaikan modul source code uploads
+!src/uploads/
