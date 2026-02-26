@@ -21,7 +21,7 @@ const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
 const profileSetupSchema = z.object({
   fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
   churchName: z.string().min(1, 'Pilih nama gereja'),
-  ministry: z.enum(MINISTRY_OPTIONS, { required_error: 'Pilih pelayanan' }),
+  ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   photoUrl: z.string().url('URL tidak valid').optional().or(z.literal('')),
