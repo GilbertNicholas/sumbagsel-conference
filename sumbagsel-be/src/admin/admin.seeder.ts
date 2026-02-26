@@ -10,7 +10,13 @@ export async function seedAdmins(dataSource: DataSource): Promise<void> {
   });
 
   if (existingAdmin) {
-    console.log('Admin already exists, skipping seed');
+    if (!existingAdmin.phoneNumber) {
+      existingAdmin.phoneNumber = '087780271525';
+      await adminRepository.save(existingAdmin);
+      console.log('Admin phone number updated to 087780271525');
+    } else {
+      console.log('Admin already exists, skipping seed');
+    }
     return;
   }
 
@@ -18,6 +24,7 @@ export async function seedAdmins(dataSource: DataSource): Promise<void> {
   const admin = adminRepository.create({
     code: 'ADMIN123',
     name: 'Admin Default',
+    phoneNumber: '087780271525',
     isActive: true,
   });
 

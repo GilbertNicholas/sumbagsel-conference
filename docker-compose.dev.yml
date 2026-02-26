@@ -28,6 +28,7 @@ services:
       PORT: 3000
       NODE_ENV: development
       DATABASE_URL: mysql://sumbagsel_dev:sumbagsel_dev@db:3306/sumbagsel_dev
+      OTP_BYPASS_DEV: "true"
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -54,6 +55,7 @@ services:
       PORT: 3001
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_OTP_BYPASS_DEV: ${NEXT_PUBLIC_OTP_BYPASS_DEV:-true}
     ports:
       - "3001:3001"
     volumes:

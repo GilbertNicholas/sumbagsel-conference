@@ -31,6 +31,10 @@ type OtpFormData = z.infer<typeof otpSchema>;
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// TEMPORARY: Bypass OTP untuk development/testing. Set NEXT_PUBLIC_OTP_BYPASS_DEV=true
+// Hapus/disable saat production - OTP via WhatsApp akan digunakan kembali.
+const OTP_BYPASS_DEV = process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true';
+
 export function LoginPage() {
   const router = useRouter();
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -58,6 +62,19 @@ export function LoginPage() {
     try {
       setError(null);
       setIsLoading(true);
+
+      // TEMPORARY: Bypass OTP - langsung login tanpa kirim/verifikasi OTP
+      if (OTP_BYPASS_DEV) {
+        const response = await apiClient.loginWithPhone(data.phoneNumber);
+        setAuthToken(response.accessToken);
+        if (!response.profileCompleted) {
+          router.push('/profile/setup');
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
+
       await apiClient.requestOtp(data.phoneNumber);
       setPhoneNumber(data.phoneNumber);
       setShowOtpModal(true);
@@ -131,10 +148,12 @@ export function LoginPage() {
             />
           </div>
           <h2 className="mt-6 lg:mt-8 text-center text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
-            Masuk dengan WhatsApp
+            Login Peserta
           </h2>
           <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
-            Masukkan nomor WhatsApp Anda untuk menerima kode verifikasi
+            {OTP_BYPASS_DEV
+              ? 'Mode dev: Masukkan nomor untuk langsung masuk (OTP bypass)'
+              : 'Masukkan nomor WhatsApp Anda untuk menerima kode verifikasi'}
           </p>
         </div>
 
@@ -172,7 +191,7 @@ export function LoginPage() {
               disabled={isLoading}
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Mengirim...' : 'Kirim Kode Verifikasi'}
+              {isLoading ? (OTP_BYPASS_DEV ? 'Memproses...' : 'Mengirim...') : (OTP_BYPASS_DEV ? 'Masuk' : 'Kirim Kode Verifikasi')}
             </button>
           </div>
         </form>

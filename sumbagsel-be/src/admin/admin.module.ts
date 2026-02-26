@@ -11,10 +11,12 @@ import { User } from '../entities/user.entity';
 import { Profile } from '../entities/profile.entity';
 import { ArrivalSchedule } from '../entities/arrival-schedule.entity';
 import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
+import { OtpModule } from '../otp/otp.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Admin, Registration, User, Profile, ArrivalSchedule]),
+    OtpModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

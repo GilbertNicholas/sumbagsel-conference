@@ -119,6 +119,101 @@ export class RegistrationsService {
     return this.toResponseDto(fullRegistration!);
   }
 
+  async updateWithChildren(
+    userId: string,
+    dto: CreateRegistrationWithChildrenDto,
+  ): Promise<RegistrationResponseDto> {
+    const registration = await this.registrationsRepository.findOne({
+      where: { userId },
+      relations: ['children'],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (
+      registration.status !== RegistrationStatus.BELUM_TERDAFTAR &&
+      registration.status !== RegistrationStatus.DAFTAR_ULANG
+    ) {
+      throw new BadRequestException(
+        'Data anak tidak dapat diubah pada status ini',
+      );
+    }
+
+    const profile = await this.profilesService.findOneByUserId(userId);
+    if (!profile || !profile.ministry) {
+      throw new BadRequestException('Profile not found or ministry not set');
+    }
+
+    if (
+      profile.ministry === 'Teens/Campus' &&
+      dto.children &&
+      dto.children.length > 0
+    ) {
+      throw new BadRequestException('Teens/Campus ministry cannot register children');
+    }
+
+    // Delete existing children
+    if (registration.children && registration.children.length > 0) {
+      await this.registrationChildrenRepository.delete({
+        registrationId: registration.id,
+      });
+    }
+
+    // Recalculate amounts
+    const ministry = profile.ministry;
+    const churchName = profile.churchName || '';
+
+    let baseAmount = 0;
+    if (ministry === 'Teens/Campus') {
+      baseAmount = MINISTRY_FEE_TEENS;
+    } else if (ministry === 'Single/S2' || ministry === 'Married') {
+      baseAmount =
+        churchName === GKDI_BATAM
+          ? MINISTRY_FEE_SINGLE_MARRIED_BATAM
+          : MINISTRY_FEE_SINGLE_MARRIED_OTHER;
+    } else {
+      baseAmount = MINISTRY_FEE_SINGLE_MARRIED_OTHER;
+    }
+
+    const childCount = dto.children?.length ?? 0;
+    baseAmount += childCount * CHILD_FEE;
+
+    // Daftar ulang: hapus bukti pembayaran dan generate invoice baru (uniqueCode baru)
+    const isDaftarUlang = registration.status === RegistrationStatus.DAFTAR_ULANG;
+    const uniqueCode = isDaftarUlang
+      ? String(Math.floor(100 + Math.random() * 900))
+      : (registration.uniqueCode ?? String(Math.floor(100 + Math.random() * 900)));
+    const totalAmount = baseAmount + parseInt(uniqueCode, 10);
+
+    registration.baseAmount = baseAmount;
+    registration.totalAmount = totalAmount;
+    registration.uniqueCode = uniqueCode;
+    if (isDaftarUlang) {
+      registration.paymentProofUrl = null;
+    }
+    await this.registrationsRepository.save(registration);
+
+    // Save new children
+    if (dto.children && dto.children.length > 0) {
+      const children = dto.children.map((c) =>
+        this.registrationChildrenRepository.create({
+          registrationId: registration.id,
+          name: c.name,
+          age: c.age,
+        }),
+      );
+      await this.registrationChildrenRepository.save(children);
+    }
+
+    const fullRegistration = await this.registrationsRepository.findOne({
+      where: { id: registration.id },
+      relations: ['children'],
+    });
+    return this.toResponseDto(fullRegistration!);
+  }
+
   async create(
     userId: string,
     createRegistrationDto: CreateRegistrationDto,

@@ -26,6 +26,7 @@ export function RegisterPage() {
 
   const hasRegistration = !!registration;
   const canAddChildren = profile?.ministry === 'Single/S2' || profile?.ministry === 'Married';
+  const childrenEditable = !hasRegistration || registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang';
 
   useEffect(() => {
     async function loadData() {
@@ -41,6 +42,18 @@ export function RegisterPage() {
         const registrationData = await apiClient.getMyRegistration();
         if (registrationData) {
           setRegistration(registrationData);
+          if (
+            (registrationData.status === 'Belum terdaftar' || registrationData.status === 'Daftar ulang') &&
+            registrationData.children?.length > 0
+          ) {
+            setChildren(
+              registrationData.children.map((c) => ({
+                id: c.id,
+                name: c.name,
+                age: c.age,
+              })),
+            );
+          }
         }
       } catch (err) {
         // Don't redirect to setup on error - could be transient. Auth-guard already validated profile.
@@ -91,7 +104,7 @@ export function RegisterPage() {
   };
 
   const handleLakukanPembayaran = async () => {
-    if (hasRegistration) {
+    if (hasRegistration && !childrenEditable) {
       router.push('/register/payment');
       return;
     }
@@ -110,10 +123,20 @@ export function RegisterPage() {
         return;
       }
 
-      await apiClient.createRegistrationWithChildren(childrenPayload);
-      router.push('/register/payment');
+      let updated: RegistrationResponse;
+      if (hasRegistration) {
+        updated = await apiClient.updateRegistrationWithChildren(childrenPayload);
+      } else {
+        updated = await apiClient.createRegistrationWithChildren(childrenPayload);
+      }
+
+      setRegistration(updated);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('registrationFromRegister', JSON.stringify(updated));
+      }
+      router.push('/register/payment?t=' + Date.now());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membuat pendaftaran');
+      setError(err instanceof Error ? err.message : 'Gagal memproses pendaftaran');
     } finally {
       setIsSubmitting(false);
     }
@@ -182,7 +205,7 @@ export function RegisterPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl">
+      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-12 sm:pb-16 lg:pb-0">
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
           Pendaftaran Konferensi
         </h1>
@@ -233,7 +256,7 @@ export function RegisterPage() {
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.churchName || '-'}</p>
             </div>
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Pelayanan</label>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Ministry</label>
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.ministry || '-'}</p>
             </div>
             <div>
@@ -245,7 +268,7 @@ export function RegisterPage() {
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.phoneNumber || '-'}</p>
             </div>
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Catatan Khusus</label>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Catatan Khusus (Alergi/Penyakit/Catatan lainnya)</label>
               <p className="text-sm lg:text-base xl:text-lg text-gray-900 whitespace-pre-wrap">{profile?.specialNotes || '-'}</p>
             </div>
           </div>
@@ -259,8 +282,8 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Daftarkan anak - only for Single/S2 and Married, and only when no registration yet */}
-        {canAddChildren && !hasRegistration && (
+        {/* Daftarkan anak - for Single/S2 and Married, editable when status allows */}
+        {canAddChildren && childrenEditable && (
           <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
               Daftarkan anak (Usia 7-12 tahun)
@@ -310,8 +333,8 @@ export function RegisterPage() {
           </div>
         )}
 
-        {/* Data Anak - read-only when has registration */}
-        {hasRegistration && registration?.children && registration.children.length > 0 && (
+        {/* Data Anak - read-only when status doesn't allow editing */}
+        {hasRegistration && !childrenEditable && registration?.children && registration.children.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
               Data Anak

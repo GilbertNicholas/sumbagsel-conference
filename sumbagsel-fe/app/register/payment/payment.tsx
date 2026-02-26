@@ -21,26 +21,40 @@ export function PaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const canUpload = registration?.status === 'Belum terdaftar';
+  const canUpload = registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang';
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [profileData, registrationData] = await Promise.all([
-          apiClient.getMyProfile(),
-          apiClient.getMyRegistration(),
-        ]);
+        // Check if registration was passed from register page via sessionStorage
+        let regFromStorage: RegistrationResponse | null = null;
+        if (typeof window !== 'undefined') {
+          const stored = sessionStorage.getItem('registrationFromRegister');
+          if (stored) {
+            sessionStorage.removeItem('registrationFromRegister');
+            try {
+              regFromStorage = JSON.parse(stored) as RegistrationResponse;
+            } catch {}
+          }
+        }
+
+        const profileData = await apiClient.getMyProfile();
         if (!profileData) {
           router.replace('/profile/setup');
           return;
         }
         setProfile(profileData);
-        setRegistration(registrationData);
-        if (!registrationData) {
-          router.replace('/register');
+
+        if (regFromStorage) {
+          setRegistration(regFromStorage);
+        } else {
+          const registrationData = await apiClient.getMyRegistration();
+          setRegistration(registrationData);
+          if (!registrationData) {
+            router.replace('/register');
+          }
         }
       } catch {
-        // Don't redirect to setup - auth-guard already validated. Redirect to register.
         router.replace('/register');
       } finally {
         setIsLoading(false);

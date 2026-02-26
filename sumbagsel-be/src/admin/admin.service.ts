@@ -1,7 +1,9 @@
 import {
   Injectable,
+  OnModuleInit,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,17 +15,21 @@ import { Profile } from '../entities/profile.entity';
 import { ArrivalSchedule } from '../entities/arrival-schedule.entity';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
+import { OtpService } from '../otp/otp.service';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
 import { ArrivalScheduleResponseDto, ArrivalScheduleSummaryDto, ArrivalScheduleGroupedDto } from './dto/arrival-schedule-response.dto';
 import { RegistrationStatus } from '../entities/registration.entity';
 
+const DEFAULT_ADMIN_PHONE = '087780271525';
+
 @Injectable()
-export class AdminService {
+export class AdminService implements OnModuleInit {
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
+    private otpService: OtpService,
     @InjectRepository(Registration)
     private registrationsRepository: Repository<Registration>,
     @InjectRepository(User)
@@ -34,6 +40,105 @@ export class AdminService {
     private arrivalSchedulesRepository: Repository<ArrivalSchedule>,
     private jwtService: JwtService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    try {
+      const admin = await this.adminRepository.findOne({
+        where: { code: 'ADMIN123' },
+      });
+      if (admin && !admin.phoneNumber) {
+        admin.phoneNumber = DEFAULT_ADMIN_PHONE;
+        await this.adminRepository.save(admin);
+        console.log('[AdminService] Admin phone number seeded: 087780271525');
+      }
+    } catch (e) {
+      console.warn('[AdminService] Seed admin phone skipped:', (e as Error).message);
+    }
+  }
+
+  private normalizePhoneNumber(phoneNumber: string): string {
+    let normalized = phoneNumber.replace(/[\s-]/g, '');
+    if (normalized.startsWith('+62')) {
+      normalized = '0' + normalized.substring(3);
+    }
+    if (!normalized.startsWith('0')) {
+      normalized = '0' + normalized;
+    }
+    return normalized;
+  }
+
+  async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+
+    const admin = await this.adminRepository.findOne({
+      where: { phoneNumber: normalizedPhone },
+    });
+
+    if (!admin) {
+      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+    }
+
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Akun admin tidak aktif');
+    }
+
+    return this.otpService.create(phoneNumber);
+  }
+
+  /** Bypass OTP - direct login with phone. Only when OTP_BYPASS_DEV=true. */
+  async loginWithPhone(phoneNumber: string): Promise<AdminAuthResponseDto> {
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+
+    const admin = await this.adminRepository.findOne({
+      where: { phoneNumber: normalizedPhone },
+    });
+
+    if (!admin) {
+      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+    }
+
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Akun admin tidak aktif');
+    }
+
+    const accessToken = this.generateToken(admin);
+    return {
+      accessToken,
+      admin: {
+        id: admin.id,
+        code: admin.code,
+        name: admin.name,
+      },
+    };
+  }
+
+  async verifyOtpAndLogin(phoneNumber: string, otp: string): Promise<AdminAuthResponseDto> {
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+
+    await this.otpService.verify(phoneNumber, otp);
+
+    const admin = await this.adminRepository.findOne({
+      where: { phoneNumber: normalizedPhone },
+    });
+
+    if (!admin) {
+      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+    }
+
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Akun admin tidak aktif');
+    }
+
+    const accessToken = this.generateToken(admin);
+    return {
+      accessToken,
+      admin: {
+        id: admin.id,
+        code: admin.code,
+        name: admin.name,
+      },
+    };
+  }
 
   async login(loginDto: AdminLoginDto): Promise<AdminAuthResponseDto> {
     const { code } = loginDto;
@@ -78,8 +183,6 @@ export class AdminService {
   }
 
   async getAllParticipants(): Promise<ParticipantResponseDto[]> {
-    // Get all users with profiles (not just those with registrations)
-    // Use query builder to properly filter profiles
     const users = await this.usersRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.profile', 'profile')
@@ -94,73 +197,225 @@ export class AdminService {
     return users.map((user) => {
       const profile = user.profile;
       const registration = user.registration;
-      
       return {
-        id: registration?.id || user.id, // Use registration id if exists, otherwise user id
+        id: registration?.id ?? user.id,
         userId: user.id,
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
         phoneNumber: profile?.phoneNumber || null,
         email: user.email || '-',
-        status: registration?.status || 'Belum terdaftar',
-        paymentProofUrl: registration?.paymentProofUrl || null,
-        createdAt: registration?.createdAt?.toISOString() || user.createdAt.toISOString(),
-        updatedAt: registration?.updatedAt?.toISOString() || user.updatedAt.toISOString(),
+        status: registration?.status ?? 'Belum terdaftar',
+        paymentProofUrl: registration?.paymentProofUrl ?? null,
+        checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
+        createdAt: registration?.createdAt?.toISOString() ?? user.createdAt.toISOString(),
+        updatedAt: registration?.updatedAt?.toISOString() ?? user.updatedAt.toISOString(),
       };
     });
   }
 
-  async getParticipantById(registrationId: string): Promise<ParticipantDetailResponseDto> {
+  async getParticipantById(participantId: string): Promise<ParticipantDetailResponseDto> {
+    // Try registration by id first
     const registration = await this.registrationsRepository.findOne({
-      where: { id: registrationId },
-      relations: ['user', 'user.profile'],
+      where: { id: participantId },
+      relations: ['user', 'user.profile', 'children'],
     });
 
-    if (!registration) {
+    if (registration) {
+      const profile = registration.user?.profile;
+      const children = (registration.children || []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        age: c.age,
+      }));
+
+      return {
+        id: registration.id,
+        userId: registration.userId,
+        fullName: profile?.fullName || '-',
+        churchName: profile?.churchName || '-',
+        ministry: profile?.ministry || null,
+        phoneNumber: profile?.phoneNumber || null,
+        email: registration.user?.email || '-',
+        specialNotes: profile?.specialNotes || null,
+        status: registration.status,
+        paymentProofUrl: registration.paymentProofUrl,
+        children,
+        baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
+        totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
+        uniqueCode: registration.uniqueCode,
+        checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+        createdAt: registration.createdAt.toISOString(),
+        updatedAt: registration.updatedAt.toISOString(),
+      };
+    }
+
+    // Not a registration id - try user id (peserta dengan profil tapi belum daftar)
+    const user = await this.usersRepository.findOne({
+      where: { id: participantId },
+      relations: ['profile'],
+    });
+
+    if (!user?.profile) {
       throw new NotFoundException('Participant not found');
     }
 
-    const profile = registration.user?.profile;
+    const profile = user.profile;
     return {
-      id: registration.id,
-      userId: registration.userId,
-      fullName: profile?.fullName || '-',
-      churchName: profile?.churchName || '-',
-      phoneNumber: profile?.phoneNumber || null,
-      email: registration.user?.email || '-',
-      specialNotes: profile?.specialNotes || null,
-      status: registration.status,
-      paymentProofUrl: registration.paymentProofUrl,
-      createdAt: registration.createdAt.toISOString(),
-      updatedAt: registration.updatedAt.toISOString(),
+      id: user.id,
+      userId: user.id,
+      fullName: profile.fullName || '-',
+      churchName: profile.churchName || '-',
+      ministry: profile.ministry || null,
+      phoneNumber: profile.phoneNumber || null,
+      email: user.email || '-',
+      specialNotes: profile.specialNotes || null,
+      status: 'Belum terdaftar',
+      paymentProofUrl: null,
+      children: [],
+      baseAmount: null,
+      totalAmount: null,
+      uniqueCode: null,
+      checkedInAt: null,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
   }
 
   async approveRegistration(registrationId: string): Promise<ParticipantDetailResponseDto> {
     const registration = await this.registrationsRepository.findOne({
       where: { id: registrationId },
-      relations: ['user', 'user.profile'],
+      relations: ['user', 'user.profile', 'children'],
     });
 
     if (!registration) {
       throw new NotFoundException('Registration not found');
     }
 
-    // Update status to Terdaftar
+    if (registration.status !== RegistrationStatus.PENDING) {
+      throw new BadRequestException('Hanya pendaftaran dengan status Pending yang dapat disetujui');
+    }
+
     registration.status = RegistrationStatus.TERDAFTAR;
     await this.registrationsRepository.save(registration);
 
     const profile = registration.user?.profile;
+    const children = (registration.children || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      age: c.age,
+    }));
+
     return {
       id: registration.id,
       userId: registration.userId,
       fullName: profile?.fullName || '-',
       churchName: profile?.churchName || '-',
+      ministry: profile?.ministry || null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
       paymentProofUrl: registration.paymentProofUrl,
+      children,
+      baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
+      totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
+      uniqueCode: registration.uniqueCode,
+      checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      createdAt: registration.createdAt.toISOString(),
+      updatedAt: registration.updatedAt.toISOString(),
+    };
+  }
+
+  async rejectRegistration(registrationId: string): Promise<ParticipantDetailResponseDto> {
+    const registration = await this.registrationsRepository.findOne({
+      where: { id: registrationId },
+      relations: ['user', 'user.profile', 'children'],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (registration.status !== RegistrationStatus.PENDING) {
+      throw new BadRequestException('Hanya pendaftaran dengan status Pending yang dapat ditolak');
+    }
+
+    registration.status = RegistrationStatus.DAFTAR_ULANG;
+    registration.paymentProofUrl = null;
+    await this.registrationsRepository.save(registration);
+
+    const profile = registration.user?.profile;
+    const children = (registration.children || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      age: c.age,
+    }));
+
+    return {
+      id: registration.id,
+      userId: registration.userId,
+      fullName: profile?.fullName || '-',
+      churchName: profile?.churchName || '-',
+      ministry: profile?.ministry || null,
+      phoneNumber: profile?.phoneNumber || null,
+      email: registration.user?.email || '-',
+      specialNotes: profile?.specialNotes || null,
+      status: registration.status,
+      paymentProofUrl: registration.paymentProofUrl,
+      children,
+      baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
+      totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
+      uniqueCode: registration.uniqueCode,
+      checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      createdAt: registration.createdAt.toISOString(),
+      updatedAt: registration.updatedAt.toISOString(),
+    };
+  }
+
+  async checkInParticipant(registrationId: string): Promise<ParticipantDetailResponseDto> {
+    const registration = await this.registrationsRepository.findOne({
+      where: { id: registrationId },
+      relations: ['user', 'user.profile', 'children'],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (registration.status !== RegistrationStatus.TERDAFTAR) {
+      throw new BadRequestException('Check-in hanya dapat dilakukan untuk peserta yang telah disetujui (Terdaftar)');
+    }
+
+    if (registration.checkedInAt) {
+      throw new BadRequestException('Peserta sudah melakukan check-in');
+    }
+
+    registration.checkedInAt = new Date();
+    await this.registrationsRepository.save(registration);
+
+    const profile = registration.user?.profile;
+    const children = (registration.children || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      age: c.age,
+    }));
+
+    return {
+      id: registration.id,
+      userId: registration.userId,
+      fullName: profile?.fullName || '-',
+      churchName: profile?.churchName || '-',
+      ministry: profile?.ministry || null,
+      phoneNumber: profile?.phoneNumber || null,
+      email: registration.user?.email || '-',
+      specialNotes: profile?.specialNotes || null,
+      status: registration.status,
+      paymentProofUrl: registration.paymentProofUrl,
+      children,
+      baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
+      totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
+      uniqueCode: registration.uniqueCode,
+      checkedInAt: registration.checkedInAt.toISOString(),
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };

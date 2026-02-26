@@ -221,7 +221,7 @@ export function ProfileSetupPage() {
             </div>
             <div>
               <label htmlFor="ministry" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Pelayanan *
+                Ministry *
               </label>
               <div className="relative">
                 <select

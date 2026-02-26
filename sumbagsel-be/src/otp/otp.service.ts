@@ -95,7 +95,16 @@ export class OtpService {
     const gkdiPhone = this.whatsappGkdiService.toGkdiPhoneFormat(normalizedPhone);
     const message = `Kode verifikasi SumBagSel Anda: ${otp}. Berlaku ${OTP_EXPIRY_MINUTES} menit. Jangan bagikan kode ini kepada siapapun.`;
 
-    await this.whatsappGkdiService.sendMessage(gkdiPhone, message);
+    try {
+      await this.whatsappGkdiService.sendMessage(gkdiPhone, message);
+    } catch (sendError) {
+      // Sending failed -- remove the OTP record so the user isn't penalised by the cooldown
+      await this.otpRepository.delete({ phoneNumber: normalizedPhone });
+      throw new HttpException(
+        'Gagal mengirim kode verifikasi. Silakan coba lagi.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
 
     return { sent: true };
   }

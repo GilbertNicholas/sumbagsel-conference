@@ -45,6 +45,9 @@ export class Registration {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, name: 'base_amount' })
   baseAmount: number | null;
 
+  @Column({ type: 'datetime', nullable: true, name: 'checked_in_at' })
+  checkedInAt: Date | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

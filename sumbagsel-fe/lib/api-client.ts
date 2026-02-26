@@ -228,7 +228,9 @@ class ApiClient {
 
   // Registration endpoints
   async getMyRegistration(): Promise<RegistrationResponse | null> {
-    return this.request<RegistrationResponse | null>('/registrations/me');
+    return this.request<RegistrationResponse | null>('/registrations/me', {
+      cache: 'no-store',
+    });
   }
 
   async createRegistration(data: CreateRegistrationDto): Promise<RegistrationResponse> {
@@ -249,6 +251,15 @@ class ApiClient {
     return this.request<RegistrationResponse>('/registrations/with-children', {
       method: 'POST',
       body: JSON.stringify({ children }),
+      cache: 'no-store',
+    });
+  }
+
+  async updateRegistrationWithChildren(children: { name: string; age: number }[]): Promise<RegistrationResponse> {
+    return this.request<RegistrationResponse>('/registrations/me/with-children', {
+      method: 'PATCH',
+      body: JSON.stringify({ children }),
+      cache: 'no-store',
     });
   }
 
@@ -318,6 +329,36 @@ class ApiClient {
     return response;
   }
 
+  async adminRequestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+    return this.request<{ sent: boolean }>('/admin/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
+  /** Bypass OTP - direct login. Only when NEXT_PUBLIC_OTP_BYPASS_DEV=true */
+  async adminLoginWithPhone(phoneNumber: string): Promise<AdminAuthResponse> {
+    const response = await this.request<AdminAuthResponse>('/admin/login-with-phone', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+    if (response.accessToken) {
+      localStorage.setItem('admin_token', response.accessToken);
+    }
+    return response;
+  }
+
+  async adminVerifyOtp(phoneNumber: string, otp: string): Promise<AdminAuthResponse> {
+    const response = await this.request<AdminAuthResponse>('/admin/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, otp }),
+    });
+    if (response.accessToken) {
+      localStorage.setItem('admin_token', response.accessToken);
+    }
+    return response;
+  }
+
   async getAdminMe(): Promise<AdminInfo> {
     const adminToken = localStorage.getItem('admin_token');
     if (!adminToken) {
@@ -360,6 +401,32 @@ class ApiClient {
       throw new Error('No admin token found');
     }
     return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/approve`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async rejectRegistration(id: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async checkInParticipant(id: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/check-in`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -461,8 +528,15 @@ export interface ParticipantResponse {
   email: string;
   status: string;
   paymentProofUrl: string | null;
+  checkedInAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ParticipantDetailChild {
+  id: string;
+  name: string;
+  age: number;
 }
 
 export interface ParticipantDetailResponse {
@@ -470,11 +544,17 @@ export interface ParticipantDetailResponse {
   userId: string;
   fullName: string;
   churchName: string;
+  ministry?: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;
   status: string;
   paymentProofUrl: string | null;
+  children?: ParticipantDetailChild[];
+  baseAmount: number | null;
+  totalAmount: number | null;
+  uniqueCode: string | null;
+  checkedInAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

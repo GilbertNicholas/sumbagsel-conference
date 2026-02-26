@@ -38,6 +38,14 @@ export class RegistrationsController {
     return this.registrationsService.createWithChildren(user.id, dto);
   }
 
+  @Patch('me/with-children')
+  async updateRegistrationWithChildren(
+    @CurrentUser() user: User,
+    @Body() dto: CreateRegistrationWithChildrenDto,
+  ): Promise<RegistrationResponseDto> {
+    return this.registrationsService.updateWithChildren(user.id, dto);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createRegistration(

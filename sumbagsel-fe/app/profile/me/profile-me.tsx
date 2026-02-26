@@ -302,10 +302,10 @@ export function ProfileMePage() {
                   )}
                 </div>
 
-                {/* Pelayanan */}
+                {/* Ministry */}
                 <div>
                   <label htmlFor="ministry" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Pelayanan *
+                    Ministry *
                   </label>
                   <div className="relative">
                     <select
@@ -379,7 +379,7 @@ export function ProfileMePage() {
                 {/* Catatan Khusus */}
                 <div>
                   <label htmlFor="specialNotes" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Catatan Khusus
+                    Catatan Khusus (Alergi/Penyakit/Catatan lainnya)
                   </label>
                   <textarea
                     {...register('specialNotes')}
@@ -427,10 +427,10 @@ export function ProfileMePage() {
                   </p>
                 </div>
 
-                {/* Pelayanan */}
+                {/* Ministry */}
                 <div>
                   <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Pelayanan
+                    Ministry
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900">
                     {profile?.ministry || '-'}
@@ -460,7 +460,7 @@ export function ProfileMePage() {
                 {/* Catatan Khusus */}
                 <div>
                   <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Catatan Khusus
+                    Catatan Khusus (Alergi/Penyakit/Catatan lainnya)  
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900 whitespace-pre-wrap">
                     {profile?.specialNotes || '-'}
