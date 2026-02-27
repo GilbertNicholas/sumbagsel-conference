@@ -9,13 +9,15 @@ export class CreateRegistrationsAndArrivalSchedules1700000001000 implements Migr
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
           {
             name: 'user_id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isNullable: false,
           },
           {
@@ -97,13 +99,15 @@ export class CreateRegistrationsAndArrivalSchedules1700000001000 implements Migr
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
           {
             name: 'user_id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isNullable: false,
           },
           {

@@ -9,7 +9,8 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
@@ -62,13 +63,15 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
           {
             name: 'user_id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isNullable: false,
           },
           {
@@ -101,13 +104,15 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
           {
             name: 'user_id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isUnique: true,
             isNullable: false,
           },
