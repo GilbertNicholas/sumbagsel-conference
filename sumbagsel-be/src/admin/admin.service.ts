@@ -203,7 +203,7 @@ export class AdminService implements OnModuleInit {
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
         phoneNumber: profile?.phoneNumber || null,
-        email: user.email || '-',
+        email: user.email || profile?.contactEmail || '-',
         status: registration?.status ?? 'Belum terdaftar',
         paymentProofUrl: registration?.paymentProofUrl ?? null,
         checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
@@ -235,7 +235,7 @@ export class AdminService implements OnModuleInit {
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
         phoneNumber: profile?.phoneNumber || null,
-        email: registration.user?.email || '-',
+        email: registration.user?.email || profile?.contactEmail || '-',
         specialNotes: profile?.specialNotes || null,
         status: registration.status,
         paymentProofUrl: registration.paymentProofUrl,
@@ -267,7 +267,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile.churchName || '-',
       ministry: profile.ministry || null,
       phoneNumber: profile.phoneNumber || null,
-      email: user.email || '-',
+      email: user.email || profile?.contactEmail || '-',
       specialNotes: profile.specialNotes || null,
       status: 'Belum terdaftar',
       paymentProofUrl: null,
@@ -312,7 +312,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       phoneNumber: profile?.phoneNumber || null,
-      email: registration.user?.email || '-',
+      email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
       paymentProofUrl: registration.paymentProofUrl,
@@ -358,7 +358,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       phoneNumber: profile?.phoneNumber || null,
-      email: registration.user?.email || '-',
+      email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
       paymentProofUrl: registration.paymentProofUrl,
@@ -407,7 +407,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       phoneNumber: profile?.phoneNumber || null,
-      email: registration.user?.email || '-',
+      email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
       paymentProofUrl: registration.paymentProofUrl,
@@ -452,7 +452,7 @@ export class AdminService implements OnModuleInit {
 
       if (filter?.search && filter.search.trim()) {
         queryBuilder.andWhere(
-          '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
+          '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.contactEmail) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
           { search: `%${filter.search.trim()}%` },
         );
       }
@@ -489,7 +489,7 @@ export class AdminService implements OnModuleInit {
           id: arrival.id,
           userId: arrival.userId,
           fullName: arrival.user?.profile?.fullName || '-',
-          email: arrival.user?.email || '-',
+          email: arrival.user?.email || arrival.user?.profile?.contactEmail || '-',
           phoneNumber: arrival.user?.profile?.phoneNumber || null,
           transportationType: arrival.transportationType,
           carrierName: arrival.carrierName,
@@ -533,7 +533,7 @@ export class AdminService implements OnModuleInit {
 
         if (filter?.search && filter.search.trim()) {
           query.andWhere(
-            '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
+            '(LOWER(profile.fullName) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(profile.contactEmail) LIKE LOWER(:search) OR LOWER(profile.phoneNumber) LIKE LOWER(:search))',
             { search: `%${filter.search.trim()}%` },
           );
         }
