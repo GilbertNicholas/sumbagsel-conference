@@ -12,6 +12,17 @@ import { extname } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+/** File object from Multer diskStorage */
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  mimetype: string;
+  size: number;
+  filename: string;
+  destination: string;
+  path: string;
+}
+
 const PAYMENT_PROOF_DIR = 'payment-proof';
 const UPLOAD_PATH = `uploads/${PAYMENT_PROOF_DIR}`;
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -49,7 +60,7 @@ export class UploadsController {
     }),
   )
   uploadPaymentProof(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: MulterFile | undefined,
   ): { url: string } {
     if (!file) {
       throw new BadRequestException('File tidak ditemukan');

@@ -24,7 +24,6 @@ const profileSetupSchema = z.object({
   ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
-  photoUrl: z.string().url('URL tidak valid').optional().or(z.literal('')),
 }).refine((data) => {
   if (data.churchName === 'Lainnya') {
     return data.customChurchName && data.customChurchName.trim().length > 0;
@@ -91,7 +90,6 @@ export function ProfileSetupPage() {
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
         contactEmail: data.contactEmail || undefined,
-        photoUrl: data.photoUrl || undefined,
       };
 
       try {
@@ -268,22 +266,6 @@ export function ProfileSetupPage() {
               {errors.contactEmail && (
                 <p className="mt-2 text-sm lg:text-base text-red-600">
                   {errors.contactEmail.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="photoUrl" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                URL Foto
-              </label>
-              <input
-                {...register('photoUrl')}
-                type="url"
-                className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
-                placeholder="https://example.com/foto.jpg (opsional)"
-              />
-              {errors.photoUrl && (
-                <p className="mt-2 text-sm lg:text-base text-red-600">
-                  {errors.photoUrl.message}
                 </p>
               )}
             </div>

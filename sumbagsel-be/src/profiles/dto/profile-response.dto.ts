@@ -5,7 +5,6 @@ export class ProfileResponseDto {
   ministry: string | null;
   contactEmail: string | null;
   phoneNumber: string | null;
-  photoUrl: string | null;
   specialNotes: string | null;
   isCompleted: boolean;
 }

@@ -32,9 +32,6 @@ export class Profile {
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'phone_number' })
   phoneNumber: string | null;
 
-  @Column({ type: 'text', nullable: true, name: 'photo_url' })
-  photoUrl: string | null;
-
   @Column({ type: 'text', nullable: true, name: 'special_notes' })
   specialNotes: string | null;
 

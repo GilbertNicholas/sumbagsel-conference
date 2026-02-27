@@ -54,7 +54,7 @@ export class ProfilesService {
       throw new NotFoundException('User not found');
     }
 
-    const { fullName, churchName, ministry, contactEmail, phoneNumber, photoUrl, specialNotes } = createProfileDto;
+    const { fullName, churchName, ministry, contactEmail, phoneNumber, specialNotes } = createProfileDto;
 
     // Determine if profile is completed
     const hasValidFullName = fullName && fullName.trim() !== '' && fullName !== 'Belum diisi';
@@ -71,7 +71,6 @@ export class ProfilesService {
       ministry: ministry || null,
       contactEmail: contactEmail || user.email,
       phoneNumber: phoneNumber || null,
-      photoUrl: photoUrl || null,
       specialNotes: specialNotes || null,
       isCompleted,
       completedAt,
@@ -116,9 +115,6 @@ export class ProfilesService {
     if (updateProfileDto.contactEmail !== undefined) {
       profile.contactEmail = updateProfileDto.contactEmail || user.email;
     }
-    if (updateProfileDto.photoUrl !== undefined) {
-      profile.photoUrl = updateProfileDto.photoUrl || null;
-    }
     if (updateProfileDto.phoneNumber !== undefined) {
       profile.phoneNumber = updateProfileDto.phoneNumber?.trim() || null;
     }
@@ -159,7 +155,6 @@ export class ProfilesService {
       ministry: profile.ministry,
       contactEmail: profile.contactEmail,
       phoneNumber: profile.phoneNumber,
-      photoUrl: profile.photoUrl,
       specialNotes: profile.specialNotes,
       isCompleted: profile.isCompleted,
     };

@@ -29,10 +29,6 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  photoUrl?: string;
-
-  @IsString()
-  @IsOptional()
   specialNotes?: string;
 
   @IsBoolean()

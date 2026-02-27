@@ -30,10 +30,6 @@ export class CreateProfileDto {
 
   @IsString()
   @IsOptional()
-  photoUrl?: string;
-
-  @IsString()
-  @IsOptional()
   specialNotes?: string;
 }
 
