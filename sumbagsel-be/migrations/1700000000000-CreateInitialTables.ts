@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex, TableUnique } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 export class CreateInitialTables1700000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -188,11 +188,13 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
       }),
     );
 
-    // Create unique constraint for user_identities (provider, provider_user_id)
-    await queryRunner.createUniqueConstraint(
+    // Create unique index for user_identities (provider, provider_user_id) - MySQL uses index, not constraint
+    await queryRunner.createIndex(
       'user_identities',
-      new TableUnique({
+      new TableIndex({
+        name: 'UQ_user_identities_provider_provider_user_id',
         columnNames: ['provider', 'provider_user_id'],
+        isUnique: true,
       }),
     );
 
