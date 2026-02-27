@@ -2,6 +2,14 @@ import Cookies from 'js-cookie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+/** Convert relative payment proof path to full API URL */
+export function getPaymentProofFullUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  const base = API_BASE_URL.replace(/\/$/, '');
+  return base ? `${base}${url}` : url;
+}
+
 export interface AuthResponse {
   accessToken: string;
   user: {

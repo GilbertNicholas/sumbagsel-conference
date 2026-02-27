@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { apiClient, ParticipantDetailResponse } from '@/lib/api-client';
+import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse } from '@/lib/api-client';
 
 const CHILD_FEE = 75_000;
 
@@ -338,7 +338,7 @@ export function ParticipantDetailPage() {
             {participant.paymentProofUrl ? (
               <div>
                 <a
-                  href={participant.paymentProofUrl}
+                  href={getPaymentProofFullUrl(participant.paymentProofUrl) ?? '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-5 py-3 lg:px-6 lg:py-4 border border-gray-300 rounded-md shadow-sm text-base lg:text-lg font-medium text-gray-700 bg-white hover:bg-gray-50"

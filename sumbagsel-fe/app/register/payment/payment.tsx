@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
+import { apiClient, getPaymentProofFullUrl, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
 import { DashboardLayout } from '@/components/dashboard-layout';
 
 const CHILD_FEE = 75_000;
@@ -241,37 +241,42 @@ export function PaymentPage() {
         )}
 
         {/* When Pending or Terdaftar - show payment proof if exists */}
-        {!canUpload && registration.paymentProofUrl && (
-          <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
-            <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
-              Bukti Pembayaran
-            </h2>
-            <p className="text-sm text-gray-600 mb-2">Status: {registration.status}</p>
-            {registration.paymentProofUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-              <a
-                href={registration.paymentProofUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <img
-                  src={registration.paymentProofUrl}
-                  alt="Bukti pembayaran"
-                  className="max-w-md rounded-lg border border-gray-200"
-                />
-              </a>
-            ) : (
-              <a
-                href={registration.paymentProofUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-500 underline"
-              >
-                Lihat bukti pembayaran
-              </a>
-            )}
-          </div>
-        )}
+        {!canUpload && registration.paymentProofUrl && (() => {
+          const fullUrl = getPaymentProofFullUrl(registration.paymentProofUrl);
+          if (!fullUrl) return null;
+          const isImage = registration.paymentProofUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+          return (
+            <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
+              <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-4">
+                Bukti Pembayaran
+              </h2>
+              <p className="text-sm text-gray-600 mb-2">Status: {registration.status}</p>
+              {isImage ? (
+                <a
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <img
+                    src={fullUrl}
+                    alt="Bukti pembayaran"
+                    className="max-w-md rounded-lg border border-gray-200"
+                  />
+                </a>
+              ) : (
+                <a
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-500 underline"
+                >
+                  Lihat bukti pembayaran
+                </a>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </DashboardLayout>
   );
