@@ -5,6 +5,7 @@ import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRequestOtpDto } from './dto/admin-request-otp.dto';
 import { AdminVerifyOtpDto } from './dto/admin-verify-otp.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
+import { AdminRejectDto } from './dto/admin-reject.dto';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
@@ -74,8 +75,11 @@ export class AdminController {
 
   @Patch('participants/:id/reject')
   @UseGuards(AdminAuthGuard)
-  async rejectRegistration(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
-    return this.adminService.rejectRegistration(id);
+  async rejectRegistration(
+    @Param('id') id: string,
+    @Body() dto: AdminRejectDto,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.rejectRegistration(id, dto.reason);
   }
 
   @Patch('participants/:id/check-in')

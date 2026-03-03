@@ -20,6 +20,7 @@ export class ParticipantDetailResponseDto {
   totalAmount: number | null;
   uniqueCode: string | null;
   checkedInAt: string | null;
+  rejectReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

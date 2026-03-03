@@ -6,9 +6,51 @@ import { apiClient, getPaymentProofFullUrl, ProfileResponse, RegistrationRespons
 import { DashboardLayout } from '@/components/dashboard-layout';
 
 const CHILD_FEE = 75_000;
+const ACCOUNT_NUMBER = '7195 300 500';
+const ACCOUNT_NAME = 'Yayasan Gema Kristus Damai Indonesia';
 
 function formatRupiah(n: number): string {
   return new Intl.NumberFormat('id-ID').format(n);
+}
+
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 p-1 rounded hover:bg-gray-100 transition-colors"
+      title={`Salin ${label}`}
+      aria-label={`Salin ${label}`}
+    >
+      {copied ? (
+        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      )}
+    </button>
+  );
 }
 
 export function PaymentPage() {
@@ -144,6 +186,13 @@ export function PaymentPage() {
           </div>
         )}
 
+        {registration.status === 'Daftar ulang' && registration.rejectReason && (
+          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+            <p className="text-sm font-medium text-red-800 mb-2">Alasan penolakan pendaftaran:</p>
+            <p className="text-sm lg:text-base text-gray-800 whitespace-pre-wrap">{registration.rejectReason}</p>
+          </div>
+        )}
+
         {/* Invoice Section */}
         <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
           <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
@@ -168,9 +217,25 @@ export function PaymentPage() {
               <span className="text-gray-700">Kode unik</span>
               <span className="text-gray-900 font-mono">{registration.uniqueCode ?? '-'}</span>
             </div>
-            <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-base lg:text-lg font-bold">
+            <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center text-base lg:text-lg font-bold">
               <span className="text-gray-900">Total transfer</span>
-              <span className="text-gray-900">Rp {formatRupiah(registration.totalAmount ?? 0)}</span>
+              <span className="flex items-center gap-1">
+                Rp {formatRupiah(registration.totalAmount ?? 0)}
+                <CopyButton text={String(registration.totalAmount ?? 0)} label="nominal transfer" />
+              </span>
+            </div>
+            {/* Nomor rekening tujuan */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">Transfer ke rekening:</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 tracking-wider">
+                  {ACCOUNT_NUMBER}
+                </span>
+                <CopyButton text={ACCOUNT_NUMBER.replace(/\s/g, '')} label="nomor rekening" />
+              </div>
+              <p className="text-base lg:text-lg xl:text-xl font-semibold text-gray-800 mt-1">
+                a.n. {ACCOUNT_NAME}
+              </p>
             </div>
           </div>
           <p className="mt-4 text-sm text-gray-500">

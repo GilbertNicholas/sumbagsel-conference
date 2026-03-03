@@ -244,6 +244,7 @@ export class AdminService implements OnModuleInit {
         totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
         uniqueCode: registration.uniqueCode,
         checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+        rejectReason: registration.rejectReason ?? null,
         createdAt: registration.createdAt.toISOString(),
         updatedAt: registration.updatedAt.toISOString(),
       };
@@ -276,6 +277,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: null,
       uniqueCode: null,
       checkedInAt: null,
+      rejectReason: null,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };
@@ -321,12 +323,13 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };
   }
 
-  async rejectRegistration(registrationId: string): Promise<ParticipantDetailResponseDto> {
+  async rejectRegistration(registrationId: string, reason: string): Promise<ParticipantDetailResponseDto> {
     const registration = await this.registrationsRepository.findOne({
       where: { id: registrationId },
       relations: ['user', 'user.profile', 'children'],
@@ -342,6 +345,7 @@ export class AdminService implements OnModuleInit {
 
     registration.status = RegistrationStatus.DAFTAR_ULANG;
     registration.paymentProofUrl = null;
+    registration.rejectReason = reason.trim();
     await this.registrationsRepository.save(registration);
 
     const profile = registration.user?.profile;
@@ -367,6 +371,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      rejectReason: registration.rejectReason,
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };
@@ -416,6 +421,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       checkedInAt: registration.checkedInAt.toISOString(),
+      rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };

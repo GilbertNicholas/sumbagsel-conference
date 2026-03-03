@@ -48,6 +48,9 @@ export class Registration {
   @Column({ type: 'datetime', nullable: true, name: 'checked_in_at' })
   checkedInAt: Date | null;
 
+  @Column({ type: 'text', nullable: true, name: 'reject_reason' })
+  rejectReason: string | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

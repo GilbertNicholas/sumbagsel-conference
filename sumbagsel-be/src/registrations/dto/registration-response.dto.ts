@@ -10,6 +10,7 @@ export class RegistrationResponseDto {
   totalAmount: number | null;
   baseAmount: number | null;
   children: RegistrationChildResponseDto[];
+  rejectReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

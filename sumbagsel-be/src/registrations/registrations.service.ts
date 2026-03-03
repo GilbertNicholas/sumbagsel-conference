@@ -299,6 +299,7 @@ export class RegistrationsService {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
       children,
+      rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt,
       updatedAt: registration.updatedAt,
     };

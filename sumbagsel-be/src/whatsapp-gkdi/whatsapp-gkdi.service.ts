@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -12,7 +12,7 @@ import { firstValueFrom } from 'rxjs';
  * - POST /message/send: Send WhatsApp message (requires x-api-token header)
  */
 @Injectable()
-export class WhatsappGkdiService {
+export class WhatsappGkdiService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappGkdiService.name);
   private readonly baseUrl: string;
   private cachedToken: string | null = null;
@@ -26,6 +26,18 @@ export class WhatsappGkdiService {
     this.baseUrl =
       this.configService.get<string>('GKDI_API_URL') ||
       'https://ticketapi.gkdi.org/api/v2';
+  }
+
+  async onModuleInit(): Promise<void> {
+    try {
+      await this.getToken();
+      this.logger.log('GKDI WhatsApp token pre-warmed at startup');
+    } catch (err) {
+      this.logger.warn(
+        'Failed to pre-warm GKDI token at startup (will retry on first OTP request)',
+        (err as Error)?.message ?? err,
+      );
+    }
   }
 
   /**

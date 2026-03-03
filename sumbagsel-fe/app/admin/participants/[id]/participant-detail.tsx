@@ -20,6 +20,8 @@ export function ParticipantDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectReasonError, setRejectReasonError] = useState<string | null>(null);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -64,12 +66,19 @@ export function ParticipantDetailPage() {
   };
 
   const handleReject = async () => {
+    const trimmed = rejectReason.trim();
+    if (!trimmed) {
+      setRejectReasonError('Alasan penolakan tidak boleh kosong');
+      return;
+    }
     try {
       setIsRejecting(true);
       setError(null);
-      const updated = await apiClient.rejectRegistration(registrationId);
+      setRejectReasonError(null);
+      const updated = await apiClient.rejectRegistration(registrationId, trimmed);
       setParticipant(updated);
       setShowRejectModal(false);
+      setRejectReason('');
       setSuccess('Pendaftaran ditolak. Status berubah menjadi Daftar ulang.');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -77,6 +86,12 @@ export function ParticipantDetailPage() {
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const openRejectModal = () => {
+    setRejectReason('');
+    setRejectReasonError(null);
+    setShowRejectModal(true);
   };
 
   const handleCheckIn = async () => {
@@ -228,7 +243,7 @@ export function ParticipantDetailPage() {
                       Setujui Pendaftaran
                     </button>
                     <button
-                      onClick={() => setShowRejectModal(true)}
+                      onClick={() => openRejectModal()}
                       disabled={isApproving || isRejecting}
                       className="px-6 py-3 lg:px-8 lg:py-4 rounded-md text-base lg:text-lg xl:text-xl font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
@@ -278,6 +293,12 @@ export function ParticipantDetailPage() {
               <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Catatan Khusus (Alergi/Penyakit/Catatan lainnya)</label>
               <p className="text-base lg:text-lg xl:text-xl text-gray-900 whitespace-pre-wrap">{participant.specialNotes || '-'}</p>
             </div>
+            {participant.status === 'Daftar ulang' && participant.rejectReason && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <label className="block text-base lg:text-lg xl:text-xl font-medium text-red-700 mb-3">Alasan penolakan pendaftaran</label>
+                <p className="text-base lg:text-lg xl:text-xl text-gray-900 whitespace-pre-wrap bg-red-50 rounded-lg p-4">{participant.rejectReason}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -383,7 +404,7 @@ export function ParticipantDetailPage() {
       )}
 
       {/* Reject Modal */}
-      {showRejectModal && (
+      {showRejectModal && participant && (
         <>
           <div
             className="fixed inset-0 backdrop-blur-md z-40"
@@ -394,12 +415,29 @@ export function ParticipantDetailPage() {
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-50 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6">
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Konfirmasi Penolakan</h3>
-                <p className="text-sm lg:text-base text-gray-600 mb-6">
-                  Apakah Anda yakin ingin menolak pendaftaran peserta ini? Status akan berubah menjadi &quot;Daftar ulang&quot; dan peserta akan diminta untuk mendaftar ulang.
+                <p className="text-sm lg:text-base text-gray-600 mb-4">
+                  Anda yakin menolak pendaftaran peserta <strong>{participant.fullName}</strong>? Peserta akan diminta membuat pengajuan pendaftaran kembali.
                 </p>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Alasan menolak pendaftaran:</label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => {
+                      setRejectReason(e.target.value);
+                      setRejectReasonError(null);
+                    }}
+                    placeholder="Masukkan alasan penolakan..."
+                    rows={4}
+                    className={`block w-full rounded-lg border px-3 py-2 text-gray-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-20 ${rejectReasonError ? 'border-red-500' : 'border-gray-300'}`}
+                    disabled={isRejecting}
+                  />
+                  {rejectReasonError && (
+                    <p className="mt-1 text-sm text-red-600">{rejectReasonError}</p>
+                  )}
+                </div>
                 <div className="flex justify-end gap-3">
                   <button onClick={() => setShowRejectModal(false)} disabled={isRejecting} className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50">Batal</button>
-                  <button onClick={handleReject} disabled={isRejecting} className="px-4 py-2 text-sm lg:text-base font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50">{isRejecting ? 'Memproses...' : 'Tolak'}</button>
+                  <button onClick={handleReject} disabled={isRejecting} className="px-4 py-2 text-sm lg:text-base font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50">{isRejecting ? 'Memproses...' : 'Tolak pendaftaran'}</button>
                 </div>
               </div>
             </div>

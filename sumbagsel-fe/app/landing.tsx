@@ -20,8 +20,8 @@ const conferencePhotos = [
 export function LandingPage() {
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-neutral-100">
-      {/* Header - Logo: center di layar kecil, margin kiri di layar besar */}
-      <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-center lg:justify-start px-4 sm:px-6 py-4 lg:pt-8 lg:pl-12 xl:pt-10 xl:pl-16 2xl:pt-12 2xl:pl-20">
+      {/* Header - Logo: atas kanan */}
+      <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-end px-4 sm:px-6 py-4 lg:pt-8 lg:pr-12 xl:pt-10 xl:pr-16 2xl:pt-12 2xl:pr-20">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/sumbagsel-logo.png"

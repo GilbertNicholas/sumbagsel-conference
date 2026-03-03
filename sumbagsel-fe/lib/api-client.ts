@@ -71,6 +71,7 @@ export interface RegistrationResponse {
   totalAmount: number | null;
   baseAmount: number | null;
   children: RegistrationChildResponse[];
+  rejectReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -416,7 +417,7 @@ class ApiClient {
     });
   }
 
-  async rejectRegistration(id: string): Promise<ParticipantDetailResponse> {
+  async rejectRegistration(id: string, reason: string): Promise<ParticipantDetailResponse> {
     const adminToken = localStorage.getItem('admin_token');
     if (!adminToken) {
       throw new Error('No admin token found');
@@ -426,6 +427,7 @@ class ApiClient {
       headers: {
         'Authorization': `Bearer ${adminToken}`,
       },
+      body: JSON.stringify({ reason: reason.trim() }),
     });
   }
 
@@ -563,6 +565,7 @@ export interface ParticipantDetailResponse {
   totalAmount: number | null;
   uniqueCode: string | null;
   checkedInAt?: string | null;
+  rejectReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

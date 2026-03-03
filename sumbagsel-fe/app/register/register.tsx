@@ -216,6 +216,12 @@ export function RegisterPage() {
             <span className={`text-sm lg:text-base xl:text-lg font-semibold ${getStatusColor(registration!.status)}`}>
               {getStatusDisplay(registration!.status)}
             </span>
+            {registration!.status === 'Daftar ulang' && registration!.rejectReason && (
+              <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-4 text-left">
+                <p className="text-sm font-medium text-red-800 mb-2">Alasan penolakan pendaftaran:</p>
+                <p className="text-sm lg:text-base text-gray-800 whitespace-pre-wrap">{registration.rejectReason}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -303,16 +309,18 @@ export function RegisterPage() {
                     placeholder="Nama anak"
                   />
                 </div>
-                <div className="w-24">
+                <div className="w-28">
                   <label className="block mb-1 text-sm font-medium text-gray-700">Usia</label>
-                  <input
-                    type="number"
-                    min={7}
-                    max={12}
+                  <select
                     value={child.age}
-                    onChange={(e) => updateChild(child.id, 'age', parseInt(e.target.value, 10) || 7)}
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
-                  />
+                    onChange={(e) => updateChild(child.id, 'age', parseInt(e.target.value, 10))}
+                    className="block w-full rounded-lg border border-gray-300 pl-3 pr-9 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 appearance-none bg-white"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25rem' }}
+                  >
+                    {[7, 8, 9, 10, 11, 12].map((a) => (
+                      <option key={a} value={a}>{a} tahun</option>
+                    ))}
+                  </select>
                 </div>
                 <button
                   type="button"
