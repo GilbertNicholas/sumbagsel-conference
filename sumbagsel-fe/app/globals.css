@@ -41,3 +41,12 @@ body {
   line-height: 1.5;
   font-weight: 400;
 }
+
+/* Cegah auto-zoom di mobile saat fokus input (iOS Safari & Android) */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
