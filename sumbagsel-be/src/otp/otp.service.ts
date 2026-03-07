@@ -12,7 +12,7 @@ import { WhatsappGkdiService } from '../whatsapp-gkdi/whatsapp-gkdi.service';
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_VERIFY_ATTEMPTS = 5;
-const RATE_LIMIT_MINUTES = 1;
+const RATE_LIMIT_MINUTES = 4;
 
 @Injectable()
 export class OtpService {
@@ -107,6 +107,15 @@ export class OtpService {
     }
 
     return { sent: true };
+  }
+
+  /**
+   * Pre-fetch GKDI WhatsApp token so it is cached when user requests OTP.
+   * Call this when user clicks "Daftar dengan WhatsApp" on landing page.
+   */
+  async warmWhatsapp(): Promise<{ ready: boolean }> {
+    await this.whatsappGkdiService.getToken();
+    return { ready: true };
   }
 
   /**

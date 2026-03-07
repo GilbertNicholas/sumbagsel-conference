@@ -295,7 +295,7 @@ export function RegisterPage() {
               Daftarkan anak (Usia 7-12 tahun)
             </h2>
             <p className="text-sm lg:text-base text-red-600 font-medium mb-6">
-              Campus/Teens harus membuat akun dan mendaftar masing-masing
+             Anak 13 tahun keatas dan Campus/Teens harus membuat akun dan mendaftar masing-masing
             </p>
             {children.map((child) => (
               <div key={child.id} className="flex flex-wrap gap-4 items-end mb-4 p-4 bg-gray-50 rounded-lg">

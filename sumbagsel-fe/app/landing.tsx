@@ -78,7 +78,7 @@ export function LandingPage() {
               Bangka, Jambi, Pekanbaru.
             </p>
 
-            {/* Tombol Daftar dengan WhatsApp - hijau dengan icon WhatsApp */}
+            {/* Tombol Daftar dengan WhatsApp */}
             <Link
               href="/auth/login"
               className="inline-flex items-center justify-center gap-3 rounded-md bg-[#25D366] px-8 py-4 text-base lg:text-lg font-semibold text-white hover:bg-[#20BD5A] transition-colors"

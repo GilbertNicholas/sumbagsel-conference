@@ -3,6 +3,7 @@ export class ParticipantResponseDto {
   userId: string;
   fullName: string;
   churchName: string;
+  ministry: string | null;
   phoneNumber: string | null;
   email: string;
   status: string;

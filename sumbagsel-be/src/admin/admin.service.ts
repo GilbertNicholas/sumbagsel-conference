@@ -202,6 +202,7 @@ export class AdminService implements OnModuleInit {
         userId: user.id,
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
+        ministry: profile?.ministry || null,
         phoneNumber: profile?.phoneNumber || null,
         email: user.email || profile?.contactEmail || '-',
         status: registration?.status ?? 'Belum terdaftar',

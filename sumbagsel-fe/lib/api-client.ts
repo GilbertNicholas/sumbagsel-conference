@@ -188,6 +188,11 @@ class ApiClient {
   }
 
   // Auth endpoints
+  /** Pre-fetch GKDI WhatsApp token. Call when user clicks "Daftar dengan WhatsApp" on landing. */
+  async warmWhatsapp(): Promise<{ ready: boolean }> {
+    return this.request<{ ready: boolean }>('/auth/warm-whatsapp', { method: 'GET' });
+  }
+
   async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
     return this.request<{ sent: boolean }>('/auth/request-otp', {
       method: 'POST',
@@ -534,6 +539,7 @@ export interface ParticipantResponse {
   userId: string;
   fullName: string;
   churchName: string;
+  ministry: string | null;
   phoneNumber: string | null;
   email: string;
   status: string;

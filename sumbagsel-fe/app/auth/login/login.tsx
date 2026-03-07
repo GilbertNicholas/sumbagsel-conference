@@ -29,7 +29,7 @@ const otpSchema = z.object({
 type PhoneFormData = z.infer<typeof phoneSchema>;
 type OtpFormData = z.infer<typeof otpSchema>;
 
-const RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOLDOWN_SECONDS = 240; // 4 menit
 
 // TEMPORARY: Bypass OTP untuk development/testing. Set NEXT_PUBLIC_OTP_BYPASS_DEV=true
 // Hapus/disable saat production - OTP via WhatsApp akan digunakan kembali.
@@ -40,6 +40,7 @@ export function LoginPage() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -61,6 +62,7 @@ export function LoginPage() {
   const onRequestOtp = async (data: PhoneFormData) => {
     try {
       setError(null);
+      setSuccess(null);
       setIsLoading(true);
 
       // TEMPORARY: Bypass OTP - langsung login tanpa kirim/verifikasi OTP
@@ -75,15 +77,24 @@ export function LoginPage() {
         return;
       }
 
+      // Pre-fetch token dulu supaya request OTP pertama tidak gagal (best-effort)
+      try {
+        await apiClient.warmWhatsapp();
+      } catch {
+        // Abaikan, lanjut request OTP
+      }
+
       await apiClient.requestOtp(data.phoneNumber);
       setPhoneNumber(data.phoneNumber);
       setShowOtpModal(true);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      setSuccess('OTP berhasil dikirim');
       otpForm.reset();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Gagal mengirim kode verifikasi';
       setError(message);
+      setSuccess(null);
     } finally {
       setIsLoading(false);
     }
@@ -93,13 +104,21 @@ export function LoginPage() {
     if (resendCooldown > 0) return;
     try {
       setError(null);
+      setSuccess(null);
       setIsLoading(true);
+      try {
+        await apiClient.warmWhatsapp();
+      } catch {
+        // Abaikan
+      }
       await apiClient.requestOtp(phoneNumber);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      setSuccess('OTP berhasil dikirim');
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Gagal mengirim ulang kode';
       setError(message);
+      setSuccess(null);
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +127,7 @@ export function LoginPage() {
   const onVerifyOtp = async (data: OtpFormData) => {
     try {
       setError(null);
+      setSuccess(null);
       setIsLoading(true);
       const response = await apiClient.verifyOtp(phoneNumber, data.otp);
       setAuthToken(response.accessToken);
@@ -121,6 +141,7 @@ export function LoginPage() {
       const message =
         err instanceof Error ? err.message : 'Verifikasi gagal';
       setError(message);
+      setSuccess(null);
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +150,7 @@ export function LoginPage() {
   const handleCloseOtpModal = () => {
     setShowOtpModal(false);
     setError(null);
+    setSuccess(null);
     setResendCooldown(0);
     otpForm.reset();
   };
@@ -223,6 +245,11 @@ export function LoginPage() {
               className="mt-6 space-y-4"
               onSubmit={otpForm.handleSubmit(onVerifyOtp)}
             >
+              {success && (
+                <div className="rounded-md bg-green-50 p-3">
+                  <p className="text-sm text-green-700 font-medium">{success}</p>
+                </div>
+              )}
               {error && (
                 <div className="rounded-md bg-red-50 p-3">
                   <p className="text-sm text-red-800">{error}</p>

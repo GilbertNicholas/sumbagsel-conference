@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
 } from '@nestjs/common';
@@ -14,6 +15,15 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
   ) {}
+
+  /**
+   * Pre-fetch GKDI WhatsApp token. Call when user clicks "Daftar dengan WhatsApp"
+   * on landing page so token is ready when they request OTP on login page.
+   */
+  @Get('warm-whatsapp')
+  async warmWhatsapp(): Promise<{ ready: boolean }> {
+    return this.authService.warmWhatsapp();
+  }
 
   /**
    * Request OTP to be sent via WhatsApp.

@@ -8,6 +8,8 @@ type SortOption = 'none' | 'date-desc' | 'status';
 type FilterOption = 'none' | 'Pending' | 'Terdaftar' | 'Belum terdaftar';
 type CheckInFilterOption = 'none' | 'checked-in' | 'not-checked-in';
 
+const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
+
 export function AdminDashboardPage() {
   const router = useRouter();
   const [participants, setParticipants] = useState<ParticipantResponse[]>([]);
@@ -16,6 +18,8 @@ export function AdminDashboardPage() {
   const [sortBy, setSortBy] = useState<SortOption>('none');
   const [filterBy, setFilterBy] = useState<FilterOption>('none');
   const [checkInFilter, setCheckInFilter] = useState<CheckInFilterOption>('none');
+  const [ministryFilter, setMinistryFilter] = useState<string>('');
+  const [churchFilter, setChurchFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -66,6 +70,24 @@ export function AdminDashboardPage() {
     return status;
   };
 
+  // Unique values for filter dropdowns (from actual data)
+  const uniqueMinistries = useMemo(() => {
+    const set = new Set<string>();
+    participants.forEach((p) => {
+      if (p.ministry && p.ministry.trim()) set.add(p.ministry);
+    });
+    return Array.from(set).sort();
+  }, [participants]);
+
+  const uniqueChurches = useMemo(() => {
+    const set = new Set<string>();
+    participants.forEach((p) => {
+      if (p.churchName && p.churchName.trim() && p.churchName !== '-')
+        set.add(p.churchName);
+    });
+    return Array.from(set).sort();
+  }, [participants]);
+
   // Filter, search, dan sort participants
   const filteredAndSortedParticipants = useMemo(() => {
     let result = [...participants];
@@ -83,6 +105,20 @@ export function AdminDashboardPage() {
     // Apply filter
     if (filterBy !== 'none') {
       result = result.filter((p) => p.status === filterBy);
+    }
+
+    // Apply ministry filter
+    if (ministryFilter) {
+      result = result.filter((p) => p.ministry === ministryFilter);
+    }
+
+    // Apply church/kota filter
+    if (churchFilter) {
+      if (churchFilter === '__lainnya__') {
+        result = result.filter((p) => !MAIN_CHURCH_OPTIONS.includes(p.churchName || ''));
+      } else {
+        result = result.filter((p) => p.churchName === churchFilter);
+      }
     }
 
     // Apply check-in filter
@@ -114,7 +150,7 @@ export function AdminDashboardPage() {
     }
 
     return result;
-  }, [participants, filterBy, checkInFilter, sortBy, searchQuery]);
+  }, [participants, filterBy, checkInFilter, sortBy, searchQuery, ministryFilter, churchFilter]);
 
   if (isLoading) {
     return (
@@ -209,6 +245,53 @@ export function AdminDashboardPage() {
                     <option value="Pending" style={{ fontSize: '16px', padding: '12px' }}>Status Pending</option>
                     <option value="Terdaftar" style={{ fontSize: '16px', padding: '12px' }}>Status Terdaftar</option>
                     <option value="Belum terdaftar" style={{ fontSize: '16px', padding: '12px' }}>Status Belum terdaftar</option>
+                  </select>
+                </div>
+
+                {/* Ministry Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="ministryFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                    Ministry
+                  </label>
+                  <select
+                    id="ministryFilter"
+                    value={ministryFilter}
+                    onChange={(e) => setMinistryFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {uniqueMinistries.map((m) => (
+                      <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Kota/Gereja Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="churchFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                    Kota / Gereja
+                  </label>
+                  <select
+                    id="churchFilter"
+                    value={churchFilter}
+                    onChange={(e) => setChurchFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {uniqueChurches.filter((c) => MAIN_CHURCH_OPTIONS.includes(c)).map((c) => (
+                      <option key={c} value={c} style={{ fontSize: '16px', padding: '12px' }}>{c}</option>
+                    ))}
+                    <option value="__lainnya__" style={{ fontSize: '16px', padding: '12px' }}>Lainnya</option>
                   </select>
                 </div>
 

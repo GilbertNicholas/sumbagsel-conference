@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +14,8 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -42,6 +45,19 @@ export class AuthService {
     }
     
     return normalized;
+  }
+
+  /**
+   * Pre-fetch GKDI WhatsApp token so it is cached when user requests OTP.
+   * Best-effort: returns { ready: false } on failure instead of throwing.
+   */
+  async warmWhatsapp(): Promise<{ ready: boolean }> {
+    try {
+      return await this.otpService.warmWhatsapp();
+    } catch (err) {
+      this.logger.warn('Warm WhatsApp failed, token not cached', err);
+      return { ready: false };
+    }
   }
 
   /**

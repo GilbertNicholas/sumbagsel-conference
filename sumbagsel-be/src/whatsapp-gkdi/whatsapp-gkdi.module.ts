@@ -7,7 +7,7 @@ import { WhatsappGkdiService } from './whatsapp-gkdi.service';
   imports: [
     ConfigModule,
     HttpModule.register({
-      timeout: 15000,
+      timeout: 30000,
       maxRedirects: 5,
     }),
   ],
