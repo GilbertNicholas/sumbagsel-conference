@@ -28,7 +28,9 @@
     "seed:admin": "ts-node src/seeders/admin.seeder.ts"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/axios": "^4.0.1",
+    "@nestjs/bull": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -38,9 +40,12 @@
     "@nestjs/typeorm": "^11.0.0",
     "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
+    "bull": "^4.16.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "handlebars": "^4.7.8",
     "mysql2": "^3.6.0",
+    "nodemailer": "^8.0.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",

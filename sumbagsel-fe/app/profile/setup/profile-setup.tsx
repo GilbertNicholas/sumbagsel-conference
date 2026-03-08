@@ -18,21 +18,25 @@ const CHURCH_OPTIONS = [
 
 const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
 
-const profileSetupSchema = z.object({
-  fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
-  churchName: z.string().min(1, 'Pilih nama gereja'),
-  ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
-  customChurchName: z.string().optional(),
-  contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
-}).refine((data) => {
-  if (data.churchName === 'Lainnya') {
-    return data.customChurchName && data.customChurchName.trim().length > 0;
-  }
-  return true;
-}, {
-  message: 'Masukkan nama gereja',
-  path: ['customChurchName'],
-});
+const profileSetupSchema = z
+  .object({
+    fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
+    churchName: z.string().min(1, 'Pilih nama gereja'),
+    ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
+    customChurchName: z.string().optional(),
+    phoneNumber: z
+      .string()
+      .min(1, 'Nomor WhatsApp wajib diisi')
+      .refine((val) => /^(\+62|0)[0-9]{9,12}$/.test(val.trim()), 'Nomor WhatsApp harus 08xx atau +628xx'),
+    contactEmail: z
+      .string()
+      .min(1, 'Email wajib diisi')
+      .email('Email tidak valid'),
+  })
+  .refine((data) => data.churchName !== 'Lainnya' || (data.customChurchName && data.customChurchName.trim().length > 0), {
+    message: 'Masukkan nama gereja',
+    path: ['customChurchName'],
+  });
 
 type ProfileSetupFormData = z.infer<typeof profileSetupSchema>;
 
@@ -41,11 +45,16 @@ export function ProfileSetupPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [loginCredential, setLoginCredential] = useState<'email' | 'phone' | null>(null);
+
+  const emailLocked = loginCredential === 'email';
+  const phoneLocked = loginCredential === 'phone';
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ProfileSetupFormData>({
     resolver: zodResolver(profileSetupSchema),
@@ -57,28 +66,45 @@ export function ProfileSetupPage() {
   useEffect(() => {
     async function checkProfile() {
       try {
-        const profile = await apiClient.getMyProfile();
-        // Check if profile has valid data (not placeholder)
-        const hasValidFullName = profile.fullName && 
-          profile.fullName.trim() !== '' && 
-          profile.fullName !== 'Belum diisi';
-        const hasValidChurchName = profile.churchName && 
-          profile.churchName.trim() !== '' && 
-          profile.churchName !== 'Belum diisi';
-        const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
-        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry;
-        
+        const profileData = await apiClient.getMyProfile();
+
+        const hasValidFullName = profileData.fullName && profileData.fullName.trim() !== '' && profileData.fullName !== 'Belum diisi';
+        const hasValidChurchName = profileData.churchName && profileData.churchName.trim() !== '' && profileData.churchName !== 'Belum diisi';
+        const hasValidMinistry = profileData.ministry && profileData.ministry.trim() !== '';
+        const hasValidPhone = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
+        const hasValidEmail = profileData.contactEmail && profileData.contactEmail.trim() !== '';
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidPhone && hasValidEmail;
+
+        // Tentukan credential login: email jika contactEmail ada & phone kosong, phone jika sebaliknya
+        const hasEmail = !!profileData.contactEmail?.trim();
+        const hasPhone = !!profileData.phoneNumber?.trim() && profileData.phoneNumber !== 'Belum diisi';
+        if (hasEmail && !hasPhone) setLoginCredential('email');
+        else if (hasPhone && !hasEmail) setLoginCredential('phone');
+
         if (isProfileValid) {
           router.push('/dashboard');
+        } else {
+          setValue('fullName', profileData.fullName && profileData.fullName !== 'Belum diisi' ? profileData.fullName : '');
+          const isCustomChurch = profileData.churchName && profileData.churchName !== 'Belum diisi' && !CHURCH_OPTIONS.includes(profileData.churchName as (typeof CHURCH_OPTIONS)[number]);
+          setValue('churchName', isCustomChurch ? 'Lainnya' : (profileData.churchName && profileData.churchName !== 'Belum diisi' ? profileData.churchName : ''));
+          setValue('customChurchName', isCustomChurch ? profileData.churchName : '');
+          const ministry = profileData.ministry && MINISTRY_OPTIONS.includes(profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
+            ? (profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
+            : MINISTRY_OPTIONS[0];
+          setValue('ministry', ministry);
+          const hasValidPhoneVal = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
+          const hasValidEmailVal = profileData.contactEmail && profileData.contactEmail.trim() !== '';
+          setValue('contactEmail', hasValidEmailVal ? profileData.contactEmail! : '');
+          setValue('phoneNumber', hasValidPhoneVal ? profileData.phoneNumber! : '');
         }
-      } catch (error) {
-        // Profile doesn't exist yet, that's fine
+      } catch (err) {
+        // Profile doesn't exist yet
       } finally {
         setIsChecking(false);
       }
     }
     checkProfile();
-  }, [router]);
+  }, [router, setValue]);
 
   const onSubmit = async (data: ProfileSetupFormData) => {
     try {
@@ -89,19 +115,21 @@ export function ProfileSetupPage() {
         fullName: data.fullName,
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
-        contactEmail: data.contactEmail || undefined,
+        contactEmail: data.contactEmail?.trim() || undefined,
+        phoneNumber: data.phoneNumber?.trim() || undefined,
       };
 
       try {
-        // Try to update existing profile first
         await apiClient.updateProfile(profileData);
       } catch (updateError) {
-        // If update fails, create new profile
+        // Jangan fallback ke create jika error credential (No. WA/Email sudah terdaftar)
+        const msg = updateError instanceof Error ? updateError.message : String(updateError);
+        if (msg.includes('sudah terdaftar')) {
+          throw updateError;
+        }
         await apiClient.createProfile(profileData);
       }
 
-      // Backend automatically sets isCompleted to true when fullName and churchName are valid
-      // Use window.location for hard redirect to ensure fresh data is loaded
       window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan profil');
@@ -144,8 +172,13 @@ export function ProfileSetupPage() {
       <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
         <form className="space-y-6 lg:space-y-8" onSubmit={handleSubmit(onSubmit)}>
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 lg:p-5">
-              <p className="text-sm lg:text-base text-red-800">{error}</p>
+            <div className="rounded-lg bg-red-50 border-2 border-red-300 p-4 lg:p-5">
+              <p className="text-base lg:text-lg font-semibold text-red-800">{error}</p>
+              {(error === 'No. WA sudah terdaftar!' || error === 'Email sudah terdaftar!') && (
+                <p className="mt-2 text-sm lg:text-base text-red-700">
+                  Silakan gunakan nomor atau email lain yang belum terdaftar.
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-5 lg:space-y-6">
@@ -254,15 +287,43 @@ export function ProfileSetupPage() {
               )}
             </div>
             <div>
+              <label htmlFor="phoneNumber" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                Nomor WhatsApp *
+              </label>
+              <input
+                {...register('phoneNumber')}
+                type="tel"
+                disabled={phoneLocked}
+                className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg ${
+                  phoneLocked ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder={phoneLocked ? '' : '08xx atau +628xx'}
+              />
+              {phoneLocked && (
+                <p className="mt-1 text-xs text-gray-500">Terdaftar via login, tidak dapat diubah</p>
+              )}
+              {errors.phoneNumber && (
+                <p className="mt-2 text-sm lg:text-base text-red-600">
+                  {errors.phoneNumber.message}
+                </p>
+              )}
+            </div>
+            <div>
               <label htmlFor="contactEmail" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Email Kontak
+                Email *
               </label>
               <input
                 {...register('contactEmail')}
                 type="email"
-                className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
-                placeholder="contoh@email.com (opsional)"
+                disabled={emailLocked}
+                className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg ${
+                  emailLocked ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder={emailLocked ? '' : 'contoh@email.com'}
               />
+              {emailLocked && (
+                <p className="mt-1 text-xs text-gray-500">Terdaftar via login, tidak dapat diubah</p>
+              )}
               {errors.contactEmail && (
                 <p className="mt-2 text-sm lg:text-base text-red-600">
                   {errors.contactEmail.message}

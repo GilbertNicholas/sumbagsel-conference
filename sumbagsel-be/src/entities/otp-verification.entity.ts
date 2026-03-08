@@ -10,8 +10,11 @@ export class OtpVerification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 20, name: 'phone_number' })
-  phoneNumber: string;
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'phone_number' })
+  phoneNumber: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'email' })
+  email: string | null;
 
   @Column({ type: 'varchar', length: 6, name: 'otp' })
   otp: string;

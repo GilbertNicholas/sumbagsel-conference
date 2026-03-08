@@ -193,17 +193,17 @@ class ApiClient {
     return this.request<{ ready: boolean }>('/auth/warm-whatsapp', { method: 'GET' });
   }
 
-  async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+  async requestOtp(identifier: string): Promise<{ sent: boolean }> {
     return this.request<{ sent: boolean }>('/auth/request-otp', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ identifier }),
     });
   }
 
-  async verifyOtp(phoneNumber: string, otp: string): Promise<AuthResponse> {
+  async verifyOtp(identifier: string, otp: string): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber, otp }),
+      body: JSON.stringify({ identifier, otp }),
     });
   }
 

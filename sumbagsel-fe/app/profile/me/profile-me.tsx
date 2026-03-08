@@ -218,8 +218,13 @@ export function ProfileMePage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4 mb-6">
-                <p className="text-sm lg:text-base text-red-800">{error}</p>
+              <div className="rounded-lg bg-red-50 border-2 border-red-300 p-4 mb-6">
+                <p className="text-base lg:text-lg font-semibold text-red-800">{error}</p>
+                {(error === 'No. WA sudah terdaftar!' || error === 'Email sudah terdaftar!') && (
+                  <p className="mt-2 text-sm lg:text-base text-red-700">
+                    Silakan gunakan nomor atau email lain yang belum terdaftar.
+                  </p>
+                )}
               </div>
             )}
 

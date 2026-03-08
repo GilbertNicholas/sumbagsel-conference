@@ -8,11 +8,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { OtpVerification } from '../entities/otp-verification.entity';
 import { WhatsappGkdiService } from '../whatsapp-gkdi/whatsapp-gkdi.service';
+import { MailService } from '../mail/mail.service';
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_VERIFY_ATTEMPTS = 5;
 const RATE_LIMIT_MINUTES = 4;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Injectable()
 export class OtpService {
@@ -20,7 +22,12 @@ export class OtpService {
     @InjectRepository(OtpVerification)
     private otpRepository: Repository<OtpVerification>,
     private whatsappGkdiService: WhatsappGkdiService,
+    private mailService: MailService,
   ) {}
+
+  private isEmail(identifier: string): boolean {
+    return EMAIL_REGEX.test(identifier.trim());
+  }
 
   /**
    * Normalize phone number to 08xx format for storage.
@@ -49,13 +56,24 @@ export class OtpService {
   }
 
   /**
-   * Create OTP, store in DB, and send via WhatsApp.
-   * Rate limit: 1 request per phone per RATE_LIMIT_MINUTES.
+   * Create OTP, store in DB, and send via WhatsApp or Email.
+   * Identifier can be phone number or email. Rate limit per identifier.
    */
-  async create(phoneNumber: string): Promise<{ sent: boolean }> {
+  async create(identifier: string): Promise<{ sent: boolean }> {
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Nomor WhatsApp atau email harus diisi.');
+    }
+
+    if (this.isEmail(trimmed)) {
+      return this.createForEmail(trimmed.toLowerCase());
+    }
+    return this.createForPhone(trimmed);
+  }
+
+  private async createForPhone(phoneNumber: string): Promise<{ sent: boolean }> {
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
 
-    // Rate limit: check if recent OTP exists
     const recentOtp = await this.otpRepository.findOne({
       where: { phoneNumber: normalizedPhone },
       order: { createdAt: 'DESC' },
@@ -77,7 +95,6 @@ export class OtpService {
       }
     }
 
-    // Invalidate any existing OTP for this phone
     await this.otpRepository.delete({ phoneNumber: normalizedPhone });
 
     const otp = this.generateOtp();
@@ -86,6 +103,7 @@ export class OtpService {
 
     const otpRecord = this.otpRepository.create({
       phoneNumber: normalizedPhone,
+      email: null,
       otp,
       expiresAt,
       attempts: 0,
@@ -98,10 +116,59 @@ export class OtpService {
     try {
       await this.whatsappGkdiService.sendMessage(gkdiPhone, message);
     } catch (sendError) {
-      // Sending failed -- remove the OTP record so the user isn't penalised by the cooldown
       await this.otpRepository.delete({ phoneNumber: normalizedPhone });
       throw new HttpException(
         'Gagal mengirim kode verifikasi. Silakan coba lagi.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    return { sent: true };
+  }
+
+  private async createForEmail(email: string): Promise<{ sent: boolean }> {
+    const recentOtp = await this.otpRepository.findOne({
+      where: { email },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (recentOtp) {
+      const rateLimitExpiry = new Date(recentOtp.createdAt);
+      rateLimitExpiry.setMinutes(
+        rateLimitExpiry.getMinutes() + RATE_LIMIT_MINUTES,
+      );
+      if (new Date() < rateLimitExpiry) {
+        const waitSeconds = Math.ceil(
+          (rateLimitExpiry.getTime() - Date.now()) / 1000,
+        );
+        throw new HttpException(
+          `Tunggu ${waitSeconds} detik sebelum meminta kode baru`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
+    await this.otpRepository.delete({ email });
+
+    const otp = this.generateOtp();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
+
+    const otpRecord = this.otpRepository.create({
+      phoneNumber: null,
+      email,
+      otp,
+      expiresAt,
+      attempts: 0,
+    });
+    await this.otpRepository.save(otpRecord);
+
+    try {
+      await this.mailService.sendOtpEmail(email, otp);
+    } catch (sendError) {
+      await this.otpRepository.delete({ email });
+      throw new HttpException(
+        sendError instanceof Error ? sendError.message : 'Gagal mengirim kode verifikasi ke email. Silakan coba lagi.',
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
@@ -120,14 +187,28 @@ export class OtpService {
 
   /**
    * Verify OTP and invalidate if successful.
+   * Identifier can be phone number or email.
    */
-  async verify(phoneNumber: string, otp: string): Promise<boolean> {
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+  async verify(identifier: string, otp: string): Promise<boolean> {
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Nomor WhatsApp atau email harus diisi.');
+    }
 
-    const otpRecord = await this.otpRepository.findOne({
-      where: { phoneNumber: normalizedPhone },
-      order: { createdAt: 'DESC' },
-    });
+    let otpRecord: OtpVerification | null;
+
+    if (this.isEmail(trimmed)) {
+      otpRecord = await this.otpRepository.findOne({
+        where: { email: trimmed.toLowerCase() },
+        order: { createdAt: 'DESC' },
+      });
+    } else {
+      const normalizedPhone = this.normalizePhoneNumber(trimmed);
+      otpRecord = await this.otpRepository.findOne({
+        where: { phoneNumber: normalizedPhone },
+        order: { createdAt: 'DESC' },
+      });
+    }
 
     if (!otpRecord) {
       throw new BadRequestException('Kode verifikasi tidak ditemukan. Silakan minta kode baru.');

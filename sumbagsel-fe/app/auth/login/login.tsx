@@ -9,14 +9,18 @@ import Image from 'next/image';
 import { apiClient } from '@/lib/api-client';
 import { setAuthToken } from '@/lib/auth';
 
-const phoneSchema = z.object({
-  phoneNumber: z
-    .string()
-    .min(1, 'Nomor WhatsApp harus diisi')
-    .regex(
-      /^(\+62|0)[0-9]{9,12}$/,
-      'Nomor WhatsApp harus dalam format Indonesia (08xx atau +628xx)',
-    ),
+const identifierSchema = z
+  .string()
+  .min(1, 'Nomor WhatsApp atau email harus diisi')
+  .refine(
+    (val) =>
+      /^(\+62|0)[0-9]{9,12}$/.test(val.trim()) ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
+    'Masukkan nomor WhatsApp (08xx atau +628xx) atau alamat email yang valid',
+  );
+
+const loginFormSchema = z.object({
+  identifier: identifierSchema,
 });
 
 const otpSchema = z.object({
@@ -26,7 +30,7 @@ const otpSchema = z.object({
     .regex(/^[0-9]{6}$/, 'Kode OTP harus berupa angka'),
 });
 
-type PhoneFormData = z.infer<typeof phoneSchema>;
+type LoginFormData = z.infer<typeof loginFormSchema>;
 type OtpFormData = z.infer<typeof otpSchema>;
 
 const RESEND_COOLDOWN_SECONDS = 240; // 4 menit
@@ -38,14 +42,14 @@ const OTP_BYPASS_DEV = process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true';
 export function LoginPage() {
   const router = useRouter();
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const phoneForm = useForm<PhoneFormData>({
-    resolver: zodResolver(phoneSchema),
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginFormSchema),
   });
 
   const otpForm = useForm<OtpFormData>({
@@ -59,7 +63,7 @@ export function LoginPage() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const onRequestOtp = async (data: PhoneFormData) => {
+  const onRequestOtp = async (data: LoginFormData) => {
     try {
       setError(null);
       setSuccess(null);
@@ -67,7 +71,7 @@ export function LoginPage() {
 
       // TEMPORARY: Bypass OTP - langsung login tanpa kirim/verifikasi OTP
       if (OTP_BYPASS_DEV) {
-        const response = await apiClient.loginWithPhone(data.phoneNumber);
+        const response = await apiClient.loginWithPhone(data.identifier);
         setAuthToken(response.accessToken);
         if (!response.profileCompleted) {
           router.push('/profile/setup');
@@ -84,8 +88,8 @@ export function LoginPage() {
         // Abaikan, lanjut request OTP
       }
 
-      await apiClient.requestOtp(data.phoneNumber);
-      setPhoneNumber(data.phoneNumber);
+      await apiClient.requestOtp(data.identifier);
+      setIdentifier(data.identifier);
       setShowOtpModal(true);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       setSuccess('OTP berhasil dikirim');
@@ -111,7 +115,7 @@ export function LoginPage() {
       } catch {
         // Abaikan
       }
-      await apiClient.requestOtp(phoneNumber);
+      await apiClient.requestOtp(identifier);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       setSuccess('OTP berhasil dikirim');
     } catch (err) {
@@ -129,7 +133,7 @@ export function LoginPage() {
       setError(null);
       setSuccess(null);
       setIsLoading(true);
-      const response = await apiClient.verifyOtp(phoneNumber, data.otp);
+      const response = await apiClient.verifyOtp(identifier, data.otp);
       setAuthToken(response.accessToken);
 
       if (!response.profileCompleted) {
@@ -174,14 +178,14 @@ export function LoginPage() {
           </h2>
           <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
             {OTP_BYPASS_DEV
-              ? 'Mode dev: Masukkan nomor untuk langsung masuk (OTP bypass)'
-              : 'Masukkan nomor WhatsApp Anda untuk menerima kode verifikasi'}
+              ? 'Mode dev: Masukkan nomor atau email untuk langsung masuk (OTP bypass)'
+              : 'Masukkan nomor WhatsApp atau email untuk menerima kode verifikasi'}
           </p>
         </div>
 
         <form
           className="mt-8 space-y-6"
-          onSubmit={phoneForm.handleSubmit(onRequestOtp)}
+          onSubmit={loginForm.handleSubmit(onRequestOtp)}
         >
           {error && !showOtpModal && (
             <div className="rounded-md bg-red-50 p-4 lg:p-5">
@@ -190,19 +194,19 @@ export function LoginPage() {
           )}
           <div className="space-y-4 lg:space-y-5 rounded-md shadow-sm">
             <div>
-              <label htmlFor="phoneNumber" className="sr-only">
-                Nomor WhatsApp
+              <label htmlFor="identifier" className="sr-only">
+                Nomor WhatsApp atau Email
               </label>
               <input
-                {...phoneForm.register('phoneNumber')}
-                type="tel"
-                autoComplete="tel"
+                {...loginForm.register('identifier')}
+                type="text"
+                autoComplete="tel email"
                 className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 text-sm lg:text-base xl:text-lg"
-                placeholder="Nomor WhatsApp (08xx atau +628xx)"
+                placeholder="08xx / +628xx atau email@contoh.com"
               />
-              {phoneForm.formState.errors.phoneNumber && (
+              {loginForm.formState.errors.identifier && (
                 <p className="mt-1 text-sm lg:text-base text-red-600">
-                  {phoneForm.formState.errors.phoneNumber.message}
+                  {loginForm.formState.errors.identifier.message}
                 </p>
               )}
             </div>
@@ -238,7 +242,7 @@ export function LoginPage() {
               Masukkan Kode Verifikasi
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              Kode 6 digit telah dikirim ke {phoneNumber}
+              Kode 6 digit telah dikirim ke {identifier}
             </p>
 
             <form
@@ -303,7 +307,7 @@ export function LoginPage() {
                     onClick={handleCloseOtpModal}
                     className="text-gray-500 hover:text-gray-700"
                   >
-                    Ubah nomor
+                    Ubah nomor/email
                   </button>
                 </div>
               </div>

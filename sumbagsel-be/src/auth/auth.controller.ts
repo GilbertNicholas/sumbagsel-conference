@@ -26,12 +26,12 @@ export class AuthController {
   }
 
   /**
-   * Request OTP to be sent via WhatsApp.
-   * Rate limited: 1 request per phone per minute.
+   * Request OTP to be sent via WhatsApp or Email.
+   * Identifier: phone number or email. Rate limited per identifier.
    */
   @Post('request-otp')
   async requestOtp(@Body() dto: RequestOtpDto): Promise<{ sent: boolean }> {
-    return this.authService.requestOtp(dto.phoneNumber);
+    return this.authService.requestOtp(dto.identifier);
   }
 
   /**
@@ -39,7 +39,7 @@ export class AuthController {
    */
   @Post('verify-otp')
   async verifyOtp(@Body() dto: VerifyOtpDto): Promise<AuthResponseDto> {
-    return this.authService.verifyOtpAndLogin(dto.phoneNumber, dto.otp);
+    return this.authService.verifyOtpAndLogin(dto.identifier, dto.otp);
   }
 
   /**
