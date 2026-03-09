@@ -182,7 +182,7 @@ export function ProfileSetupPage() {
               <p className="text-base lg:text-lg font-semibold text-red-800">{error}</p>
               {(error === 'No. WA sudah terdaftar!' || error === 'Email sudah terdaftar!') && (
                 <p className="mt-2 text-sm lg:text-base text-red-700">
-                  Silakan gunakan nomor atau email lain yang belum terdaftar.
+                  Silakan gunakan nomor atau email lain.
                 </p>
               )}
             </div>
@@ -324,6 +324,7 @@ export function ProfileSetupPage() {
               <label htmlFor="phoneNumber" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
                 Nomor WhatsApp *
               </label>
+              <p className="mb-1 text-xs lg:text-sm text-gray-500">Gunakan no. WA yang aktif</p>
               <input
                 {...register('phoneNumber')}
                 type="tel"
@@ -346,6 +347,7 @@ export function ProfileSetupPage() {
               <label htmlFor="contactEmail" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
                 Email *
               </label>
+              <p className="mb-1 text-xs lg:text-sm text-gray-500">Gunakan email yang aktif</p>
               <input
                 {...register('contactEmail')}
                 type="email"

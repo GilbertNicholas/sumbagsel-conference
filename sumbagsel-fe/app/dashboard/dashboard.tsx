@@ -238,9 +238,9 @@ export function DashboardPage() {
               <div className="mt-auto">
                 <button
                   onClick={() => router.push('/profile/me')}
-                  className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm lg:text-base font-medium hover:bg-gray-50 transition-colors"
+                  className="w-full bg-[#C84343] text-white px-4 py-2 rounded-md text-sm lg:text-base font-medium hover:bg-[#A73535] transition-colors"
                 >
-                  Lihat Profil
+                  Ubah Profil
                 </button>
               </div>
             </div>

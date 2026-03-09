@@ -113,20 +113,29 @@ export function RegisterPage() {
   };
 
   const handleLakukanPembayaran = async () => {
+    setError(null);
+
+    // Validasi size baju wajib sebelum lanjut ke pembayaran
+    const hasValidShirtSize = shirtSize && SHIRT_SIZES.includes(shirtSize as (typeof SHIRT_SIZES)[number]);
+    const registrationHasShirtSize = registration?.shirtSize && SHIRT_SIZES.includes(registration.shirtSize as (typeof SHIRT_SIZES)[number]);
+
     if (hasRegistration && !childrenEditable) {
+      if (!registrationHasShirtSize) {
+        setError('Pilih size baju terlebih dahulu sebelum lanjut ke pembayaran');
+        return;
+      }
       router.push('/register/payment');
+      return;
+    }
+
+    if (!hasValidShirtSize) {
+      setError('Pilih size baju terlebih dahulu sebelum lanjut ke pembayaran');
       return;
     }
 
     try {
       setError(null);
       setIsSubmitting(true);
-
-      if (!shirtSize || !SHIRT_SIZES.includes(shirtSize as (typeof SHIRT_SIZES)[number])) {
-        setError('Pilih size baju terlebih dahulu');
-        setIsSubmitting(false);
-        return;
-      }
 
       const childrenPayload = children
         .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12)
@@ -247,12 +256,6 @@ export function RegisterPage() {
           </div>
         )}
 
-        {error && (
-          <div className="mb-6 lg:mb-8 rounded-lg bg-red-50 border border-red-200 p-4">
-            <p className="text-sm lg:text-base text-red-800">{error}</p>
-          </div>
-        )}
-
         {/* Data Diri */}
         <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -308,8 +311,8 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Pilih size baju - above children section */}
-        {(childrenEditable || !hasRegistration) && (
+        {/* Pilih size baju - above children section (tampilkan jika perlu pilih atau belum ada size di registration) */}
+        {(childrenEditable || !hasRegistration || (hasRegistration && !registration?.shirtSize)) && (
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
             <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-2">
               Pilih size baju Sumbagsel <span className="text-red-600">*</span>
@@ -460,7 +463,12 @@ export function RegisterPage() {
         )}
 
         {/* Main action button */}
-        <div className="mt-8 lg:mt-10 flex justify-center">
+        <div className="mt-8 lg:mt-10 flex flex-col items-center gap-4">
+          {error && (
+            <div className="w-full max-w-xl rounded-lg bg-red-50 border border-red-200 p-4">
+              <p className="text-sm lg:text-base text-red-800">{error}</p>
+            </div>
+          )}
           <button
             onClick={handleLakukanPembayaran}
             disabled={isSubmitting}
