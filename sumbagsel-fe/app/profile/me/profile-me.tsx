@@ -17,11 +17,13 @@ const CHURCH_OPTIONS = [
 ] as const;
 
 const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
+const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
 
 const profileFormSchema = z.object({
   fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
   churchName: z.string().min(1, 'Pilih asal gereja'),
   ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
+  gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }).optional().or(z.literal('')),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
@@ -97,6 +99,7 @@ export function ProfileMePage() {
         }
         
         setValue('ministry', MINISTRY_OPTIONS.includes(profileData.ministry as typeof MINISTRY_OPTIONS[number]) ? profileData.ministry as typeof MINISTRY_OPTIONS[number] : MINISTRY_OPTIONS[0]);
+        setValue('gender', profileData.gender && GENDER_OPTIONS.includes(profileData.gender as typeof GENDER_OPTIONS[number]) ? profileData.gender as typeof GENDER_OPTIONS[number] : '');
         setValue('contactEmail', profileData.contactEmail || '');
         setValue('phoneNumber', profileData.phoneNumber || '');
         setValue('specialNotes', profileData.specialNotes || '');
@@ -130,6 +133,7 @@ export function ProfileMePage() {
         fullName: data.fullName,
         churchName: finalChurchName,
         ministry: data.ministry,
+        gender: data.gender || undefined,
         contactEmail: data.contactEmail || undefined,
         phoneNumber: data.phoneNumber || undefined,
         specialNotes: data.specialNotes || undefined,
@@ -345,6 +349,36 @@ export function ProfileMePage() {
                   )}
                 </div>
 
+                {/* Gender */}
+                <div>
+                  <label htmlFor="gender" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Gender
+                  </label>
+                  <div className="relative">
+                    <select
+                      {...register('gender')}
+                      defaultValue=""
+                      className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 pr-10 lg:pr-12 xl:pr-14 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-base lg:text-base xl:text-lg appearance-none bg-white cursor-pointer ${
+                        !watch('gender') ? 'text-gray-400' : 'text-gray-900'
+                      }`}
+                      style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    >
+                      <option value="" style={{ fontSize: '16px', padding: '12px' }}>Pilih gender</option>
+                      {GENDER_OPTIONS.map((g) => (
+                        <option key={g} value={g} style={{ fontSize: '16px', padding: '12px' }}>{g}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 lg:pr-4 xl:pr-5 pointer-events-none">
+                      <svg className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.gender && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.gender.message}</p>
+                  )}
+                </div>
+
                 {/* Email */}
                 <div>
                   <label htmlFor="contactEmail" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
@@ -439,6 +473,16 @@ export function ProfileMePage() {
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900">
                     {profile?.ministry || '-'}
+                  </p>
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Gender
+                  </label>
+                  <p className="text-sm lg:text-base xl:text-lg text-gray-900">
+                    {profile?.gender || '-'}
                   </p>
                 </div>
 

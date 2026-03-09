@@ -199,6 +199,12 @@ export function PaymentPage() {
             Invoice
           </h2>
           <div className="space-y-3">
+            {registration.shirtSize && (
+              <div className="flex justify-between text-sm lg:text-base">
+                <span className="text-gray-700">Size baju</span>
+                <span className="text-gray-900 font-medium">{registration.shirtSize}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm lg:text-base">
               <span className="text-gray-700">Biaya pelayanan ({profile?.ministry || '-'})</span>
               <span className="text-gray-900">Rp {formatRupiah(ministryFee)}</span>

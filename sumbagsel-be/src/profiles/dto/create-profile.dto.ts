@@ -1,6 +1,7 @@
 import { IsString, IsNotEmpty, IsOptional, MaxLength, IsEmail, IsIn } from 'class-validator';
 
 export const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
+export const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
 
 export class CreateProfileDto {
   @IsString()
@@ -27,6 +28,11 @@ export class CreateProfileDto {
   @IsOptional()
   @MaxLength(20)
   phoneNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
+  gender?: string;
 
   @IsString()
   @IsOptional()

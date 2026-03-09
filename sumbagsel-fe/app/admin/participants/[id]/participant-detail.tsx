@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse } from '@/lib/api-client';
+import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse, AdminInfo } from '@/lib/api-client';
 
 const CHILD_FEE = 75_000;
 
@@ -16,6 +16,7 @@ export function ParticipantDetailPage() {
   const registrationId = params.id as string;
   
   const [participant, setParticipant] = useState<ParticipantDetailResponse | null>(null);
+  const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -31,8 +32,12 @@ export function ParticipantDetailPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await apiClient.getParticipantById(registrationId);
-        setParticipant(data);
+        const [participantData, adminData] = await Promise.all([
+          apiClient.getParticipantById(registrationId),
+          apiClient.getAdminMe(),
+        ]);
+        setParticipant(participantData);
+        setAdminInfo(adminData);
       } catch (err) {
         if (err instanceof Error && err.message.includes('No admin token')) {
           router.push('/admin');
@@ -129,6 +134,7 @@ export function ParticipantDetailPage() {
   const isTerdaftar = participant?.status === 'Terdaftar';
   const canCheckIn = isTerdaftar && !participant?.checkedInAt;
   const hasCheckedIn = participant?.checkedInAt;
+  const canApproveReject = adminInfo?.role === 'master';
 
   if (isLoading) {
     return (
@@ -233,7 +239,7 @@ export function ParticipantDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {isPending && (
+                {isPending && canApproveReject && (
                   <>
                     <button
                       onClick={() => setShowConfirmModal(true)}
@@ -280,6 +286,10 @@ export function ParticipantDetailPage() {
             <div>
               <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Ministry</label>
               <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.ministry || '-'}</p>
+            </div>
+            <div>
+              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Gender</label>
+              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.gender || '-'}</p>
             </div>
             <div>
               <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Email</label>

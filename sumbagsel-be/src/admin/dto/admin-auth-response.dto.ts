@@ -4,5 +4,6 @@ export class AdminAuthResponseDto {
     id: string;
     code: string;
     name: string | null;
+    role: 'master' | 'biasa';
   };
 }

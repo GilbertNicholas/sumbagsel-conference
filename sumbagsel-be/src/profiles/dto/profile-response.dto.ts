@@ -3,6 +3,7 @@ export class ProfileResponseDto {
   fullName: string;
   churchName: string;
   ministry: string | null;
+  gender: string | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   specialNotes: string | null;

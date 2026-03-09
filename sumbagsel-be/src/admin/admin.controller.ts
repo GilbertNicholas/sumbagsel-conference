@@ -52,6 +52,7 @@ export class AdminController {
       id: admin.id,
       code: admin.code,
       name: admin.name,
+      role: admin.role,
     };
   }
 
@@ -69,8 +70,11 @@ export class AdminController {
 
   @Patch('participants/:id/approve')
   @UseGuards(AdminAuthGuard)
-  async approveRegistration(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
-    return this.adminService.approveRegistration(id);
+  async approveRegistration(
+    @Param('id') id: string,
+    @CurrentAdmin() admin: Admin,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.approveRegistration(id, admin);
   }
 
   @Patch('participants/:id/reject')
@@ -78,8 +82,9 @@ export class AdminController {
   async rejectRegistration(
     @Param('id') id: string,
     @Body() dto: AdminRejectDto,
+    @CurrentAdmin() admin: Admin,
   ): Promise<ParticipantDetailResponseDto> {
-    return this.adminService.rejectRegistration(id, dto.reason);
+    return this.adminService.rejectRegistration(id, dto.reason, admin);
   }
 
   @Patch('participants/:id/check-in')

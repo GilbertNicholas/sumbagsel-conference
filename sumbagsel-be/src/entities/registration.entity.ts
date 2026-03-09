@@ -51,6 +51,9 @@ export class Registration {
   @Column({ type: 'text', nullable: true, name: 'reject_reason' })
   rejectReason: string | null;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, name: 'shirt_size' })
+  shirtSize: string | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

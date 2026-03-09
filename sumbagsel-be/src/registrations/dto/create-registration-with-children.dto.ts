@@ -8,8 +8,12 @@ import {
   Min,
   Max,
   MinLength,
+  IsIn,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+const SHIRT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const;
 
 class ChildDto {
   @IsString()
@@ -23,6 +27,11 @@ class ChildDto {
 }
 
 export class CreateRegistrationWithChildrenDto {
+  @IsString()
+  @IsOptional()
+  @IsIn(SHIRT_SIZE_OPTIONS, { message: 'Shirt size must be XS, S, M, L, XL, XXL, or XXXL' })
+  shirtSize?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ChildDto)

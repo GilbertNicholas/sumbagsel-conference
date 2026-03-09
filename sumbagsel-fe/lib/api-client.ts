@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import { removeAuthToken } from './auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -27,6 +28,7 @@ export interface ProfileResponse {
   fullName: string;
   churchName: string;
   ministry: string | null;
+  gender: string | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   photoUrl: string | null;
@@ -38,6 +40,7 @@ export interface CreateProfileDto {
   fullName: string;
   churchName: string;
   ministry?: string;
+  gender?: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -48,6 +51,7 @@ export interface UpdateProfileDto {
   fullName?: string;
   churchName?: string;
   ministry?: string;
+  gender?: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -70,6 +74,7 @@ export interface RegistrationResponse {
   uniqueCode: string | null;
   totalAmount: number | null;
   baseAmount: number | null;
+  shirtSize: string | null;
   children: RegistrationChildResponse[];
   rejectReason: string | null;
   createdAt: string;
@@ -142,6 +147,19 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        // Handle 401 - session expired, redirect to login with message
+        if (response.status === 401 && typeof window !== 'undefined') {
+          const isAdminRequest = endpoint.startsWith('/admin');
+          if (isAdminRequest) {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin?sessionExpired=1';
+          } else {
+            removeAuthToken();
+            window.location.href = '/auth/login?sessionExpired=1';
+          }
+          throw new Error('Session expired');
+        }
+
         // Handle 404 as null for optional resources
         if (response.status === 404) {
           return null as T;
@@ -261,18 +279,18 @@ class ApiClient {
     });
   }
 
-  async createRegistrationWithChildren(children: { name: string; age: number }[]): Promise<RegistrationResponse> {
+  async createRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/with-children', {
       method: 'POST',
-      body: JSON.stringify({ children }),
+      body: JSON.stringify(data),
       cache: 'no-store',
     });
   }
 
-  async updateRegistrationWithChildren(children: { name: string; age: number }[]): Promise<RegistrationResponse> {
+  async updateRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/me/with-children', {
       method: 'PATCH',
-      body: JSON.stringify({ children }),
+      body: JSON.stringify(data),
       cache: 'no-store',
     });
   }
@@ -525,6 +543,7 @@ export interface AdminAuthResponse {
     id: string;
     code: string;
     name: string | null;
+    role: 'master' | 'biasa';
   };
 }
 
@@ -532,6 +551,7 @@ export interface AdminInfo {
   id: string;
   code: string;
   name: string | null;
+  role: 'master' | 'biasa';
 }
 
 export interface ParticipantResponse {
@@ -540,6 +560,7 @@ export interface ParticipantResponse {
   fullName: string;
   churchName: string;
   ministry: string | null;
+  gender: string | null;
   phoneNumber: string | null;
   email: string;
   status: string;
@@ -561,6 +582,7 @@ export interface ParticipantDetailResponse {
   fullName: string;
   churchName: string;
   ministry?: string | null;
+  gender?: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;

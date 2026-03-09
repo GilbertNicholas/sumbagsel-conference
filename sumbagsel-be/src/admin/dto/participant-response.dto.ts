@@ -4,6 +4,7 @@ export class ParticipantResponseDto {
   fullName: string;
   churchName: string;
   ministry: string | null;
+  gender: string | null;
   phoneNumber: string | null;
   email: string;
   status: string;

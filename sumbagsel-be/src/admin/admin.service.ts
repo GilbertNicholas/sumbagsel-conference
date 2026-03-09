@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -21,8 +22,6 @@ import { ParticipantDetailResponseDto } from './dto/participant-detail-response.
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
 import { ArrivalScheduleResponseDto, ArrivalScheduleSummaryDto, ArrivalScheduleGroupedDto } from './dto/arrival-schedule-response.dto';
 import { RegistrationStatus } from '../entities/registration.entity';
-
-const DEFAULT_ADMIN_PHONE = '087780271525';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -42,18 +41,7 @@ export class AdminService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    try {
-      const admin = await this.adminRepository.findOne({
-        where: { code: 'ADMIN123' },
-      });
-      if (admin && !admin.phoneNumber) {
-        admin.phoneNumber = DEFAULT_ADMIN_PHONE;
-        await this.adminRepository.save(admin);
-        console.log('[AdminService] Admin phone number seeded: 087780271525');
-      }
-    } catch (e) {
-      console.warn('[AdminService] Seed admin phone skipped:', (e as Error).message);
-    }
+    // No runtime seeding - admins are seeded via migration
   }
 
   private normalizePhoneNumber(phoneNumber: string): string {
@@ -108,6 +96,7 @@ export class AdminService implements OnModuleInit {
         id: admin.id,
         code: admin.code,
         name: admin.name,
+        role: admin.role,
       },
     };
   }
@@ -136,6 +125,7 @@ export class AdminService implements OnModuleInit {
         id: admin.id,
         code: admin.code,
         name: admin.name,
+        role: admin.role,
       },
     };
   }
@@ -166,6 +156,7 @@ export class AdminService implements OnModuleInit {
         id: admin.id,
         code: admin.code,
         name: admin.name,
+        role: admin.role,
       },
     };
   }
@@ -203,6 +194,7 @@ export class AdminService implements OnModuleInit {
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
+        gender: profile?.gender || null,
         phoneNumber: profile?.phoneNumber || null,
         email: user.email || profile?.contactEmail || '-',
         status: registration?.status ?? 'Belum terdaftar',
@@ -235,6 +227,7 @@ export class AdminService implements OnModuleInit {
         fullName: profile?.fullName || '-',
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
+        gender: profile?.gender || null,
         phoneNumber: profile?.phoneNumber || null,
         email: registration.user?.email || profile?.contactEmail || '-',
         specialNotes: profile?.specialNotes || null,
@@ -268,6 +261,7 @@ export class AdminService implements OnModuleInit {
       fullName: profile.fullName || '-',
       churchName: profile.churchName || '-',
       ministry: profile.ministry || null,
+      gender: profile.gender || null,
       phoneNumber: profile.phoneNumber || null,
       email: user.email || profile?.contactEmail || '-',
       specialNotes: profile.specialNotes || null,
@@ -284,7 +278,10 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  async approveRegistration(registrationId: string): Promise<ParticipantDetailResponseDto> {
+  async approveRegistration(registrationId: string, admin: Admin): Promise<ParticipantDetailResponseDto> {
+    if (admin.role !== 'master') {
+      throw new ForbiddenException('Hanya Admin Master yang dapat menyetujui pendaftaran');
+    }
     const registration = await this.registrationsRepository.findOne({
       where: { id: registrationId },
       relations: ['user', 'user.profile', 'children'],
@@ -314,6 +311,7 @@ export class AdminService implements OnModuleInit {
       fullName: profile?.fullName || '-',
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
+      gender: profile?.gender || null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -330,7 +328,10 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  async rejectRegistration(registrationId: string, reason: string): Promise<ParticipantDetailResponseDto> {
+  async rejectRegistration(registrationId: string, reason: string, admin: Admin): Promise<ParticipantDetailResponseDto> {
+    if (admin.role !== 'master') {
+      throw new ForbiddenException('Hanya Admin Master yang dapat menolak pendaftaran');
+    }
     const registration = await this.registrationsRepository.findOne({
       where: { id: registrationId },
       relations: ['user', 'user.profile', 'children'],
@@ -362,6 +363,7 @@ export class AdminService implements OnModuleInit {
       fullName: profile?.fullName || '-',
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
+      gender: profile?.gender || null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -412,6 +414,7 @@ export class AdminService implements OnModuleInit {
       fullName: profile?.fullName || '-',
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
+      gender: profile?.gender || null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -648,7 +651,7 @@ export class AdminService implements OnModuleInit {
   }
 
   private generateToken(admin: Admin): string {
-    const payload = { sub: admin.id, code: admin.code, role: 'admin' };
+    const payload = { sub: admin.id, code: admin.code, role: 'admin', adminRole: admin.role };
     return this.jwtService.sign(payload);
   }
 }

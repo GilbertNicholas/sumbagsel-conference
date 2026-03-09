@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, ProfileResponse, RegistrationResponse, ArrivalScheduleResponse, RegistrationStatus } from '@/lib/api-client';
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { FEATURES } from '@/lib/features';
 
 // Dummy sessions data
 const dummySessions = [
@@ -46,7 +47,7 @@ export function DashboardPage() {
         const [profileData, registrationData, arrivalData] = await Promise.all([
           apiClient.getMyProfile().catch(() => null),
           apiClient.getMyRegistration().catch(() => null),
-          apiClient.getMyArrivalSchedule().catch(() => null),
+          FEATURES.arrivalSchedule ? apiClient.getMyArrivalSchedule().catch(() => null) : Promise.resolve(null),
         ]);
         
         // Check if profile has valid data but isCompleted might be wrong
@@ -128,7 +129,7 @@ export function DashboardPage() {
         {/* Header */}
         <div className="mb-6 lg:mb-8">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
-            Welcome back, {profile?.fullName || 'User'}!
+            Welcome, {profile?.fullName || 'User'}!
           </h1>
           <p className="text-sm sm:text-base text-gray-600">Your Sumbagsel 2026 conference journey starts here!</p>
         </div>
@@ -169,7 +170,8 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {/* Jadwal Kedatangan Card */}
+            {/* Jadwal Kedatangan Card - FEATURES.arrivalSchedule */}
+            {FEATURES.arrivalSchedule && (
             <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 flex flex-col">
               <div className="flex items-center justify-between mb-3 lg:mb-4">
                 <h3 className="text-base lg:text-lg font-semibold text-gray-900">Jadwal Kedatangan</h3>
@@ -217,6 +219,7 @@ export function DashboardPage() {
                 </button>
               </div>
             </div>
+            )}
 
             {/* Profil Saya Card */}
             <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 flex flex-col">

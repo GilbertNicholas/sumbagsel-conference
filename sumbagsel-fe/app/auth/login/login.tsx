@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,6 +41,8 @@ const OTP_BYPASS_DEV = process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true';
 
 export function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('sessionExpired') === '1';
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +189,11 @@ export function LoginPage() {
           className="mt-8 space-y-6"
           onSubmit={loginForm.handleSubmit(onRequestOtp)}
         >
+          {sessionExpired && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
+              <p className="text-sm lg:text-base text-amber-800">Session Anda telah berakhir. Silakan login kembali.</p>
+            </div>
+          )}
           {error && !showOtpModal && (
             <div className="rounded-md bg-red-50 p-4 lg:p-5">
               <p className="text-sm lg:text-base text-red-800">{error}</p>
@@ -289,7 +296,7 @@ export function LoginPage() {
                 </button>
                 <div className="flex flex-col items-center gap-2 text-sm">
                   {resendCooldown > 0 ? (
-                    <p className="text-gray-500">
+                    <p className="text-red-600 font-medium">
                       Kirim ulang dalam {resendCooldown} detik
                     </p>
                   ) : (
@@ -297,7 +304,7 @@ export function LoginPage() {
                       type="button"
                       onClick={onResendOtp}
                       disabled={isLoading}
-                      className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                      className="text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
                     >
                       Kirim ulang kode
                     </button>
@@ -305,7 +312,7 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={handleCloseOtpModal}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-base text-gray-500 hover:text-gray-700"
                   >
                     Ubah nomor/email
                   </button>

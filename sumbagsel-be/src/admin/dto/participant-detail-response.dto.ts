@@ -10,6 +10,7 @@ export class ParticipantDetailResponseDto {
   fullName: string;
   churchName: string;
   ministry: string | null;
+  gender: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;

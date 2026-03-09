@@ -67,7 +67,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
           profile.churchName.trim() !== '' && 
           profile.churchName !== 'Belum diisi';
         const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
-        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry;
+        const hasValidGender = profile.gender && profile.gender.trim() !== '';
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender;
         
         // If on auth page but logged in, redirect based on profile status
         if (isAuthPage) {

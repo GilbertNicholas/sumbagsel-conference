@@ -17,12 +17,14 @@ const CHURCH_OPTIONS = [
 ] as const;
 
 const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
+const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
 
 const profileSetupSchema = z
   .object({
     fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
     churchName: z.string().min(1, 'Pilih nama gereja'),
     ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
+    gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }),
     customChurchName: z.string().optional(),
     phoneNumber: z
       .string()
@@ -71,9 +73,10 @@ export function ProfileSetupPage() {
         const hasValidFullName = profileData.fullName && profileData.fullName.trim() !== '' && profileData.fullName !== 'Belum diisi';
         const hasValidChurchName = profileData.churchName && profileData.churchName.trim() !== '' && profileData.churchName !== 'Belum diisi';
         const hasValidMinistry = profileData.ministry && profileData.ministry.trim() !== '';
+        const hasValidGender = (profileData as { gender?: string }).gender && (profileData as { gender?: string }).gender!.trim() !== '';
         const hasValidPhone = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
         const hasValidEmail = profileData.contactEmail && profileData.contactEmail.trim() !== '';
-        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidPhone && hasValidEmail;
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender && hasValidPhone && hasValidEmail;
 
         // Tentukan credential login: email jika contactEmail ada & phone kosong, phone jika sebaliknya
         const hasEmail = !!profileData.contactEmail?.trim();
@@ -92,6 +95,8 @@ export function ProfileSetupPage() {
             ? (profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
             : MINISTRY_OPTIONS[0];
           setValue('ministry', ministry);
+          const profileGender = (profileData as { gender?: string }).gender;
+          setValue('gender', profileGender && GENDER_OPTIONS.includes(profileGender as (typeof GENDER_OPTIONS)[number]) ? profileGender as (typeof GENDER_OPTIONS)[number] : GENDER_OPTIONS[0]);
           const hasValidPhoneVal = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
           const hasValidEmailVal = profileData.contactEmail && profileData.contactEmail.trim() !== '';
           setValue('contactEmail', hasValidEmailVal ? profileData.contactEmail! : '');
@@ -115,6 +120,7 @@ export function ProfileSetupPage() {
         fullName: data.fullName,
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
+        gender: data.gender,
         contactEmail: data.contactEmail?.trim() || undefined,
         phoneNumber: data.phoneNumber?.trim() || undefined,
       };
@@ -155,8 +161,8 @@ export function ProfileSetupPage() {
       <div className="w-full max-w-md lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mb-8 lg:mb-12">
         <div className="flex justify-center mt-6 lg:mt-8 mb-4 lg:mb-6">
           <Image
-            src="/images/sumbagsel-welcome.png"
-            alt="Selamat Datang SumBagSel"
+            src="/images/sumbagsel-logo.png"
+            alt="Sumbagsel Conference"
             width={1800}
             height={1200}
             className="h-auto w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] 2xl:max-w-[1100px]"
@@ -284,6 +290,34 @@ export function ProfileSetupPage() {
                 <p className="mt-2 text-sm lg:text-base text-red-600">
                   {errors.ministry.message}
                 </p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="gender" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                Gender *
+              </label>
+              <div className="relative">
+                <select
+                  {...register('gender')}
+                  defaultValue=""
+                  className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 pr-10 lg:pr-12 xl:pr-14 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-base lg:text-base xl:text-lg appearance-none cursor-pointer bg-white ${
+                    !watch('gender') ? 'text-gray-400' : 'text-gray-900'
+                  }`}
+                  style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                >
+                  <option value="" disabled>Pilih gender</option>
+                  {GENDER_OPTIONS.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 lg:pr-4 xl:pr-5 pointer-events-none">
+                  <svg className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              {errors.gender && (
+                <p className="mt-2 text-sm lg:text-base text-red-600">{errors.gender.message}</p>
               )}
             </div>
             <div>

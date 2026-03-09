@@ -9,6 +9,7 @@ export class RegistrationResponseDto {
   uniqueCode: string | null;
   totalAmount: number | null;
   baseAmount: number | null;
+  shirtSize: string | null;
   children: RegistrationChildResponseDto[];
   rejectReason: string | null;
   createdAt: Date;

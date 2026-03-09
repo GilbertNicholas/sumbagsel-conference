@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { apiClient, ProfileResponse, RegistrationResponse, RegistrationStatus as ApiRegistrationStatus } from '@/lib/api-client';
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { FEATURES } from '@/lib/features';
 
 type RegistrationStatus = ApiRegistrationStatus;
+
+const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const;
 
 interface ChildInput {
   id: string;
@@ -21,8 +25,10 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [children, setChildren] = useState<ChildInput[]>([]);
+  const [shirtSize, setShirtSize] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showSizeChartModal, setShowSizeChartModal] = useState(false);
 
   const hasRegistration = !!registration;
   const canAddChildren = profile?.ministry === 'Single/S2' || profile?.ministry === 'Married';
@@ -53,6 +59,9 @@ export function RegisterPage() {
                 age: c.age,
               })),
             );
+          }
+          if (registrationData.shirtSize && SHIRT_SIZES.includes(registrationData.shirtSize as (typeof SHIRT_SIZES)[number])) {
+            setShirtSize(registrationData.shirtSize);
           }
         }
       } catch (err) {
@@ -113,6 +122,12 @@ export function RegisterPage() {
       setError(null);
       setIsSubmitting(true);
 
+      if (!shirtSize || !SHIRT_SIZES.includes(shirtSize as (typeof SHIRT_SIZES)[number])) {
+        setError('Pilih size baju terlebih dahulu');
+        setIsSubmitting(false);
+        return;
+      }
+
       const childrenPayload = children
         .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12)
         .map((c) => ({ name: c.name.trim(), age: c.age }));
@@ -123,11 +138,12 @@ export function RegisterPage() {
         return;
       }
 
+      const payload = { shirtSize, children: childrenPayload };
       let updated: RegistrationResponse;
       if (hasRegistration) {
-        updated = await apiClient.updateRegistrationWithChildren(childrenPayload);
+        updated = await apiClient.updateRegistrationWithChildren(payload);
       } else {
-        updated = await apiClient.createRegistrationWithChildren(childrenPayload);
+        updated = await apiClient.createRegistrationWithChildren(payload);
       }
 
       setRegistration(updated);
@@ -266,6 +282,10 @@ export function RegisterPage() {
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.ministry || '-'}</p>
             </div>
             <div>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Gender</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.gender || '-'}</p>
+            </div>
+            <div>
               <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Email</label>
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.contactEmail || '-'}</p>
             </div>
@@ -288,6 +308,88 @@ export function RegisterPage() {
           </div>
         </div>
 
+        {/* Pilih size baju - above children section */}
+        {(childrenEditable || !hasRegistration) && (
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-2">
+              Pilih size baju Sumbagsel <span className="text-red-600">*</span>
+            </h2>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-4">
+              Baju hanya diberikan untuk peserta yang terdaftar pada data diri di atas.
+            </p>
+            <div className="mb-4 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setShowSizeChartModal(true)}
+                className="block w-full max-w-md cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg overflow-hidden"
+              >
+                <Image
+                  src="/images/size-chart.png"
+                  alt="Tabel ukuran kaos - Klik untuk memperbesar"
+                  width={400}
+                  height={300}
+                  className="w-full max-w-md rounded-lg border border-gray-200 object-contain hover:opacity-90 transition-opacity"
+                />
+              </button>
+              <p className="mt-1 text-xs text-gray-500">Klik gambar untuk memperbesar</p>
+            </div>
+
+            {/* Modal zoom size chart */}
+            {showSizeChartModal && (
+              <>
+                <div
+                  className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+                  onClick={() => setShowSizeChartModal(false)}
+                  aria-hidden
+                />
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  onClick={() => setShowSizeChartModal(false)}
+                >
+                  <div className="relative max-h-[90vh] max-w-[95vw]">
+                    <button
+                      type="button"
+                      onClick={() => setShowSizeChartModal(false)}
+                      className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+                      aria-label="Tutup"
+                    >
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <div
+                      className="bg-white rounded-lg shadow-2xl overflow-auto max-h-[90vh]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Image
+                        src="/images/size-chart.png"
+                        alt="Tabel ukuran kaos"
+                        width={800}
+                        height={600}
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            <div>
+              <label className="block mb-2 text-sm lg:text-base font-medium text-gray-700">Size baju</label>
+              <select
+                value={shirtSize}
+                onChange={(e) => setShirtSize(e.target.value)}
+                className="block w-full sm:max-w-xs rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 appearance-none bg-white"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="">Pilih size</option>
+                {SHIRT_SIZES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         {/* Daftarkan anak - for Single/S2 and Married, editable when status allows */}
         {canAddChildren && childrenEditable && (
           <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
@@ -298,8 +400,8 @@ export function RegisterPage() {
              Anak 13 tahun keatas dan Campus/Teens harus membuat akun dan mendaftar masing-masing
             </p>
             {children.map((child) => (
-              <div key={child.id} className="flex flex-wrap gap-4 items-end mb-4 p-4 bg-gray-50 rounded-lg">
-                <div className="flex-1 min-w-[120px]">
+              <div key={child.id} className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-w-0 sm:min-w-[120px]">
                   <label className="block mb-1 text-sm font-medium text-gray-700">Nama</label>
                   <input
                     type="text"
@@ -309,7 +411,7 @@ export function RegisterPage() {
                     placeholder="Nama anak"
                   />
                 </div>
-                <div className="w-28">
+                <div className="w-full sm:w-28">
                   <label className="block mb-1 text-sm font-medium text-gray-700">Usia</label>
                   <select
                     value={child.age}
@@ -325,7 +427,7 @@ export function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => removeChild(child.id)}
-                  className="rounded-md px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                  className="rounded-md px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors w-full sm:w-auto"
                 >
                   Hapus
                 </button>
@@ -364,11 +466,11 @@ export function RegisterPage() {
             disabled={isSubmitting}
             className="rounded-full px-8 py-3 lg:px-12 lg:py-4 xl:px-16 xl:py-5 text-base lg:text-lg xl:text-xl font-bold text-white transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed bg-[#C84343] hover:bg-[#A73535] hover:shadow-xl"
           >
-            {isSubmitting ? 'Memproses...' : hasRegistration ? 'Lihat Status Pembayaran' : 'Lakukan Pembayaran'}
+            {isSubmitting ? 'Memproses...' : (registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang' || !hasRegistration) ? 'Lanjutkan ke pembayaran' : 'Lihat Status Pembayaran'}
           </button>
         </div>
 
-        {registration?.status === 'Terdaftar' && (
+        {FEATURES.arrivalSchedule && registration?.status === 'Terdaftar' && (
           <div className="mt-8 lg:mt-10 flex justify-center">
             <button
               onClick={() => router.push('/schedule/arrival')}

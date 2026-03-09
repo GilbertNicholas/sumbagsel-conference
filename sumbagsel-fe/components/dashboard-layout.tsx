@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { Sidebar, SidebarItem } from '@/components/sidebar';
 import { removeAuthToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { FEATURES } from '@/lib/features';
 
-const navItems: SidebarItem[] = [
+const allNavItems: SidebarItem[] = [
   {
     label: 'Dashboard',
     path: '/dashboard',
@@ -34,7 +35,7 @@ const navItems: SidebarItem[] = [
         <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
       </svg>
     ),
-  },
+  }, // FEATURES.arrivalSchedule - set true to show in sidebar
   {
     label: 'Profile',
     path: '/profile/me',
@@ -55,6 +56,8 @@ const navItems: SidebarItem[] = [
     ),
   },
 ];
+
+const navItems = allNavItems.filter((item) => item.path !== '/schedule/arrival' || FEATURES.arrivalSchedule);
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

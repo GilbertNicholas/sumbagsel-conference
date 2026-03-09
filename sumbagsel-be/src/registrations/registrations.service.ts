@@ -98,6 +98,7 @@ export class RegistrationsService {
       uniqueCode,
       totalAmount,
       baseAmount,
+      shirtSize: dto.shirtSize || null,
     });
     const savedRegistration = await this.registrationsRepository.save(registration);
 
@@ -190,6 +191,9 @@ export class RegistrationsService {
     registration.baseAmount = baseAmount;
     registration.totalAmount = totalAmount;
     registration.uniqueCode = uniqueCode;
+    if (dto.shirtSize) {
+      registration.shirtSize = dto.shirtSize;
+    }
     if (isDaftarUlang) {
       registration.paymentProofUrl = null;
     }
@@ -298,6 +302,7 @@ export class RegistrationsService {
       uniqueCode: registration.uniqueCode,
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
+      shirtSize: registration.shirtSize ?? null,
       children,
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt,

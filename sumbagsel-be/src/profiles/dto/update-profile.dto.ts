@@ -1,5 +1,5 @@
 import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean, IsIn } from 'class-validator';
-import { MINISTRY_OPTIONS } from './create-profile.dto';
+import { MINISTRY_OPTIONS, GENDER_OPTIONS } from './create-profile.dto';
 
 export class UpdateProfileDto {
   @IsString()
@@ -26,6 +26,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @MaxLength(20)
   phoneNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
+  gender?: string;
 
   @IsString()
   @IsOptional()

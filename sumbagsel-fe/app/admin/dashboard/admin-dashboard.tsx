@@ -3,12 +3,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, ParticipantResponse } from '@/lib/api-client';
+import { FEATURES } from '@/lib/features';
 
 type SortOption = 'none' | 'date-desc' | 'status';
 type FilterOption = 'none' | 'Pending' | 'Terdaftar' | 'Belum terdaftar';
 type CheckInFilterOption = 'none' | 'checked-in' | 'not-checked-in';
 
 const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
+const GENDER_OPTIONS = ['Pria', 'Wanita'];
 
 export function AdminDashboardPage() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export function AdminDashboardPage() {
   const [checkInFilter, setCheckInFilter] = useState<CheckInFilterOption>('none');
   const [ministryFilter, setMinistryFilter] = useState<string>('');
   const [churchFilter, setChurchFilter] = useState<string>('');
+  const [genderFilter, setGenderFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -121,6 +124,11 @@ export function AdminDashboardPage() {
       }
     }
 
+    // Apply gender filter
+    if (genderFilter) {
+      result = result.filter((p) => p.gender === genderFilter);
+    }
+
     // Apply check-in filter
     if (checkInFilter === 'checked-in') {
       result = result.filter((p) => !!p.checkedInAt);
@@ -150,7 +158,7 @@ export function AdminDashboardPage() {
     }
 
     return result;
-  }, [participants, filterBy, checkInFilter, sortBy, searchQuery, ministryFilter, churchFilter]);
+  }, [participants, filterBy, checkInFilter, sortBy, searchQuery, ministryFilter, churchFilter, genderFilter]);
 
   if (isLoading) {
     return (
@@ -189,12 +197,14 @@ export function AdminDashboardPage() {
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
                 Dashboard Admin
               </h1>
-              <button
-                onClick={() => router.push('/admin/arrival-schedules')}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Arrival Schedules
-              </button>
+              {FEATURES.arrivalSchedule && (
+                <button
+                  onClick={() => router.push('/admin/arrival-schedules')}
+                  className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Arrival Schedules
+                </button>
+              )}
             </div>
             <div className="flex items-center">
               <button
@@ -267,6 +277,29 @@ export function AdminDashboardPage() {
                     <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
                     {uniqueMinistries.map((m) => (
                       <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gender Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="genderFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                    Gender
+                  </label>
+                  <select
+                    id="genderFilter"
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g} style={{ fontSize: '16px', padding: '12px' }}>{g}</option>
                     ))}
                   </select>
                 </div>
@@ -386,8 +419,11 @@ export function AdminDashboardPage() {
                   <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[18%]">
                     Nama
                   </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[15%]">
+                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[12%]">
                     Asal Gereja
+                  </th>
+                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[8%]">
+                    Gender
                   </th>
                   <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[12%]">
                     No. Telp
@@ -406,7 +442,7 @@ export function AdminDashboardPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredAndSortedParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 lg:py-16 text-center text-base lg:text-lg xl:text-xl text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 lg:py-16 text-center text-base lg:text-lg xl:text-xl text-gray-500">
                       {participants.length === 0 ? 'Tidak ada data peserta' : 'Tidak ada peserta yang sesuai filter'}
                     </td>
                   </tr>
@@ -418,6 +454,9 @@ export function AdminDashboardPage() {
                       </td>
                       <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-900 overflow-hidden text-ellipsis">
                         {participant.churchName}
+                      </td>
+                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-500 overflow-hidden text-ellipsis">
+                        {participant.gender || '-'}
                       </td>
                       <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-500 overflow-hidden text-ellipsis">
                         {participant.phoneNumber || '-'}
