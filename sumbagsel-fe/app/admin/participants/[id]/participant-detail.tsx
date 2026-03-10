@@ -1,18 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse, AdminInfo } from '@/lib/api-client';
+import { FEATURES } from '@/lib/features';
 
 const CHILD_FEE = 75_000;
+const navActive = 'px-4 py-2 text-sm lg:text-base font-medium text-green-600 bg-green-50 rounded-md';
+const navInactive = 'px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors';
 
 function formatRupiah(n: number): string {
   return new Intl.NumberFormat('id-ID').format(n);
 }
 
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 p-1 rounded hover:bg-gray-100 transition-colors"
+      title={`Salin ${label}`}
+      aria-label={`Salin ${label}`}
+    >
+      {copied ? (
+        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export function ParticipantDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const registrationId = params.id as string;
   
   const [participant, setParticipant] = useState<ParticipantDetailResponse | null>(null);
@@ -173,18 +216,44 @@ export function ParticipantDetailPage() {
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%]">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => router.push('/admin/dashboard')}
-                className="mr-4 text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Detail Peserta
+                Dashboard Admin
               </h1>
+              <button
+                onClick={() => router.push('/admin/dashboard')}
+                className={pathname?.startsWith('/admin/participants') ? navActive : navInactive}
+              >
+                Data Konferensi
+              </button>
+              <button
+                onClick={() => router.push('/admin/shirt-data')}
+                className={pathname === '/admin/shirt-data' ? navActive : navInactive}
+              >
+                Data Baju
+              </button>
+              <button
+                onClick={() => router.push('/admin/children')}
+                className={pathname === '/admin/children' ? navActive : navInactive}
+              >
+                Data Anak
+              </button>
+              {FEATURES.arrivalSchedule && (
+                <button
+                  onClick={() => router.push('/admin/arrival-schedules')}
+                  className={pathname === '/admin/arrival-schedules' ? navActive : navInactive}
+                >
+                  Arrival Schedules
+                </button>
+              )}
             </div>
             <div className="flex items-center">
               <button
@@ -314,16 +383,18 @@ export function ParticipantDetailPage() {
 
         {/* Section 2: Invoice - tampil ketika bukti pembayaran sudah dikirim dan status Pending atau Terdaftar */}
         {participant.paymentProofUrl && (participant.status === 'Pending' || participant.status === 'Terdaftar') && (participant.baseAmount != null || participant.totalAmount != null) && (
-          <div className="bg-white shadow rounded-lg overflow-hidden mb-6 lg:mb-8">
-            <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-              <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
-                Invoice
-              </h2>
-              <div className="space-y-3">
-                {participant.baseAmount != null && (
-                  <>
+          <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
+            <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
+              Invoice
+            </h2>
+            <div className="space-y-3">
+              {participant.baseAmount != null && (
+                <>
+                  <div>
                     <div className="flex justify-between text-sm lg:text-base">
-                      <span className="text-gray-700">Biaya pelayanan ({participant.ministry || '-'})</span>
+                      <span className="text-gray-700">
+                        Biaya pendaftaran ({participant.ministry || '-'}) a/n {participant.fullName}
+                      </span>
                       <span className="text-gray-900">
                         Rp {formatRupiah(
                           participant.baseAmount -
@@ -331,31 +402,35 @@ export function ParticipantDetailPage() {
                         )}
                       </span>
                     </div>
-                    {(participant.children ?? []).map((c) => (
-                      <div key={c.id} className="flex justify-between text-sm lg:text-base">
-                        <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun)</span>
-                        <span className="text-gray-900">Rp {formatRupiah(CHILD_FEE)}</span>
-                      </div>
-                    ))}
-                    <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-sm lg:text-base">
-                      <span className="text-gray-700 font-medium">Subtotal</span>
-                      <span className="text-gray-900 font-medium">Rp {formatRupiah(participant.baseAmount)}</span>
+                    {participant.shirtSize && (
+                      <p className="text-sm lg:text-base text-gray-700 mt-0.5">Size baju: {participant.shirtSize}</p>
+                    )}
+                  </div>
+                  {(participant.children ?? []).map((c) => (
+                    <div key={c.id} className="flex justify-between text-sm lg:text-base">
+                      <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun)</span>
+                      <span className="text-gray-900">Rp {formatRupiah(CHILD_FEE)}</span>
                     </div>
-                  </>
-                )}
-                {participant.uniqueCode && (
-                  <div className="flex justify-between text-sm lg:text-base">
-                    <span className="text-gray-700">Kode unik</span>
-                    <span className="text-gray-900 font-mono">{participant.uniqueCode}</span>
+                  ))}
+                  <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-sm lg:text-base">
+                    <span className="text-gray-700 font-medium">Subtotal</span>
+                    <span className="text-gray-900 font-medium">Rp {formatRupiah(participant.baseAmount)}</span>
                   </div>
-                )}
-                {participant.totalAmount != null && (
-                  <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-base lg:text-lg font-bold">
-                    <span className="text-gray-900">Total transfer</span>
-                    <span className="text-gray-900">Rp {formatRupiah(participant.totalAmount)}</span>
-                  </div>
-                )}
+                </>
+              )}
+              <div className="flex justify-between text-sm lg:text-base">
+                <span className="text-gray-700">Kode unik</span>
+                <span className="text-gray-900 font-mono">{participant.uniqueCode ?? '-'}</span>
               </div>
+              {participant.totalAmount != null && (
+                <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center text-base lg:text-lg font-bold">
+                  <span className="text-gray-900">Total transfer</span>
+                  <span className="flex items-center gap-1">
+                    Rp {formatRupiah(participant.totalAmount)}
+                    <CopyButton text={String(participant.totalAmount)} label="nominal transfer" />
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

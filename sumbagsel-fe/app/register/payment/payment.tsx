@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, getPaymentProofFullUrl, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { FEATURES } from '@/lib/features';
 
 const CHILD_FEE = 75_000;
 const ACCOUNT_NUMBER = '7195 300 500';
@@ -59,11 +60,16 @@ export function PaymentPage() {
   const [registration, setRegistration] = useState<RegistrationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const canUpload = registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang';
+  const showUbahData =
+    (registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang') &&
+    registration?.baseAmount != null;
 
   useEffect(() => {
     async function loadData() {
@@ -112,6 +118,19 @@ export function PaymentPage() {
 
   const handleRemoveFile = () => setUploadedFile(null);
 
+  const handleDaftarkanSayaClick = () => {
+    if (!uploadedFile) {
+      setError('Pilih file bukti pembayaran terlebih dahulu');
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmDaftar = async () => {
+    setShowConfirmModal(false);
+    await handleUploadAndSubmit();
+  };
+
   const handleUploadAndSubmit = async () => {
     if (!registration || !uploadedFile) {
       setError('Pilih file bukti pembayaran terlebih dahulu');
@@ -137,9 +156,34 @@ export function PaymentPage() {
   };
 
   const ministryFee =
-    registration?.baseAmount != null && registration?.children
-      ? registration.baseAmount - registration.children.length * CHILD_FEE
+    registration?.baseAmount != null
+      ? registration.baseAmount - (registration.children?.length ?? 0) * CHILD_FEE
       : 0;
+
+  const handleUbahDataPendaftaran = async () => {
+    if (!registration) return;
+    try {
+      setError(null);
+      setIsResetting(true);
+      if (registration.status === 'Belum terdaftar') {
+        await apiClient.resetRegistration();
+        router.replace('/register');
+      } else if (registration.status === 'Daftar ulang') {
+        const payload = {
+          shirtSize: registration.shirtSize ?? undefined,
+          children: (registration.children ?? []).map((c) => ({ name: c.name, age: c.age })),
+        };
+        const updated = await apiClient.updateRegistrationWithChildren(payload);
+        setRegistration(updated);
+        setSuccess('Invoice berhasil diperbarui');
+        setTimeout(() => setSuccess(null), 5000);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal mengubah data pendaftaran');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -165,14 +209,20 @@ export function PaymentPage() {
           Pembayaran
         </h1>
 
-        <div className="mb-4 flex items-center gap-2">
-          <button
-            onClick={() => router.push('/register')}
-            className="text-sm lg:text-base text-blue-600 hover:text-blue-500"
-          >
-            ← Kembali ke Daftar Konferensi
-          </button>
-        </div>
+        {showUbahData && (
+          <div className="mb-6">
+            <button
+              onClick={handleUbahDataPendaftaran}
+              disabled={isResetting}
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-amber-500 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 shadow-sm transition-all hover:border-amber-600 hover:bg-amber-100 disabled:opacity-50"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              {isResetting ? 'Memproses...' : 'Ubah data pendaftaran'}
+            </button>
+          </div>
+        )}
 
         {success && (
           <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
@@ -199,15 +249,16 @@ export function PaymentPage() {
             Invoice
           </h2>
           <div className="space-y-3">
-            {registration.shirtSize && (
+            <div>
               <div className="flex justify-between text-sm lg:text-base">
-                <span className="text-gray-700">Size baju</span>
-                <span className="text-gray-900 font-medium">{registration.shirtSize}</span>
+                <span className="text-gray-700">
+                  Biaya pendaftaran ({profile?.ministry || '-'}) a/n {profile?.fullName || '-'}
+                </span>
+                <span className="text-gray-900">Rp {formatRupiah(ministryFee)}</span>
               </div>
-            )}
-            <div className="flex justify-between text-sm lg:text-base">
-              <span className="text-gray-700">Biaya pelayanan ({profile?.ministry || '-'})</span>
-              <span className="text-gray-900">Rp {formatRupiah(ministryFee)}</span>
+              {registration.shirtSize && (
+                <p className="text-sm lg:text-base text-gray-700 mt-0.5">Size baju: {registration.shirtSize}</p>
+              )}
             </div>
             {registration.children?.map((c) => (
               <div key={c.id} className="flex justify-between text-sm lg:text-base">
@@ -299,14 +350,53 @@ export function PaymentPage() {
                 </div>
               </div>
             )}
-            <div className="mt-6">
-              <button
-                onClick={handleUploadAndSubmit}
-                disabled={!uploadedFile || isUploading}
-                className="rounded-md bg-blue-600 px-6 py-3 text-sm lg:text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isUploading ? 'Mengunggah...' : 'Upload bukti bayar'}
-              </button>
+          </div>
+        )}
+
+        {/* Tombol Daftarkan saya - di luar section upload */}
+        {canUpload && (
+          <div className="mb-6 lg:mb-8 flex justify-center">
+            <button
+              onClick={handleDaftarkanSayaClick}
+              disabled={!uploadedFile || isUploading}
+              className="rounded-md bg-blue-600 px-8 py-4 text-base lg:text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isUploading ? 'Mengunggah...' : 'Daftarkan saya'}
+            </button>
+          </div>
+        )}
+
+        {/* Konfirmasi modal */}
+        {showConfirmModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            aria-modal="true"
+            role="dialog"
+          >
+            <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Konfirmasi Pendaftaran
+              </h3>
+              <p className="text-sm lg:text-base text-gray-700 mb-6">
+                Anda yakin data sudah benar? Ketika pendaftaran disetujui oleh admin maka data pendaftaran tidak dapat diubah lagi.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDaftar}
+                  disabled={isUploading}
+                  className="rounded-md px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  Ya, daftarkan
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -348,6 +438,17 @@ export function PaymentPage() {
             </div>
           );
         })()}
+
+        {FEATURES.arrivalSchedule && registration?.status === 'Terdaftar' && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => router.push('/schedule/arrival')}
+              className="rounded-full bg-[#C84343] px-8 py-3 lg:px-12 lg:py-4 xl:px-16 xl:py-5 text-base lg:text-lg xl:text-xl font-bold text-white hover:bg-[#A73535] transition-colors shadow-lg hover:shadow-xl"
+            >
+              Atur Jadwal Kedatangan
+            </button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

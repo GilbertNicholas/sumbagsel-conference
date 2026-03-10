@@ -8,14 +8,18 @@ import { z } from 'zod';
 import Image from 'next/image';
 import { apiClient } from '@/lib/api-client';
 
-const phoneSchema = z.object({
-  phoneNumber: z
-    .string()
-    .min(1, 'Nomor WhatsApp harus diisi')
-    .regex(
-      /^(\+62|0)[0-9]{9,12}$/,
-      'Nomor WhatsApp harus dalam format Indonesia (08xx atau +628xx)',
-    ),
+const identifierSchema = z
+  .string()
+  .min(1, 'Nomor WhatsApp atau email harus diisi')
+  .refine(
+    (val) =>
+      /^(\+62|0)[0-9]{9,12}$/.test(val.trim()) ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
+    'Masukkan nomor WhatsApp (08xx atau +628xx) atau alamat email yang valid',
+  );
+
+const loginFormSchema = z.object({
+  identifier: identifierSchema,
 });
 
 const otpSchema = z.object({
@@ -25,7 +29,7 @@ const otpSchema = z.object({
     .regex(/^[0-9]{6}$/, 'Kode OTP harus berupa angka'),
 });
 
-type PhoneFormData = z.infer<typeof phoneSchema>;
+type LoginFormData = z.infer<typeof loginFormSchema>;
 type OtpFormData = z.infer<typeof otpSchema>;
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -38,13 +42,13 @@ export function AdminLoginPage() {
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('sessionExpired') === '1';
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const phoneForm = useForm<PhoneFormData>({
-    resolver: zodResolver(phoneSchema),
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginFormSchema),
   });
 
   const otpForm = useForm<OtpFormData>({
@@ -57,19 +61,19 @@ export function AdminLoginPage() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const onRequestOtp = async (data: PhoneFormData) => {
+  const onRequestOtp = async (data: LoginFormData) => {
     try {
       setError(null);
       setIsLoading(true);
 
       if (OTP_BYPASS_DEV) {
-        await apiClient.adminLoginWithPhone(data.phoneNumber);
+        await apiClient.adminLoginByIdentifier(data.identifier);
         router.push('/admin/dashboard');
         return;
       }
 
-      await apiClient.adminRequestOtp(data.phoneNumber);
-      setPhoneNumber(data.phoneNumber);
+      await apiClient.adminRequestOtp(data.identifier);
+      setIdentifier(data.identifier);
       setShowOtpModal(true);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       otpForm.reset();
@@ -87,7 +91,7 @@ export function AdminLoginPage() {
     try {
       setError(null);
       setIsLoading(true);
-      await apiClient.adminRequestOtp(phoneNumber);
+      await apiClient.adminRequestOtp(identifier);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
       const message =
@@ -102,7 +106,7 @@ export function AdminLoginPage() {
     try {
       setError(null);
       setIsLoading(true);
-      await apiClient.adminVerifyOtp(phoneNumber, data.otp);
+      await apiClient.adminVerifyOtp(identifier, data.otp);
       router.push('/admin/dashboard');
     } catch (err) {
       const message =
@@ -139,14 +143,14 @@ export function AdminLoginPage() {
           </h2>
           <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
             {OTP_BYPASS_DEV
-              ? 'Mode dev: Masukkan nomor HP admin untuk langsung masuk (OTP bypass)'
-              : 'Masukkan nomor HP yang terdaftar sebagai admin untuk menerima kode verifikasi'}
+              ? 'Mode dev: Masukkan nomor WA atau email admin untuk langsung masuk (OTP bypass)'
+              : 'Masukkan nomor WA atau email yang terdaftar sebagai admin untuk menerima kode verifikasi'}
           </p>
         </div>
 
         <form
           className="mt-8 space-y-6"
-          onSubmit={phoneForm.handleSubmit(onRequestOtp)}
+          onSubmit={loginForm.handleSubmit(onRequestOtp)}
         >
           {sessionExpired && (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
@@ -160,19 +164,19 @@ export function AdminLoginPage() {
           )}
           <div className="space-y-4 lg:space-y-5 rounded-md shadow-sm">
             <div>
-              <label htmlFor="phoneNumber" className="sr-only">
-                Nomor WhatsApp
+              <label htmlFor="identifier" className="sr-only">
+                Nomor WhatsApp atau Email
               </label>
               <input
-                {...phoneForm.register('phoneNumber')}
-                type="tel"
-                autoComplete="tel"
+                {...loginForm.register('identifier')}
+                type="text"
+                autoComplete="username"
                 className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 text-sm lg:text-base xl:text-lg"
-                placeholder="Nomor WhatsApp (08xx atau +628xx)"
+                placeholder="Nomor WhatsApp (08xx atau +628xx) atau Email"
               />
-              {phoneForm.formState.errors.phoneNumber && (
+              {loginForm.formState.errors.identifier && (
                 <p className="mt-1 text-sm lg:text-base text-red-600">
-                  {phoneForm.formState.errors.phoneNumber.message}
+                  {loginForm.formState.errors.identifier.message}
                 </p>
               )}
             </div>
@@ -208,7 +212,7 @@ export function AdminLoginPage() {
               Masukkan Kode Verifikasi
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              Kode 6 digit telah dikirim ke {phoneNumber}
+              Kode 6 digit telah dikirim ke {identifier}
             </p>
 
             <form

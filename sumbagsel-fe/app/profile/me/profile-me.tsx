@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiClient, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
+import { capitalizeWords } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard-layout';
 
 const CHURCH_OPTIONS = [
@@ -130,7 +131,7 @@ export function ProfileMePage() {
       
       // Update profile
       const profileData = {
-        fullName: data.fullName,
+        fullName: capitalizeWords(data.fullName.trim()),
         churchName: finalChurchName,
         ministry: data.ministry,
         gender: data.gender || undefined,

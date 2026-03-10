@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { apiClient, ArrivalScheduleGrouped, ArrivalScheduleSummary, ArrivalScheduleFilter, TransportationType } from '@/lib/api-client';
+import { FEATURES } from '@/lib/features';
+
+const navActive = 'px-4 py-2 text-sm lg:text-base font-medium text-green-600 bg-green-50 rounded-md';
+const navInactive = 'px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors';
 
 export function ArrivalScheduleManagementPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [arrivals, setArrivals] = useState<ArrivalScheduleGrouped[]>([]);
   const [summary, setSummary] = useState<ArrivalScheduleSummary>({ totalArrivals: 0, byAir: 0, bySea: 0 });
@@ -131,18 +136,38 @@ export function ArrivalScheduleManagementPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%]">
           <div className="flex justify-between h-16">
             <div className="flex items-center gap-6">
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Arrival Schedule Management
+                Dashboard Admin
               </h1>
               <button
                 onClick={() => router.push('/admin/dashboard')}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                className={pathname === '/admin/dashboard' || pathname?.startsWith('/admin/participants') ? navActive : navInactive}
               >
-                Dashboard
+                Data Konferensi
               </button>
+              <button
+                onClick={() => router.push('/admin/shirt-data')}
+                className={pathname === '/admin/shirt-data' ? navActive : navInactive}
+              >
+                Data Baju
+              </button>
+              <button
+                onClick={() => router.push('/admin/children')}
+                className={pathname === '/admin/children' ? navActive : navInactive}
+              >
+                Daftar Anak
+              </button>
+              {FEATURES.arrivalSchedule && (
+                <button
+                  onClick={() => router.push('/admin/arrival-schedules')}
+                  className={pathname === '/admin/arrival-schedules' ? navActive : navInactive}
+                >
+                  Arrival Schedules
+                </button>
+              )}
             </div>
             <div className="flex items-center">
               <button

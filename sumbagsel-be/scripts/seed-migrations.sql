@@ -20,4 +20,6 @@ INSERT INTO migrations (timestamp, name) VALUES
 (1770000000000, 'AddRejectReasonToRegistrations1770000000000'),
 (1780000000000, 'AddEmailToOtpVerifications1780000000000'),
 (1790000000000, 'AddGenderToProfiles1790000000000'),
-(1790000001000, 'AddShirtSizeToRegistrations1790000001000');
+(1790000001000, 'AddShirtSizeToRegistrations1790000001000'),
+(1790000002000, 'AddRoleToAdminsAndRecreate1790000002000'),
+(1790000003000, 'AddEmailToAdminsAndSeed1790000003000');

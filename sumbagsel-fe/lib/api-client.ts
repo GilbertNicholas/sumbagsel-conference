@@ -147,8 +147,22 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        // Handle 401 - session expired, redirect to login with message
-        if (response.status === 401 && typeof window !== 'undefined') {
+        // Handle 401 - session expired for protected endpoints only.
+        // Login endpoints (request-otp, verify-otp, login) return 401 for invalid credentials,
+        // not session expiry - jangan redirect, biarkan error message ditampilkan.
+        const isLoginEndpoint =
+          endpoint === '/admin/request-otp' ||
+          endpoint === '/admin/verify-otp' ||
+          endpoint === '/admin/login-with-phone' ||
+          endpoint === '/admin/login' ||
+          endpoint === '/auth/request-otp' ||
+          endpoint === '/auth/verify-otp' ||
+          endpoint === '/auth/login';
+        if (
+          response.status === 401 &&
+          typeof window !== 'undefined' &&
+          !isLoginEndpoint
+        ) {
           const isAdminRequest = endpoint.startsWith('/admin');
           if (isAdminRequest) {
             localStorage.removeItem('admin_token');
@@ -330,6 +344,25 @@ class ApiClient {
     });
   }
 
+  async resetRegistration(): Promise<void> {
+    const token = this.getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${this.baseUrl}/registrations/me`, {
+      method: 'DELETE',
+      headers,
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let err: { message?: string } = {};
+      try {
+        if (text) err = JSON.parse(text);
+      } catch {}
+      throw new Error(err.message || 'Gagal mengubah data pendaftaran');
+    }
+  }
+
   // Arrival Schedule endpoints
   async getMyArrivalSchedule(): Promise<ArrivalScheduleResponse | null> {
     return this.request<ArrivalScheduleResponse | null>('/arrival-schedules/me');
@@ -361,18 +394,18 @@ class ApiClient {
     return response;
   }
 
-  async adminRequestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
+  async adminRequestOtp(identifier: string): Promise<{ sent: boolean }> {
     return this.request<{ sent: boolean }>('/admin/request-otp', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ identifier }),
     });
   }
 
   /** Bypass OTP - direct login. Only when NEXT_PUBLIC_OTP_BYPASS_DEV=true */
-  async adminLoginWithPhone(phoneNumber: string): Promise<AdminAuthResponse> {
+  async adminLoginByIdentifier(identifier: string): Promise<AdminAuthResponse> {
     const response = await this.request<AdminAuthResponse>('/admin/login-with-phone', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ identifier }),
     });
     if (response.accessToken) {
       localStorage.setItem('admin_token', response.accessToken);
@@ -380,10 +413,10 @@ class ApiClient {
     return response;
   }
 
-  async adminVerifyOtp(phoneNumber: string, otp: string): Promise<AdminAuthResponse> {
+  async adminVerifyOtp(identifier: string, otp: string): Promise<AdminAuthResponse> {
     const response = await this.request<AdminAuthResponse>('/admin/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ phoneNumber, otp }),
+      body: JSON.stringify({ identifier, otp }),
     });
     if (response.accessToken) {
       localStorage.setItem('admin_token', response.accessToken);
@@ -409,6 +442,40 @@ class ApiClient {
       throw new Error('No admin token found');
     }
     return this.request<ParticipantResponse[]>('/admin/participants', {
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async getShirtData(filter?: { church?: string; size?: string }): Promise<ShirtDataResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.size?.trim()) params.append('size', filter.size.trim());
+    const queryString = params.toString();
+    return this.request<ShirtDataResponse>(`/admin/shirt-data${queryString ? `?${queryString}` : ''}`, {
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
+  async getChildren(filter?: { church?: string; age?: string; checkInStatus?: string; search?: string }): Promise<ChildrenResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.age?.trim()) params.append('age', filter.age.trim());
+    if (filter?.checkInStatus) params.append('checkInStatus', filter.checkInStatus);
+    if (filter?.search?.trim()) params.append('search', filter.search.trim());
+    const queryString = params.toString();
+    return this.request<ChildrenResponse>(`/admin/children${queryString ? `?${queryString}` : ''}`, {
       headers: {
         'Authorization': `Bearer ${adminToken}`,
       },
@@ -554,6 +621,35 @@ export interface AdminInfo {
   role: 'master' | 'biasa';
 }
 
+export interface ShirtDataRow {
+  id: string;
+  fullName: string;
+  churchName: string;
+  shirtSize: string;
+  phoneNumber: string | null;
+  email: string;
+}
+
+export interface ShirtDataResponse {
+  totalsBySize: Record<string, number>;
+  rows: ShirtDataRow[];
+}
+
+export interface ChildRow {
+  id: string;
+  childName: string;
+  churchName: string;
+  age: number;
+  parentName: string;
+  registrationId: string;
+  checkedInAt: string | null;
+}
+
+export interface ChildrenResponse {
+  total: number;
+  rows: ChildRow[];
+}
+
 export interface ParticipantResponse {
   id: string;
   userId: string;
@@ -592,6 +688,7 @@ export interface ParticipantDetailResponse {
   baseAmount: number | null;
   totalAmount: number | null;
   uniqueCode: string | null;
+  shirtSize?: string | null;
   checkedInAt?: string | null;
   rejectReason: string | null;
   createdAt: string;

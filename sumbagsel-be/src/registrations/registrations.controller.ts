@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   UseGuards,
   HttpCode,
@@ -69,5 +70,11 @@ export class RegistrationsController {
     @CurrentUser() user: User,
   ): Promise<RegistrationResponseDto> {
     return this.registrationsService.submitRegistration(user.id);
+  }
+
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetRegistration(@CurrentUser() user: User): Promise<void> {
+    return this.registrationsService.resetRegistration(user.id);
   }
 }

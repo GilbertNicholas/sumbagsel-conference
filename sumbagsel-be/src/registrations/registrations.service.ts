@@ -288,6 +288,30 @@ export class RegistrationsService {
     return this.toResponseDto(updatedRegistration);
   }
 
+  async resetRegistration(userId: string): Promise<void> {
+    const registration = await this.registrationsRepository.findOne({
+      where: { userId },
+      relations: ['children'],
+    });
+
+    if (!registration) {
+      return;
+    }
+
+    if (registration.status !== RegistrationStatus.BELUM_TERDAFTAR) {
+      throw new BadRequestException(
+        'Hanya dapat mengubah data saat status Belum terdaftar',
+      );
+    }
+
+    if (registration.children && registration.children.length > 0) {
+      await this.registrationChildrenRepository.delete({
+        registrationId: registration.id,
+      });
+    }
+    await this.registrationsRepository.remove(registration);
+  }
+
   private toResponseDto(registration: Registration): RegistrationResponseDto {
     const children = registration.children?.map((c) => ({
       id: c.id,

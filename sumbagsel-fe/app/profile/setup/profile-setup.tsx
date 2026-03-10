@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Image from 'next/image';
 import { apiClient } from '@/lib/api-client';
+import { capitalizeWords } from '@/lib/utils';
 
 const CHURCH_OPTIONS = [
   'GKDI Batam',
@@ -23,8 +24,8 @@ const profileSetupSchema = z
   .object({
     fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
     churchName: z.string().min(1, 'Pilih nama gereja'),
-    ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
-    gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }),
+    ministry: z.string().refine((val) => val !== '' && MINISTRY_OPTIONS.includes(val as (typeof MINISTRY_OPTIONS)[number]), { message: 'Pilih Ministry' }),
+    gender: z.string().refine((val) => val !== '' && GENDER_OPTIONS.includes(val as (typeof GENDER_OPTIONS)[number]), { message: 'Pilih Gender' }),
     customChurchName: z.string().optional(),
     phoneNumber: z
       .string()
@@ -60,6 +61,7 @@ export function ProfileSetupPage() {
     formState: { errors },
   } = useForm<ProfileSetupFormData>({
     resolver: zodResolver(profileSetupSchema),
+    defaultValues: { ministry: '', gender: '' },
   });
 
   const churchName = watch('churchName');
@@ -93,10 +95,10 @@ export function ProfileSetupPage() {
           setValue('customChurchName', isCustomChurch ? profileData.churchName : '');
           const ministry = profileData.ministry && MINISTRY_OPTIONS.includes(profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
             ? (profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
-            : MINISTRY_OPTIONS[0];
+            : '';
           setValue('ministry', ministry);
           const profileGender = (profileData as { gender?: string }).gender;
-          setValue('gender', profileGender && GENDER_OPTIONS.includes(profileGender as (typeof GENDER_OPTIONS)[number]) ? profileGender as (typeof GENDER_OPTIONS)[number] : GENDER_OPTIONS[0]);
+          setValue('gender', profileGender && GENDER_OPTIONS.includes(profileGender as (typeof GENDER_OPTIONS)[number]) ? profileGender as (typeof GENDER_OPTIONS)[number] : '');
           const hasValidPhoneVal = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
           const hasValidEmailVal = profileData.contactEmail && profileData.contactEmail.trim() !== '';
           setValue('contactEmail', hasValidEmailVal ? profileData.contactEmail! : '');
@@ -117,7 +119,7 @@ export function ProfileSetupPage() {
       setIsLoading(true);
 
       const profileData = {
-        fullName: data.fullName,
+        fullName: capitalizeWords(data.fullName.trim()),
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
         gender: data.gender,
@@ -156,23 +158,24 @@ export function ProfileSetupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      {/* Container untuk Logo */}
-      <div className="w-full max-w-md lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mb-8 lg:mb-12">
-        <div className="flex justify-center mt-6 lg:mt-8 mb-4 lg:mb-6">
-          <Image
-            src="/images/sumbagsel-logo.png"
-            alt="Sumbagsel Conference"
-            width={1800}
-            height={1200}
-            className="h-auto w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] 2xl:max-w-[1100px]"
-            priority
-          />
+    <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col bg-gray-50">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
+        {/* Container untuk Logo */}
+        <div className="w-full max-w-md lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mb-6 sm:mb-8 lg:mb-12">
+          <div className="flex justify-center mt-4 sm:mt-6 lg:mt-8 mb-3 sm:mb-4 lg:mb-6">
+            <Image
+              src="/images/sumbagsel-logo.png"
+              alt="Sumbagsel Conference"
+              width={1800}
+              height={1200}
+              className="h-auto w-full max-w-[240px] sm:max-w-[300px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] 2xl:max-w-[1100px]"
+              priority
+            />
+          </div>
+          <p className="mt-1.5 sm:mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
+            Lengkapi informasi profil Anda
+          </p>
         </div>
-        <p className="mt-2 lg:mt-3 text-center text-md lg:text-base xl:text-lg text-gray-600">
-          Lengkapi informasi profil Anda
-        </p>
-      </div>
 
       {/* Container untuk Form */}
       <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
@@ -273,7 +276,7 @@ export function ProfileSetupPage() {
                     MozAppearance: 'none',
                   }}
                 >
-                  <option value="" disabled style={{ fontSize: '16px', padding: '12px' }}>Pilih pelayanan</option>
+                  <option value="" disabled style={{ fontSize: '16px', padding: '12px' }}>Pilih Ministry</option>
                   {MINISTRY_OPTIONS.map((m) => (
                     <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>
                       {m}
@@ -305,7 +308,7 @@ export function ProfileSetupPage() {
                   }`}
                   style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
                 >
-                  <option value="" disabled>Pilih gender</option>
+                  <option value="" disabled>Pilih Gender</option>
                   {GENDER_OPTIONS.map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
@@ -378,6 +381,7 @@ export function ProfileSetupPage() {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

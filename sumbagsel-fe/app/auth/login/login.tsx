@@ -162,23 +162,24 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-8 lg:space-y-10">
-        <div>
-          <div className="flex justify-center mb-6 lg:mb-8">
-            <Image
-              src="/images/sumbagsel-logo.png"
-              alt="SumBagSel Conference Logo"
-              width={1800}
-              height={120}
-              className="h-auto w-auto max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px] drop-shadow-lg"
-              priority
-            />
-          </div>
-          <h2 className="mt-6 lg:mt-8 text-center text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
-            Login Peserta
-          </h2>
-          <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
+    <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col bg-gray-50">
+      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-5 sm:space-y-6 lg:space-y-10">
+          <div>
+            <div className="flex justify-center mb-4 sm:mb-6 lg:mb-8">
+              <Image
+                src="/images/sumbagsel-logo.png"
+                alt="SumBagSel Conference Logo"
+                width={1800}
+                height={120}
+                className="h-auto w-auto max-w-[240px] sm:max-w-[320px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px] drop-shadow-lg"
+                priority
+              />
+            </div>
+            <h2 className="mt-4 sm:mt-6 lg:mt-8 text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
+              Login Peserta
+            </h2>
+            <p className="mt-1.5 sm:mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
             {OTP_BYPASS_DEV
               ? 'Mode dev: Masukkan nomor atau email untuk langsung masuk (OTP bypass)'
               : 'Masukkan nomor WhatsApp atau email untuk menerima kode verifikasi'}
@@ -186,7 +187,7 @@ export function LoginPage() {
         </div>
 
         <form
-          className="mt-8 space-y-6"
+          className="mt-5 sm:mt-6 lg:mt-8 space-y-4 sm:space-y-6"
           onSubmit={loginForm.handleSubmit(onRequestOtp)}
         >
           {sessionExpired && (
@@ -228,6 +229,7 @@ export function LoginPage() {
             </button>
           </div>
         </form>
+        </div>
       </div>
 
       {/* OTP Modal */}

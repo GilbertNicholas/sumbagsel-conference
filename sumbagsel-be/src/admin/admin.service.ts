@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -22,13 +23,28 @@ import { ParticipantDetailResponseDto } from './dto/participant-detail-response.
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
 import { ArrivalScheduleResponseDto, ArrivalScheduleSummaryDto, ArrivalScheduleGroupedDto } from './dto/arrival-schedule-response.dto';
 import { RegistrationStatus } from '../entities/registration.entity';
+import { MailService } from '../mail/mail.service';
+import { ShirtDataFilterDto } from './dto/shirt-data-filter.dto';
+import { ShirtDataResponseDto, ShirtDataRowDto } from './dto/shirt-data-response.dto';
+import { ChildrenFilterDto } from './dto/children-filter.dto';
+import { ChildrenResponseDto, ChildRowDto } from './dto/children-response.dto';
+import { RegistrationChild } from '../entities/registration-child.entity';
+
+const CHILD_FEE = 75_000;
+
+/** Opsi gereja utama - untuk filter "Lainnya" (church NOT IN list) */
+const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
+const CHURCH_FILTER_OTHER = '__lainnya__';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
     private otpService: OtpService,
+    private mailService: MailService,
     @InjectRepository(Registration)
     private registrationsRepository: Repository<Registration>,
     @InjectRepository(User)
@@ -37,6 +53,8 @@ export class AdminService implements OnModuleInit {
     private profilesRepository: Repository<Profile>,
     @InjectRepository(ArrivalSchedule)
     private arrivalSchedulesRepository: Repository<ArrivalSchedule>,
+    @InjectRepository(RegistrationChild)
+    private registrationChildrenRepository: Repository<RegistrationChild>,
     private jwtService: JwtService,
   ) {}
 
@@ -55,34 +73,43 @@ export class AdminService implements OnModuleInit {
     return normalized;
   }
 
-  async requestOtp(phoneNumber: string): Promise<{ sent: boolean }> {
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+  private isEmail(identifier: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+  }
 
-    const admin = await this.adminRepository.findOne({
+  private async findAdminByIdentifier(identifier: string): Promise<Admin | null> {
+    const trimmed = identifier.trim();
+    if (this.isEmail(trimmed)) {
+      return this.adminRepository.findOne({
+        where: { email: trimmed.toLowerCase() },
+      });
+    }
+    const normalizedPhone = this.normalizePhoneNumber(trimmed);
+    return this.adminRepository.findOne({
       where: { phoneNumber: normalizedPhone },
     });
+  }
+
+  async requestOtp(identifier: string): Promise<{ sent: boolean }> {
+    const admin = await this.findAdminByIdentifier(identifier);
 
     if (!admin) {
-      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
     }
 
     if (!admin.isActive) {
       throw new UnauthorizedException('Akun admin tidak aktif');
     }
 
-    return this.otpService.create(phoneNumber);
+    return this.otpService.create(identifier);
   }
 
-  /** Bypass OTP - direct login with phone. Only when OTP_BYPASS_DEV=true. */
-  async loginWithPhone(phoneNumber: string): Promise<AdminAuthResponseDto> {
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
-
-    const admin = await this.adminRepository.findOne({
-      where: { phoneNumber: normalizedPhone },
-    });
+  /** Bypass OTP - direct login with identifier. Only when OTP_BYPASS_DEV=true. */
+  async loginByIdentifier(identifier: string): Promise<AdminAuthResponseDto> {
+    const admin = await this.findAdminByIdentifier(identifier);
 
     if (!admin) {
-      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
     }
 
     if (!admin.isActive) {
@@ -101,17 +128,13 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  async verifyOtpAndLogin(phoneNumber: string, otp: string): Promise<AdminAuthResponseDto> {
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+  async verifyOtpAndLogin(identifier: string, otp: string): Promise<AdminAuthResponseDto> {
+    await this.otpService.verify(identifier, otp);
 
-    await this.otpService.verify(phoneNumber, otp);
-
-    const admin = await this.adminRepository.findOne({
-      where: { phoneNumber: normalizedPhone },
-    });
+    const admin = await this.findAdminByIdentifier(identifier);
 
     if (!admin) {
-      throw new UnauthorizedException('Nomor tidak terdaftar sebagai admin');
+      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
     }
 
     if (!admin.isActive) {
@@ -237,6 +260,7 @@ export class AdminService implements OnModuleInit {
         baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
         totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
         uniqueCode: registration.uniqueCode,
+        shirtSize: registration.shirtSize ?? null,
         checkedInAt: registration.checkedInAt?.toISOString() ?? null,
         rejectReason: registration.rejectReason ?? null,
         createdAt: registration.createdAt.toISOString(),
@@ -271,6 +295,7 @@ export class AdminService implements OnModuleInit {
       baseAmount: null,
       totalAmount: null,
       uniqueCode: null,
+      shirtSize: null,
       checkedInAt: null,
       rejectReason: null,
       createdAt: user.createdAt.toISOString(),
@@ -298,6 +323,29 @@ export class AdminService implements OnModuleInit {
     registration.status = RegistrationStatus.TERDAFTAR;
     await this.registrationsRepository.save(registration);
 
+    // Kirim email konfirmasi ke user
+    const recipientEmail = registration.user?.email || registration.user?.profile?.contactEmail;
+    if (recipientEmail && recipientEmail.trim() !== '' && recipientEmail !== '-') {
+      const profile = registration.user?.profile;
+      const childCount = registration.children?.length ?? 0;
+      const ministryFee =
+        (registration.baseAmount != null ? Number(registration.baseAmount) : 0) - childCount * CHILD_FEE;
+      this.mailService
+        .sendRegistrationConfirmationEmail(recipientEmail.trim(), {
+          fullName: profile?.fullName || '-',
+          ministry: profile?.ministry || '-',
+          shirtSize: registration.shirtSize ?? null,
+          children: (registration.children || []).map((c) => ({ name: c.name, age: c.age })),
+          ministryFee,
+          baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : 0,
+          uniqueCode: registration.uniqueCode,
+          totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : 0,
+        })
+        .catch((err) => {
+          this.logger.error('Failed to send registration confirmation email', err);
+        });
+    }
+
     const profile = registration.user?.profile;
     const children = (registration.children || []).map((c) => ({
       id: c.id,
@@ -321,6 +369,7 @@ export class AdminService implements OnModuleInit {
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
+      shirtSize: registration.shirtSize ?? null,
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),
@@ -373,6 +422,7 @@ export class AdminService implements OnModuleInit {
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
+      shirtSize: registration.shirtSize ?? null,
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       rejectReason: registration.rejectReason,
       createdAt: registration.createdAt.toISOString(),
@@ -424,6 +474,7 @@ export class AdminService implements OnModuleInit {
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
+      shirtSize: registration.shirtSize ?? null,
       checkedInAt: registration.checkedInAt.toISOString(),
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),
@@ -653,5 +704,106 @@ export class AdminService implements OnModuleInit {
   private generateToken(admin: Admin): string {
     const payload = { sub: admin.id, code: admin.code, role: 'admin', adminRole: admin.role };
     return this.jwtService.sign(payload);
+  }
+
+  async getShirtData(filter?: ShirtDataFilterDto): Promise<ShirtDataResponseDto> {
+    const qb = this.registrationsRepository
+      .createQueryBuilder('reg')
+      .innerJoinAndSelect('reg.user', 'user')
+      .innerJoinAndSelect('user.profile', 'profile')
+      .where('reg.status = :status', { status: RegistrationStatus.TERDAFTAR })
+      .andWhere('reg.shirt_size IS NOT NULL')
+      .andWhere('reg.shirt_size != :empty', { empty: '' });
+
+    if (filter?.church?.trim()) {
+      if (filter.church.trim() === CHURCH_FILTER_OTHER) {
+        qb.andWhere('profile.church_name NOT IN (:...mainChurches)', { mainChurches: MAIN_CHURCH_OPTIONS });
+      } else {
+        qb.andWhere('profile.church_name = :church', { church: filter.church.trim() });
+      }
+    }
+    if (filter?.size?.trim()) {
+      qb.andWhere('reg.shirt_size = :size', { size: filter.size.trim() });
+    }
+
+    const registrations = await qb
+      .orderBy('profile.full_name', 'ASC')
+      .getMany();
+
+    const rows: ShirtDataRowDto[] = registrations.map((reg) => {
+      const profile = reg.user?.profile;
+      return {
+        id: reg.id,
+        fullName: profile?.fullName || '-',
+        churchName: profile?.churchName || '-',
+        shirtSize: reg.shirtSize || '-',
+        phoneNumber: profile?.phoneNumber || null,
+        email: reg.user?.email || profile?.contactEmail || '-',
+      };
+    });
+
+    const totalsBySize: Record<string, number> = {};
+    rows.forEach((r) => {
+      const s = r.shirtSize || '-';
+      totalsBySize[s] = (totalsBySize[s] || 0) + 1;
+    });
+
+    return { totalsBySize, rows };
+  }
+
+  async getChildren(filter?: ChildrenFilterDto): Promise<ChildrenResponseDto> {
+    const qb = this.registrationChildrenRepository
+      .createQueryBuilder('child')
+      .innerJoinAndSelect('child.registration', 'reg')
+      .innerJoinAndSelect('reg.user', 'user')
+      .innerJoinAndSelect('user.profile', 'profile')
+      .where('reg.status = :status', { status: RegistrationStatus.TERDAFTAR });
+
+    if (filter?.church?.trim()) {
+      if (filter.church.trim() === CHURCH_FILTER_OTHER) {
+        qb.andWhere('profile.church_name NOT IN (:...mainChurches)', { mainChurches: MAIN_CHURCH_OPTIONS });
+      } else {
+        qb.andWhere('profile.church_name = :church', { church: filter.church.trim() });
+      }
+    }
+    if (filter?.age?.trim()) {
+      const ageNum = parseInt(filter.age, 10);
+      if (!isNaN(ageNum)) {
+        qb.andWhere('child.age = :age', { age: ageNum });
+      }
+    }
+    if (filter?.checkInStatus === 'checked-in') {
+      qb.andWhere('reg.checked_in_at IS NOT NULL');
+    } else if (filter?.checkInStatus === 'not-checked-in') {
+      qb.andWhere('reg.checked_in_at IS NULL');
+    }
+    if (filter?.search?.trim()) {
+      const search = `%${filter.search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(child.name) LIKE :search OR LOWER(profile.full_name) LIKE :search)',
+        { search },
+      );
+    }
+
+    const children = await qb
+      .orderBy('profile.church_name', 'ASC')
+      .addOrderBy('child.name', 'ASC')
+      .getMany();
+
+    const rows: ChildRowDto[] = children.map((child) => {
+      const reg = child.registration;
+      const profile = reg?.user?.profile;
+      return {
+        id: child.id,
+        childName: child.name,
+        churchName: profile?.churchName || '-',
+        age: child.age,
+        parentName: profile?.fullName || '-',
+        registrationId: child.registrationId,
+        checkedInAt: reg?.checkedInAt?.toISOString() ?? null,
+      };
+    });
+
+    return { total: rows.length, rows };
   }
 }

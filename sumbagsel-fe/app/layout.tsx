@@ -19,13 +19,13 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Sumbagsel 2026",
-  description: "Sumbagsel Application",
+  description: "Sumbagsel Conference 2026 @BATAM - GKDI's Conference for Sumbagsel Region",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
     title: "Sumbagsel 2026",
-    description: "Sumbagsel Application",
+    description: "Sumbagsel Conference 2026 @BATAM - GKDI's Conference for Sumbagsel Region",
     images: ["/images/sumbagsel-logo.png"],
   },
 };

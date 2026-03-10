@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { apiClient, ParticipantResponse } from '@/lib/api-client';
 import { FEATURES } from '@/lib/features';
+import { MAIN_CHURCH_OPTIONS, CHURCH_FILTER_OTHER, MINISTRY_OPTIONS, GENDER_OPTIONS } from '@/lib/admin-filter-constants';
 
 type SortOption = 'none' | 'date-desc' | 'status';
 type FilterOption = 'none' | 'Pending' | 'Terdaftar' | 'Belum terdaftar';
 type CheckInFilterOption = 'none' | 'checked-in' | 'not-checked-in';
 
-const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
-const GENDER_OPTIONS = ['Pria', 'Wanita'];
+const navActive = 'px-4 py-2 text-sm lg:text-base font-medium text-green-600 bg-green-50 rounded-md';
+const navInactive = 'px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors';
 
 export function AdminDashboardPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [participants, setParticipants] = useState<ParticipantResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,24 +75,6 @@ export function AdminDashboardPage() {
     return status;
   };
 
-  // Unique values for filter dropdowns (from actual data)
-  const uniqueMinistries = useMemo(() => {
-    const set = new Set<string>();
-    participants.forEach((p) => {
-      if (p.ministry && p.ministry.trim()) set.add(p.ministry);
-    });
-    return Array.from(set).sort();
-  }, [participants]);
-
-  const uniqueChurches = useMemo(() => {
-    const set = new Set<string>();
-    participants.forEach((p) => {
-      if (p.churchName && p.churchName.trim() && p.churchName !== '-')
-        set.add(p.churchName);
-    });
-    return Array.from(set).sort();
-  }, [participants]);
-
   // Filter, search, dan sort participants
   const filteredAndSortedParticipants = useMemo(() => {
     let result = [...participants];
@@ -117,7 +101,7 @@ export function AdminDashboardPage() {
 
     // Apply church/kota filter
     if (churchFilter) {
-      if (churchFilter === '__lainnya__') {
+      if (churchFilter === CHURCH_FILTER_OTHER) {
         result = result.filter((p) => !MAIN_CHURCH_OPTIONS.includes(p.churchName || ''));
       } else {
         result = result.filter((p) => p.churchName === churchFilter);
@@ -197,10 +181,28 @@ export function AdminDashboardPage() {
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
                 Dashboard Admin
               </h1>
+              <button
+                onClick={() => router.push('/admin/dashboard')}
+                className={pathname === '/admin/dashboard' || pathname?.startsWith('/admin/participants') ? navActive : navInactive}
+              >
+                Data Konferensi
+              </button>
+              <button
+                onClick={() => router.push('/admin/shirt-data')}
+                className={pathname === '/admin/shirt-data' ? navActive : navInactive}
+              >
+                Data Baju
+              </button>
+              <button
+                onClick={() => router.push('/admin/children')}
+                className={pathname === '/admin/children' ? navActive : navInactive}
+              >
+                Daftar Anak
+              </button>
               {FEATURES.arrivalSchedule && (
                 <button
                   onClick={() => router.push('/admin/arrival-schedules')}
-                  className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                  className={pathname === '/admin/arrival-schedules' ? navActive : navInactive}
                 >
                   Arrival Schedules
                 </button>
@@ -275,7 +277,7 @@ export function AdminDashboardPage() {
                     }}
                   >
                     <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
-                    {uniqueMinistries.map((m) => (
+                    {MINISTRY_OPTIONS.map((m) => (
                       <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>{m}</option>
                     ))}
                   </select>
@@ -321,10 +323,10 @@ export function AdminDashboardPage() {
                     }}
                   >
                     <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
-                    {uniqueChurches.filter((c) => MAIN_CHURCH_OPTIONS.includes(c)).map((c) => (
+                    {MAIN_CHURCH_OPTIONS.map((c) => (
                       <option key={c} value={c} style={{ fontSize: '16px', padding: '12px' }}>{c}</option>
                     ))}
-                    <option value="__lainnya__" style={{ fontSize: '16px', padding: '12px' }}>Lainnya</option>
+                    <option value={CHURCH_FILTER_OTHER} style={{ fontSize: '16px', padding: '12px' }}>Lainnya</option>
                   </select>
                 </div>
 

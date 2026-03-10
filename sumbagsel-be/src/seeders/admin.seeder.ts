@@ -9,6 +9,23 @@ config({ path: `.env.${nodeEnv}` });
 config({ path: '.env.local' });
 config({ path: '.env' });
 
+const ADMIN_SEEDS = [
+  {
+    code: 'ADMIN_MASTER_001',
+    phoneNumber: '087780271525',
+    email: 'gilbertnicholas09@gmail.com',
+    name: 'Admin Master',
+    role: 'master' as const,
+  },
+  {
+    code: 'ADMIN_BIASA_001',
+    phoneNumber: '087780271526',
+    email: 'gilbertnicholas34@gmail.com',
+    name: 'Admin Biasa',
+    role: 'biasa' as const,
+  },
+];
+
 async function seed() {
   const dataSource = new DataSource({
     type: 'mysql',
@@ -24,37 +41,30 @@ async function seed() {
 
     const adminRepository = dataSource.getRepository(Admin);
 
-    // Check if admin already exists
-    const existingAdmin = await adminRepository.findOne({
-      where: { code: 'ADMIN123' },
-    });
-
-    if (existingAdmin) {
-      console.log('✅ Admin dengan kode ADMIN123 sudah ada');
-      console.log(`   Code: ${existingAdmin.code}`);
-      console.log(`   Name: ${existingAdmin.name || 'N/A'}`);
-      console.log(`   Phone: ${existingAdmin.phoneNumber || 'N/A'}`);
-      console.log(`   Role: ${existingAdmin.role}`);
-      await dataSource.destroy();
-      return;
+    for (const seed of ADMIN_SEEDS) {
+      let admin = await adminRepository.findOne({
+        where: [{ phoneNumber: seed.phoneNumber }, { email: seed.email }],
+      });
+      if (admin) {
+        admin.code = seed.code;
+        admin.phoneNumber = seed.phoneNumber;
+        admin.email = seed.email;
+        admin.name = seed.name;
+        admin.role = seed.role;
+        admin.isActive = true;
+        await adminRepository.save(admin);
+        console.log(`✅ Admin updated: ${seed.email} (${seed.role})`);
+      } else {
+        admin = adminRepository.create({
+          ...seed,
+          isActive: true,
+        });
+        await adminRepository.save(admin);
+        console.log(`✅ Admin created: ${seed.email} (${seed.role})`);
+      }
     }
 
-    // Create default admin (master)
-    const admin = adminRepository.create({
-      code: 'ADMIN123',
-      name: 'Admin Master',
-      phoneNumber: '081234567890',
-      role: 'master',
-      isActive: true,
-    });
-
-    await adminRepository.save(admin);
-
-    console.log('✅ Admin seeded successfully!');
-    console.log(`   Code: ${admin.code}`);
-    console.log(`   Name: ${admin.name}`);
-    console.log(`   Active: ${admin.isActive}`);
-
+    console.log('✅ Admin seed selesai');
     await dataSource.destroy();
   } catch (error) {
     console.error('❌ Error seeding admin:', error);

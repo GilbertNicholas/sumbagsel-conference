@@ -10,6 +10,10 @@ import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
 import { ArrivalScheduleGroupedDto } from './dto/arrival-schedule-response.dto';
+import { ShirtDataFilterDto } from './dto/shirt-data-filter.dto';
+import { ShirtDataResponseDto } from './dto/shirt-data-response.dto';
+import { ChildrenFilterDto } from './dto/children-filter.dto';
+import { ChildrenResponseDto } from './dto/children-response.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { CurrentAdmin } from './decorators/current-admin.decorator';
 import { Admin } from '../entities/admin.entity';
@@ -25,16 +29,16 @@ export class AdminController {
 
   @Post('request-otp')
   async requestOtp(@Body() dto: AdminRequestOtpDto): Promise<{ sent: boolean }> {
-    return this.adminService.requestOtp(dto.phoneNumber);
+    return this.adminService.requestOtp(dto.identifier);
   }
 
   @Post('verify-otp')
   async verifyOtp(@Body() dto: AdminVerifyOtpDto): Promise<AdminAuthResponseDto> {
-    return this.adminService.verifyOtpAndLogin(dto.phoneNumber, dto.otp);
+    return this.adminService.verifyOtpAndLogin(dto.identifier, dto.otp);
   }
 
   /**
-   * Bypass OTP - direct login with phone. Only works when OTP_BYPASS_DEV=true.
+   * Bypass OTP - direct login with identifier (phone or email). Only works when OTP_BYPASS_DEV=true.
    * For development/testing only.
    */
   @Post('login-with-phone')
@@ -42,7 +46,7 @@ export class AdminController {
     if (process.env.OTP_BYPASS_DEV !== 'true') {
       throw new ForbiddenException('OTP bypass hanya tersedia di mode development');
     }
-    return this.adminService.loginWithPhone(dto.phoneNumber);
+    return this.adminService.loginByIdentifier(dto.identifier);
   }
 
   @Get('me')
@@ -60,6 +64,18 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   async getAllParticipants(): Promise<ParticipantResponseDto[]> {
     return this.adminService.getAllParticipants();
+  }
+
+  @Get('shirt-data')
+  @UseGuards(AdminAuthGuard)
+  async getShirtData(@Query() filter: ShirtDataFilterDto): Promise<ShirtDataResponseDto> {
+    return this.adminService.getShirtData(filter);
+  }
+
+  @Get('children')
+  @UseGuards(AdminAuthGuard)
+  async getChildren(@Query() filter: ChildrenFilterDto): Promise<ChildrenResponseDto> {
+    return this.adminService.getChildren(filter);
   }
 
   @Get('participants/:id')

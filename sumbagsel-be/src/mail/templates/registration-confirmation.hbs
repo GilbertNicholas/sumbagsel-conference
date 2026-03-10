@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Pendaftaran - Konferensi Sumbagsel 2026</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #2563eb;">Konfirmasi Pendaftaran</h2>
+
+  <h3 style="color: #374151; margin-bottom: 16px;">Invoice</h3>
+  <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <span style="color: #4b5563;">Biaya pendaftaran ({{ministry}}) a/n {{fullName}}</span>
+      <span style="font-weight: 500;">Rp {{ministryFeeFormatted}}</span>
+    </div>
+    {{#if shirtSize}}
+    <p style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563;">Size baju: {{shirtSize}}</p>
+    {{/if}}
+    {{#each children}}
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <span style="color: #4b5563;">Anak: {{name}} (usia {{age}} tahun)</span>
+      <span style="font-weight: 500;">Rp {{../childFeeFormatted}}</span>
+    </div>
+    {{/each}}
+    <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between;">
+      <span style="color: #4b5563; font-weight: 500;">Subtotal</span>
+      <span style="font-weight: 500;">Rp {{baseAmountFormatted}}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+      <span style="color: #4b5563;">Kode unik</span>
+      <span style="font-family: monospace;">{{uniqueCode}}</span>
+    </div>
+    <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; font-weight: bold; font-size: 16px;">
+      <span>Total transfer</span>
+      <span>Rp {{totalAmountFormatted}}</span>
+    </div>
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+      <p style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">Transfer ke rekening:</p>
+      <p style="font-size: 18px; font-weight: bold; letter-spacing: 1px; margin: 0;">{{accountNumber}}</p>
+      <p style="font-size: 14px; font-weight: 600; color: #374151; margin-top: 4px;">a.n. {{accountName}}</p>
+    </div>
+  </div>
+
+  <!-- Badge Terdaftar - hijau dengan background hijau muda -->
+  <div style="display: inline-block; background-color: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 20px 0;">
+    Terdaftar
+  </div>
+
+  <p style="font-size: 16px; margin-top: 16px;">
+    Selamat! Kamu sudah terdaftar untuk Konferensi Sumbagsel 2026 di Batam
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+  <p style="font-size: 12px; color: #6b7280;">Pesan ini dikirim otomatis. Mohon tidak membalas email ini.</p>
+</body>
+</html>
