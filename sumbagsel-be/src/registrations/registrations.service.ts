@@ -298,9 +298,12 @@ export class RegistrationsService {
       return;
     }
 
-    if (registration.status !== RegistrationStatus.BELUM_TERDAFTAR) {
+    if (
+      registration.status !== RegistrationStatus.BELUM_TERDAFTAR &&
+      registration.status !== RegistrationStatus.DAFTAR_ULANG
+    ) {
       throw new BadRequestException(
-        'Hanya dapat mengubah data saat status Belum terdaftar',
+        'Hanya dapat mengubah data saat status Belum terdaftar atau Daftar ulang',
       );
     }
 

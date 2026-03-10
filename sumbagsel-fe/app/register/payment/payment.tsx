@@ -165,18 +165,9 @@ export function PaymentPage() {
     try {
       setError(null);
       setIsResetting(true);
-      if (registration.status === 'Belum terdaftar') {
+      if (registration.status === 'Belum terdaftar' || registration.status === 'Daftar ulang') {
         await apiClient.resetRegistration();
         router.replace('/register');
-      } else if (registration.status === 'Daftar ulang') {
-        const payload = {
-          shirtSize: registration.shirtSize ?? undefined,
-          children: (registration.children ?? []).map((c) => ({ name: c.name, age: c.age })),
-        };
-        const updated = await apiClient.updateRegistrationWithChildren(payload);
-        setRegistration(updated);
-        setSuccess('Invoice berhasil diperbarui');
-        setTimeout(() => setSuccess(null), 5000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengubah data pendaftaran');
