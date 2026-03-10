@@ -102,7 +102,7 @@ export function AdminDashboardPage() {
     // Apply church/kota filter
     if (churchFilter) {
       if (churchFilter === CHURCH_FILTER_OTHER) {
-        result = result.filter((p) => !MAIN_CHURCH_OPTIONS.includes(p.churchName || ''));
+        result = result.filter((p) => !MAIN_CHURCH_OPTIONS.some((opt) => opt === (p.churchName || '')));
       } else {
         result = result.filter((p) => p.churchName === churchFilter);
       }

@@ -96,7 +96,7 @@ export function ChildrenPage() {
       await loadData();
       if (detailChild) {
         setDetailChild((prev) =>
-          prev ? { ...prev, checkedInAt: updated.checkedInAt } : null
+          prev ? { ...prev, checkedInAt: updated.checkedInAt ?? null } : null
         );
       }
     } catch (err) {
