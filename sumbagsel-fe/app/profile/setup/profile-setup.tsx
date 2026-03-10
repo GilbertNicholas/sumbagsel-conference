@@ -198,7 +198,7 @@ export function ProfileSetupPage() {
               <input
                 {...register('fullName')}
                 type="text"
-                className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
                 placeholder="Masukkan nama lengkap Anda"
               />
               {errors.fullName && (
@@ -248,7 +248,7 @@ export function ProfileSetupPage() {
                   <input
                     {...register('customChurchName')}
                     type="text"
-                    className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
                     placeholder="Contoh: GKDI Balige"
                   />
                   {errors.customChurchName && (
@@ -333,7 +333,7 @@ export function ProfileSetupPage() {
                 type="tel"
                 disabled={phoneLocked}
                 className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg ${
-                  phoneLocked ? 'bg-gray-100 cursor-not-allowed' : ''
+                  phoneLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
                 }`}
                 placeholder={phoneLocked ? '' : '08xx atau +628xx'}
               />
@@ -356,7 +356,7 @@ export function ProfileSetupPage() {
                 type="email"
                 disabled={emailLocked}
                 className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg ${
-                  emailLocked ? 'bg-gray-100 cursor-not-allowed' : ''
+                  emailLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
                 }`}
                 placeholder={emailLocked ? '' : 'contoh@email.com'}
               />

@@ -314,7 +314,7 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={handleCloseOtpModal}
-                    className="text-base text-gray-500 hover:text-gray-700"
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-colors"
                   >
                     Ubah nomor/email
                   </button>

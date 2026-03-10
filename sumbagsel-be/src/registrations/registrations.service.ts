@@ -298,10 +298,9 @@ export class RegistrationsService {
       return;
     }
 
-    if (
-      registration.status !== RegistrationStatus.BELUM_TERDAFTAR &&
-      registration.status !== RegistrationStatus.DAFTAR_ULANG
-    ) {
+    const status = String(registration.status ?? '');
+    const canReset = status === 'Belum terdaftar' || status === 'Daftar ulang';
+    if (!canReset) {
       throw new BadRequestException(
         'Hanya dapat mengubah data saat status Belum terdaftar atau Daftar ulang',
       );
