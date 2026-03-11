@@ -22,6 +22,7 @@ export function AdminDashboardPage() {
   const [churchFilter, setChurchFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -163,7 +164,15 @@ export function AdminDashboardPage() {
   }
 
   return (
-      <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto">
+      <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto relative">
+        {navigatingToId && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
+            <div className="flex flex-col items-center gap-4">
+              <span className="animate-spin inline-block w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full" />
+              <p className="text-gray-700 font-medium">Memuat detail peserta...</p>
+            </div>
+          </div>
+        )}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-8 xl:px-8 border-b border-gray-200">
             <div className="flex flex-col gap-4">
@@ -395,11 +404,20 @@ export function AdminDashboardPage() {
                       <td className={`${adminTableTd} font-medium`}>
                         <button
                           onClick={() => {
+                            setNavigatingToId(participant.id);
                             router.push(`/admin/participants/${participant.id}`);
                           }}
-                          className="px-2 py-1.5 lg:px-3 lg:py-2 border-2 border-red-600 text-red-600 rounded-md transition-colors font-medium whitespace-nowrap text-sm"
+                          disabled={!!navigatingToId}
+                          className="px-2 py-1.5 lg:px-3 lg:py-2 border-2 border-red-600 text-red-600 rounded-md transition-colors font-medium whitespace-nowrap text-sm disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
                         >
-                          Lihat Detail
+                          {navigatingToId === participant.id ? (
+                            <>
+                              <span className="animate-spin inline-block w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full" />
+                              Membuka...
+                            </>
+                          ) : (
+                            'Lihat Detail'
+                          )}
                         </button>
                       </td>
                     </tr>

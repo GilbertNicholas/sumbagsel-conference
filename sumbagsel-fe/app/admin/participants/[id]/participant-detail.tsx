@@ -189,7 +189,7 @@ export function ParticipantDetailPage() {
             onClick={() => router.push('/admin/dashboard')}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
           >
-            Kembali ke Dashboard
+            Kembali ke Data Peserta
           </button>
         </div>
       </div>
@@ -202,6 +202,16 @@ export function ParticipantDetailPage() {
 
   return (
     <div className="max-w-5xl xl:max-w-6xl mx-auto">
+        <button
+          onClick={() => router.push('/admin/dashboard')}
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 hover:border-gray-400 transition-colors shadow-sm"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Kembali ke Data Peserta
+        </button>
+
         {/* Success Message */}
         {success && (
           <div className="mb-6 rounded-md bg-green-50 p-4">
