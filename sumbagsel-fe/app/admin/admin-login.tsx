@@ -32,7 +32,7 @@ const otpSchema = z.object({
 type LoginFormData = z.infer<typeof loginFormSchema>;
 type OtpFormData = z.infer<typeof otpSchema>;
 
-const RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOLDOWN_SECONDS = 240; // 4 menit, sama seperti peserta
 
 // Bypass OTP untuk development. Set NEXT_PUBLIC_OTP_BYPASS_DEV=true
 const OTP_BYPASS_DEV = process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true';
@@ -125,7 +125,8 @@ export function AdminLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col bg-gray-50">
+    <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
       <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-8 lg:space-y-10">
         <div>
           <div className="flex justify-center mb-6 lg:mb-8">
@@ -154,7 +155,7 @@ export function AdminLoginPage() {
         >
           {sessionExpired && (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
-              <p className="text-sm lg:text-base text-amber-800">Session Anda telah berakhir. Silakan login kembali.</p>
+              <p className="text-sm lg:text-base text-amber-800">Session admin telah berakhir. Silakan login admin kembali.</p>
             </div>
           )}
           {error && !showOtpModal && (
@@ -192,6 +193,7 @@ export function AdminLoginPage() {
           </div>
         </form>
       </div>
+    </div>
 
       {/* OTP Modal */}
       {showOtpModal && (

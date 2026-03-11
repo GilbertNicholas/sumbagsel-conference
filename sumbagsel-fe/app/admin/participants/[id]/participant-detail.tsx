@@ -4,10 +4,20 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse, AdminInfo } from '@/lib/api-client';
 import { FEATURES } from '@/lib/features';
+import { ParticipantDetailModals } from './participant-detail-modals';
+
 
 const CHILD_FEE = 75_000;
-const navActive = 'px-4 py-2 text-sm lg:text-base font-medium text-green-600 bg-green-50 rounded-md';
-const navInactive = 'px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors';
+
+function DataRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex gap-2 py-3 border-b border-gray-100 last:border-0">
+      <span className="font-medium text-gray-700 min-w-[220px] shrink-0 text-base lg:text-lg">{label}</span>
+      <span className="text-gray-500 shrink-0">:</span>
+      <span className="text-gray-900 text-base lg:text-lg">{value ?? '-'}</span>
+    </div>
+  );
+}
 
 function formatRupiah(n: number): string {
   return new Intl.NumberFormat('id-ID').format(n);
@@ -55,7 +65,6 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 export function ParticipantDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const pathname = usePathname();
   const registrationId = params.id as string;
   
   const [participant, setParticipant] = useState<ParticipantDetailResponse | null>(null);
@@ -67,6 +76,7 @@ export function ParticipantDetailPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectReasonError, setRejectReasonError] = useState<string | null>(null);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showPaymentProofModal, setShowPaymentProofModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isCheckIn, setIsCheckIn] = useState(false);
@@ -211,67 +221,7 @@ export function ParticipantDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%]">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center gap-6">
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Dashboard Admin
-              </h1>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className={pathname?.startsWith('/admin/participants') ? navActive : navInactive}
-              >
-                Data Konferensi
-              </button>
-              <button
-                onClick={() => router.push('/admin/shirt-data')}
-                className={pathname === '/admin/shirt-data' ? navActive : navInactive}
-              >
-                Data Baju
-              </button>
-              <button
-                onClick={() => router.push('/admin/children')}
-                className={pathname === '/admin/children' ? navActive : navInactive}
-              >
-                Data Anak
-              </button>
-              {FEATURES.arrivalSchedule && (
-                <button
-                  onClick={() => router.push('/admin/arrival-schedules')}
-                  className={pathname === '/admin/arrival-schedules' ? navActive : navInactive}
-                >
-                  Arrival Schedules
-                </button>
-              )}
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  apiClient.adminLogout();
-                  router.push('/admin');
-                }}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900"
-              >
-                Keluar
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%] py-8">
+    <div className="max-w-5xl xl:max-w-6xl mx-auto">
         {/* Success Message */}
         {success && (
           <div className="mb-6 rounded-md bg-green-50 p-4">
@@ -287,21 +237,21 @@ export function ParticipantDetailPage() {
         )}
 
         {/* Section 1: Data Diri Peserta */}
-        <div className="bg-white shadow rounded-lg overflow-hidden mb-6 lg:mb-8">
-          <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 border-b border-gray-200">
+        <div className="bg-white shadow rounded-lg overflow-hidden mb-6">
+          <div className="px-6 py-6 lg:px-8 lg:py-8 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900">
                   Data Diri Peserta
                 </h2>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="text-base lg:text-lg xl:text-xl text-gray-500">
+                  <span className="text-sm text-gray-500">
                     Status: <span className={`font-medium ${getStatusColor(participant.status)}`}>
                       {participant.status}
                     </span>
                   </span>
                   {hasCheckedIn && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Sudah check-in
                     </span>
                   )}
@@ -343,39 +293,20 @@ export function ParticipantDetailPage() {
               </div>
             </div>
           </div>
-          <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 space-y-6 lg:space-y-8">
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Nama Lengkap</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.fullName}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Asal Gereja</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.churchName}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Ministry</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.ministry || '-'}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Gender</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.gender || '-'}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Email</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.email}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">No. Telp</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900">{participant.phoneNumber || '-'}</p>
-            </div>
-            <div>
-              <label className="block text-base lg:text-lg xl:text-xl font-medium text-gray-700 mb-3">Catatan Khusus (Alergi/Penyakit/Catatan lainnya)</label>
-              <p className="text-base lg:text-lg xl:text-xl text-gray-900 whitespace-pre-wrap">{participant.specialNotes || '-'}</p>
+          <div className="px-6 py-6 lg:px-8 lg:py-8">
+            <div className="space-y-0 divide-y divide-gray-100">
+              <DataRow label="Nama Lengkap" value={participant.fullName} />
+              <DataRow label="Asal Gereja" value={participant.churchName} />
+              <DataRow label="Ministry" value={participant.ministry} />
+              <DataRow label="Gender" value={participant.gender} />
+              <DataRow label="Email" value={participant.email} />
+              <DataRow label="No. Telp" value={participant.phoneNumber} />
+              <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />
             </div>
             {participant.status === 'Daftar ulang' && participant.rejectReason && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <label className="block text-base lg:text-lg xl:text-xl font-medium text-red-700 mb-3">Alasan penolakan pendaftaran</label>
-                <p className="text-base lg:text-lg xl:text-xl text-gray-900 whitespace-pre-wrap bg-red-50 rounded-lg p-4">{participant.rejectReason}</p>
+                <p className="text-sm font-medium text-red-700 mb-2">Alasan penolakan pendaftaran</p>
+                <p className="text-sm text-gray-900 whitespace-pre-wrap bg-red-50 rounded-lg p-4">{participant.rejectReason}</p>
               </div>
             )}
           </div>
@@ -437,123 +368,87 @@ export function ParticipantDetailPage() {
 
         {/* Section 3: Bukti Pembayaran */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+          <div className="px-6 py-6 lg:px-8 lg:py-8 xl:px-10 xl:py-10">
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
               Bukti Pembayaran
             </h2>
             {participant.paymentProofUrl ? (
               <div>
-                <a
-                  href={getPaymentProofFullUrl(participant.paymentProofUrl) ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-3 lg:px-6 lg:py-4 border border-gray-300 rounded-md shadow-sm text-base lg:text-lg font-medium text-gray-700 bg-white hover:bg-gray-50"
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentProofModal(true)}
+                  className="inline-flex items-center px-5 py-3 lg:px-6 lg:py-4 border border-gray-300 rounded-md shadow-sm text-base lg:text-lg font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
                 >
                   <svg className="w-6 h-6 lg:w-7 lg:h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                   Lihat Bukti Pembayaran
-                </a>
+                </button>
+                <p className="mt-1 text-sm text-gray-500">Klik untuk memperbesar</p>
               </div>
             ) : (
               <p className="text-base lg:text-lg xl:text-xl text-gray-500">Tidak ada bukti pembayaran</p>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Approve Modal */}
-      {showConfirmModal && (
-        <>
-          <div
-            className="fixed inset-0 backdrop-blur-md z-40"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-            onClick={() => !isApproving && setShowConfirmModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto pointer-events-none">
-            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-50 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Konfirmasi Persetujuan</h3>
-                <p className="text-sm lg:text-base text-gray-600 mb-6">
-                  Apakah Anda yakin ingin menyetujui pendaftaran peserta ini? Status akan berubah menjadi &quot;Terdaftar&quot;.
-                </p>
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => setShowConfirmModal(false)} disabled={isApproving} className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50">Batal</button>
-                  <button onClick={handleApprove} disabled={isApproving} className="px-4 py-2 text-sm lg:text-base font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50">{isApproving ? 'Memproses...' : 'Setujui'}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Reject Modal */}
-      {showRejectModal && participant && (
-        <>
-          <div
-            className="fixed inset-0 backdrop-blur-md z-40"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-            onClick={() => !isRejecting && setShowRejectModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto pointer-events-none">
-            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-50 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Konfirmasi Penolakan</h3>
-                <p className="text-sm lg:text-base text-gray-600 mb-4">
-                  Anda yakin menolak pendaftaran peserta <strong>{participant.fullName}</strong>? Peserta akan diminta membuat pengajuan pendaftaran kembali.
-                </p>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Alasan menolak pendaftaran:</label>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(e) => {
-                      setRejectReason(e.target.value);
-                      setRejectReasonError(null);
-                    }}
-                    placeholder="Masukkan alasan penolakan..."
-                    rows={4}
-                    className={`block w-full rounded-lg border px-3 py-2 text-gray-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-20 ${rejectReasonError ? 'border-red-500' : 'border-gray-300'}`}
-                    disabled={isRejecting}
+        {/* Modal Bukti Pembayaran - popup gambar seperti size chart */}
+        {showPaymentProofModal && participant.paymentProofUrl && (
+          <>
+            <div
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+              onClick={() => setShowPaymentProofModal(false)}
+              aria-hidden
+            />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowPaymentProofModal(false)}
+            >
+              <div className="relative max-h-[90vh] max-w-[95vw]">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentProofModal(false)}
+                  className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label="Tutup"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div
+                  className="bg-white rounded-lg shadow-2xl overflow-auto max-h-[90vh]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={getPaymentProofFullUrl(participant.paymentProofUrl) ?? ''}
+                    alt="Bukti pembayaran"
+                    className="w-full h-auto object-contain max-h-[85vh]"
                   />
-                  {rejectReasonError && (
-                    <p className="mt-1 text-sm text-red-600">{rejectReasonError}</p>
-                  )}
-                </div>
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => setShowRejectModal(false)} disabled={isRejecting} className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50">Batal</button>
-                  <button onClick={handleReject} disabled={isRejecting} className="px-4 py-2 text-sm lg:text-base font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50">{isRejecting ? 'Memproses...' : 'Tolak pendaftaran'}</button>
                 </div>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Check-in Modal */}
-      {showCheckInModal && (
-        <>
-          <div
-            className="fixed inset-0 backdrop-blur-md z-40"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-            onClick={() => !isCheckIn && setShowCheckInModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto pointer-events-none">
-            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-50 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Konfirmasi Check-in</h3>
-                <p className="text-sm lg:text-base text-gray-600 mb-6">
-                  Apakah Anda yakin ingin melakukan check-in peserta ini? Tindakan ini menandakan peserta telah hadir di lokasi.
-                </p>
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => setShowCheckInModal(false)} disabled={isCheckIn} className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50">Batal</button>
-                  <button onClick={handleCheckIn} disabled={isCheckIn} className="px-4 py-2 text-sm lg:text-base font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">{isCheckIn ? 'Memproses...' : 'Check-in'}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <ParticipantDetailModals
+        showConfirmModal={showConfirmModal}
+        showRejectModal={showRejectModal}
+        showCheckInModal={showCheckInModal}
+        participant={participant}
+        isApproving={isApproving}
+        isRejecting={isRejecting}
+        isCheckIn={isCheckIn}
+        rejectReason={rejectReason}
+        rejectReasonError={rejectReasonError}
+        onCloseConfirm={() => setShowConfirmModal(false)}
+        onCloseReject={() => setShowRejectModal(false)}
+        onCloseCheckIn={() => setShowCheckInModal(false)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onCheckIn={handleCheckIn}
+        onRejectReasonChange={(v) => { setRejectReason(v); setRejectReasonError(null); }}
+      />
     </div>
   );
 }

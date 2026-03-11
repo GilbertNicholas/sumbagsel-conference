@@ -127,12 +127,13 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { _skipUserToken?: boolean } = {}
   ): Promise<T> {
-    const token = this.getToken();
+    const { _skipUserToken, ...fetchOptions } = options;
+    const token = _skipUserToken ? null : this.getToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
+      ...(fetchOptions.headers as Record<string, string>),
     };
 
     if (token) {
@@ -141,7 +142,7 @@ class ApiClient {
 
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        ...options,
+        ...fetchOptions,
         headers,
         credentials: 'include',
       });
@@ -398,6 +399,7 @@ class ApiClient {
     return this.request<{ sent: boolean }>('/admin/request-otp', {
       method: 'POST',
       body: JSON.stringify({ identifier }),
+      _skipUserToken: true,
     });
   }
 
@@ -406,6 +408,7 @@ class ApiClient {
     const response = await this.request<AdminAuthResponse>('/admin/login-with-phone', {
       method: 'POST',
       body: JSON.stringify({ identifier }),
+      _skipUserToken: true,
     });
     if (response.accessToken) {
       localStorage.setItem('admin_token', response.accessToken);
@@ -417,6 +420,7 @@ class ApiClient {
     const response = await this.request<AdminAuthResponse>('/admin/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ identifier, otp }),
+      _skipUserToken: true,
     });
     if (response.accessToken) {
       localStorage.setItem('admin_token', response.accessToken);
