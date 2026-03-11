@@ -21,7 +21,7 @@ config({ path: `.env.${nodeEnv}` });
 config({ path: '.env.local' });
 config({ path: '.env' });
 
-const CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru', 'GKDI Medan', 'GKDI Bandung', 'GKDI Jakarta'];
+const CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru', 'GKDI Siantar', 'GKDI Jakarta'];
 
 const CHILD_NAMES = ['Andi', 'Bella', 'Cahya', 'Dina', 'Eko', 'Fitri', 'Gilang', 'Hana', 'Indra', 'Jasmine', 'Kevin', 'Luna', 'Mario', 'Nadia', 'Oscar', 'Putri', 'Rizki', 'Sari', 'Tono', 'Umi'];
 

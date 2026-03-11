@@ -14,6 +14,7 @@ export function RegistrationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [churchFilter, setChurchFilter] = useState<string>('');
+  const [checkInFilter, setCheckInFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -47,6 +48,12 @@ export function RegistrationsPage() {
       } else {
         result = result.filter((p) => p.churchName === churchFilter);
       }
+    }
+
+    if (checkInFilter === 'checked-in') {
+      result = result.filter((p) => !!p.checkedInAt);
+    } else if (checkInFilter === 'not-checked-in') {
+      result = result.filter((p) => !p.checkedInAt);
     }
 
     if (searchQuery.trim()) {
@@ -123,6 +130,23 @@ export function RegistrationsPage() {
                 </select>
               </div>
 
+              <div className="w-full sm:w-auto">
+                <label htmlFor="checkInFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                  Check-in
+                </label>
+                <select
+                  id="checkInFilter"
+                  value={checkInFilter}
+                  onChange={(e) => setCheckInFilter(e.target.value)}
+                  className={selectClass}
+                  style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                >
+                  <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                  <option value="checked-in" style={{ fontSize: '16px', padding: '12px' }}>Sudah check-in</option>
+                  <option value="not-checked-in" style={{ fontSize: '16px', padding: '12px' }}>Belum check-in</option>
+                </select>
+              </div>
+
               <div className="w-full">
                 <label htmlFor="search" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
                   Cari
@@ -162,18 +186,19 @@ export function RegistrationsPage() {
           <table className="w-full min-w-[560px] divide-y divide-gray-200 lg:table-fixed lg:min-w-0">
             <thead className="bg-gray-50">
               <tr>
-                <th className={`${adminTableTh} lg:w-[18%]`}>Nama</th>
-                <th className={`${adminTableTh} lg:w-[18%]`}>Asal Gereja</th>
-                <th className={`${adminTableTh} lg:w-[12%]`}>No. Telp</th>
-                <th className={`${adminTableTh} lg:w-[18%]`}>Email</th>
-                <th className={`${adminTableTh} lg:w-[10%]`}>Size Baju</th>
-                <th className={`${adminTableTh} lg:w-[15%]`}>Aksi</th>
+                <th className={`${adminTableTh} lg:w-[16%]`}>Nama</th>
+                <th className={`${adminTableTh} lg:w-[16%]`}>Asal Gereja</th>
+                <th className={`${adminTableTh} lg:w-[10%]`}>No. Telp</th>
+                <th className={`${adminTableTh} lg:w-[16%]`}>Email</th>
+                <th className={`${adminTableTh} lg:w-[8%]`}>Size Baju</th>
+                <th className={`${adminTableTh} lg:w-[10%]`}>Check-in</th>
+                <th className={`${adminTableTh} lg:w-[12%]`}>Aksi</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredParticipants.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={adminTableEmpty}>
+                  <td colSpan={7} className={adminTableEmpty}>
                     Tidak ada peserta yang sesuai filter
                   </td>
                 </tr>
@@ -185,6 +210,15 @@ export function RegistrationsPage() {
                     <td className={adminTableTdMuted}>{p.phoneNumber || '-'}</td>
                     <td className={adminTableTdMuted}>{p.email}</td>
                     <td className={adminTableTdMuted}>{p.shirtSize || '-'}</td>
+                    <td className={adminTableTd}>
+                      {p.checkedInAt ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Sudah
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Belum</span>
+                      )}
+                    </td>
                     <td className={adminTableTd}>
                       <button
                         onClick={() => router.push(`/admin/registrations/${p.id}`)}
