@@ -2,6 +2,7 @@ export class ParticipantDetailChildDto {
   id: string;
   name: string;
   age: number;
+  checkedInAt: string | null;
 }
 
 export class ParticipantDetailResponseDto {

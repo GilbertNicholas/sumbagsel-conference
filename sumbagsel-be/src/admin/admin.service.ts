@@ -223,6 +223,7 @@ export class AdminService implements OnModuleInit {
         status: registration?.status ?? 'Belum terdaftar',
         paymentProofUrl: registration?.paymentProofUrl ?? null,
         checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
+        shirtSize: registration?.shirtSize ?? null,
         createdAt: registration?.createdAt?.toISOString() ?? user.createdAt.toISOString(),
         updatedAt: registration?.updatedAt?.toISOString() ?? user.updatedAt.toISOString(),
       };
@@ -242,6 +243,7 @@ export class AdminService implements OnModuleInit {
         id: c.id,
         name: c.name,
         age: c.age,
+        checkedInAt: c.checkedInAt?.toISOString() ?? null,
       }));
 
       return {
@@ -351,6 +353,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
     return {
@@ -404,6 +407,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
     return {
@@ -456,6 +460,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
     return {
@@ -480,6 +485,31 @@ export class AdminService implements OnModuleInit {
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };
+  }
+
+  async checkInChild(childId: string): Promise<ParticipantDetailResponseDto> {
+    const child = await this.registrationChildrenRepository.findOne({
+      where: { id: childId },
+      relations: ['registration', 'registration.user', 'registration.user.profile', 'registration.children'],
+    });
+
+    if (!child) {
+      throw new NotFoundException('Anak tidak ditemukan');
+    }
+
+    const registration = child.registration;
+    if (registration.status !== RegistrationStatus.TERDAFTAR) {
+      throw new BadRequestException('Check-in anak hanya dapat dilakukan untuk peserta yang telah disetujui (Terdaftar)');
+    }
+
+    if (child.checkedInAt) {
+      throw new BadRequestException('Anak sudah melakukan check-in');
+    }
+
+    child.checkedInAt = new Date();
+    await this.registrationChildrenRepository.save(child);
+
+    return this.getParticipantById(registration.id);
   }
 
   async getArrivalSchedules(filter: ArrivalScheduleFilterDto): Promise<ArrivalScheduleGroupedDto[]> {
@@ -773,9 +803,9 @@ export class AdminService implements OnModuleInit {
       }
     }
     if (filter?.checkInStatus === 'checked-in') {
-      qb.andWhere('reg.checked_in_at IS NOT NULL');
+      qb.andWhere('child.checked_in_at IS NOT NULL');
     } else if (filter?.checkInStatus === 'not-checked-in') {
-      qb.andWhere('reg.checked_in_at IS NULL');
+      qb.andWhere('child.checked_in_at IS NULL');
     }
     if (filter?.search?.trim()) {
       const search = `%${filter.search.trim().toLowerCase()}%`;
@@ -800,7 +830,7 @@ export class AdminService implements OnModuleInit {
         age: child.age,
         parentName: profile?.fullName || '-',
         registrationId: child.registrationId,
-        checkedInAt: reg?.checkedInAt?.toISOString() ?? null,
+        checkedInAt: child.checkedInAt?.toISOString() ?? null,
       };
     });
 

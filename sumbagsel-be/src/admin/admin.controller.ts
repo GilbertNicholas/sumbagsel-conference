@@ -109,6 +109,12 @@ export class AdminController {
     return this.adminService.checkInParticipant(id);
   }
 
+  @Patch('children/:id/check-in')
+  @UseGuards(AdminAuthGuard)
+  async checkInChild(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.checkInChild(id);
+  }
+
   @Get('arrival-schedules')
   @UseGuards(AdminAuthGuard)
   async getArrivalSchedules(

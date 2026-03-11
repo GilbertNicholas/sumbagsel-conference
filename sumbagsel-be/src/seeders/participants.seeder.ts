@@ -22,18 +22,20 @@ config({ path: `.env.${nodeEnv}` });
 config({ path: '.env.local' });
 config({ path: '.env' });
 
-const CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
+const CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru', 'GKDI Medan', 'GKDI Bandung', 'GKDI Jakarta'];
 
-const CHILD_NAMES = ['Andi', 'Bella', 'Cahya', 'Dina', 'Eko', 'Fitri', 'Gilang', 'Hana', 'Indra', 'Jasmine'];
+const CHILD_NAMES = ['Andi', 'Bella', 'Cahya', 'Dina', 'Eko', 'Fitri', 'Gilang', 'Hana', 'Indra', 'Jasmine', 'Kevin', 'Luna', 'Mario', 'Nadia', 'Oscar', 'Putri', 'Rizki', 'Sari', 'Tono', 'Umi'];
 
 const FIRST_NAMES = [
   'Budi', 'Siti', 'Ahmad', 'Dewi', 'Rudi', 'Lina', 'Hadi', 'Maya', 'Joko', 'Rina',
   'Ari', 'Sari', 'Dedi', 'Nina', 'Eko', 'Lisa', 'Fajar', 'Dina', 'Gunawan', 'Rita',
+  'Bambang', 'Yuni', 'Hendra', 'Kartika', 'Iwan', 'Wulan', 'Joko', 'Sinta', 'Agus', 'Dewi',
 ];
 
 const LAST_NAMES = [
   'Santoso', 'Wijaya', 'Prasetyo', 'Kurniawan', 'Setiawan', 'Sari', 'Hidayat', 'Putri',
   'Saputra', 'Lestari', 'Rahman', 'Sari', 'Nugroho', 'Sari', 'Wibowo', 'Sari',
+  'Permana', 'Kusuma', 'Hartono', 'Susanto', 'Gunawan', 'Rahman', 'Suryadi', 'Wibowo',
 ];
 
 const SPECIAL_NOTES_OPTIONS = [
@@ -45,14 +47,28 @@ const SPECIAL_NOTES_OPTIONS = [
   'Tidak ada',
   'Alergi kacang',
   'Makanan halal',
+  'Diet rendah garam',
+  'Laktosa intoleran',
 ];
 
 const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'];
+
+const GENDER_OPTIONS = ['Pria', 'Wanita'];
+
+const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 const STATUS_OPTIONS: RegistrationStatus[] = [
   RegistrationStatus.BELUM_TERDAFTAR,
   RegistrationStatus.PENDING,
   RegistrationStatus.TERDAFTAR,
+  RegistrationStatus.DAFTAR_ULANG,
+];
+
+const REJECT_REASONS = [
+  'Bukti pembayaran tidak jelas',
+  'Data tidak lengkap',
+  'Silakan daftar ulang dengan bukti yang valid',
+  'Nominal transfer tidak sesuai',
 ];
 
 function calcRegistrationAmount(ministry: string, churchName: string, childCount: number): { baseAmount: number; uniqueCode: string; totalAmount: number } {
@@ -82,7 +98,7 @@ function getRandomPhoneNumber(): string {
 }
 
 function getRandomEmail(firstName: string, lastName: string, index: number): string {
-  const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+  const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
   const randomDomain = getRandomElement(domains);
   const randomNumber = Math.floor(Math.random() * 10000) + index * 1000;
   return `participant${index + 1}.${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}@${randomDomain}`;
@@ -107,7 +123,7 @@ async function seedParticipants() {
     const registrationRepository = dataSource.getRepository(Registration);
     const registrationChildRepository = dataSource.getRepository(RegistrationChild);
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
       const firstName = getRandomElement(FIRST_NAMES);
       const lastName = getRandomElement(LAST_NAMES);
       const fullName = `${firstName} ${lastName}`;
@@ -115,8 +131,21 @@ async function seedParticipants() {
       const phoneNumber = getRandomPhoneNumber();
       const churchName = getRandomElement(CHURCH_OPTIONS);
       const ministry = getRandomElement(MINISTRY_OPTIONS);
+      const gender = getRandomElement(GENDER_OPTIONS);
       const specialNotes = getRandomElement(SPECIAL_NOTES_OPTIONS);
-      const status = getRandomElement(STATUS_OPTIONS);
+
+      // Status distribution: lebih banyak Terdaftar dan Pending untuk testing
+      const statusRand = Math.random();
+      let status: RegistrationStatus;
+      if (statusRand < 0.15) {
+        status = RegistrationStatus.BELUM_TERDAFTAR;
+      } else if (statusRand < 0.25) {
+        status = RegistrationStatus.DAFTAR_ULANG;
+      } else if (statusRand < 0.45) {
+        status = RegistrationStatus.PENDING;
+      } else {
+        status = RegistrationStatus.TERDAFTAR;
+      }
 
       const user = userRepository.create({
         email,
@@ -138,6 +167,7 @@ async function seedParticipants() {
         fullName,
         churchName,
         ministry,
+        gender,
         contactEmail: email,
         phoneNumber,
         specialNotes,
@@ -147,13 +177,24 @@ async function seedParticipants() {
       await profileRepository.save(profile);
 
       const hasPaymentProof = status !== RegistrationStatus.BELUM_TERDAFTAR;
-      const childCount = (ministry === 'Single/S2' || ministry === 'Married') && Math.random() > 0.5
-        ? Math.floor(1 + Math.random() * 2)
+      const isDaftarUlang = status === RegistrationStatus.DAFTAR_ULANG;
+
+      // Children: hanya untuk Single/S2 dan Married, 0-3 anak
+      const childCount = (ministry === 'Single/S2' || ministry === 'Married') && Math.random() > 0.4
+        ? Math.floor(Math.random() * 4) // 0, 1, 2, 3
         : 0;
 
       const { baseAmount, uniqueCode, totalAmount } = hasPaymentProof
         ? calcRegistrationAmount(ministry, churchName, childCount)
         : { baseAmount: null, uniqueCode: null, totalAmount: null };
+
+      // Shirt size: hanya untuk Pending dan Terdaftar
+      const shirtSize = (status === RegistrationStatus.PENDING || status === RegistrationStatus.TERDAFTAR)
+        ? getRandomElement(SIZE_OPTIONS)
+        : null;
+
+      // Check-in peserta: hanya untuk sebagian Terdaftar (~40%)
+      const participantCheckedIn = status === RegistrationStatus.TERDAFTAR && Math.random() < 0.4;
 
       const registration = registrationRepository.create({
         userId: savedUser.id,
@@ -162,21 +203,29 @@ async function seedParticipants() {
         baseAmount,
         totalAmount,
         uniqueCode,
+        shirtSize,
+        checkedInAt: participantCheckedIn ? new Date() : null,
+        rejectReason: isDaftarUlang ? getRandomElement(REJECT_REASONS) : null,
       });
       const savedRegistration = await registrationRepository.save(registration);
 
       if (childCount > 0) {
-        const children = Array.from({ length: childCount }, (_, idx) =>
-          registrationChildRepository.create({
+        const children = Array.from({ length: childCount }, (_, idx) => {
+          const childName = `${getRandomElement(CHILD_NAMES)} ${lastName}`;
+          const childAge = 7 + Math.floor(Math.random() * 6);
+          // Beberapa anak check-in jika peserta sudah check-in (~50% chance per child)
+          const childCheckedIn = participantCheckedIn && Math.random() < 0.5;
+          return registrationChildRepository.create({
             registrationId: savedRegistration.id,
-            name: `${getRandomElement(CHILD_NAMES)} ${lastName}`,
-            age: 7 + Math.floor(Math.random() * 6),
-          }),
-        );
+            name: childName,
+            age: childAge,
+            checkedInAt: childCheckedIn ? new Date() : null,
+          });
+        });
         await registrationChildRepository.save(children);
       }
 
-      console.log(`✅ Created participant ${i + 1}: ${fullName} (${email}) - Status: ${status}`);
+      console.log(`✅ Created participant ${i + 1}: ${fullName} (${email}) - Status: ${status}, Church: ${churchName}, Size: ${shirtSize ?? '-'}, Children: ${childCount}`);
     }
 
     console.log('\n✅ Seeding completed successfully!');

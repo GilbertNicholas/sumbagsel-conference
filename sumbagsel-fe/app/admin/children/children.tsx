@@ -89,12 +89,13 @@ export function ChildrenPage() {
     if (!detailChild) return;
     setIsCheckInLoading(true);
     try {
-      const updated = await apiClient.checkInParticipant(detailChild.registrationId);
+      const updated = await apiClient.checkInChild(detailChild.id);
       setParticipantDetail(updated);
       await loadData();
+      const checkedInChild = updated.children?.find((c) => c.id === detailChild.id);
       if (detailChild) {
         setDetailChild((prev) =>
-          prev ? { ...prev, checkedInAt: updated.checkedInAt ?? null } : null
+          prev ? { ...prev, checkedInAt: checkedInChild?.checkedInAt ?? null } : null
         );
       }
     } catch (err) {
@@ -306,9 +307,6 @@ export function ChildrenPage() {
                   <p><span className="font-medium text-gray-700">Asal Gereja:</span> {participantDetail.churchName}</p>
                   <p><span className="font-medium text-gray-700">No. Telp:</span> {participantDetail.phoneNumber || '-'}</p>
                   <p><span className="font-medium text-gray-700">Email:</span> {participantDetail.email}</p>
-                  {participantDetail.checkedInAt && (
-                    <p className="text-green-600 font-medium">✓ Sudah check-in</p>
-                  )}
                 </div>
               ) : (
                 <p className="text-gray-500">Gagal memuat data</p>
@@ -328,16 +326,20 @@ export function ChildrenPage() {
               </button>
               {participantDetail &&
                 participantDetail.status === 'Terdaftar' &&
-                !participantDetail.checkedInAt && (
+                (detailChild.checkedInAt ? (
+                  <span className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 text-gray-600">
+                    Sudah check-in
+                  </span>
+                ) : (
                   <button
                     type="button"
                     onClick={handleCheckIn}
                     disabled={isCheckInLoading}
                     className="rounded-md px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
                   >
-                    {isCheckInLoading ? 'Memproses...' : 'Check In'}
+                    {isCheckInLoading ? 'Memproses...' : 'Check-in Anak'}
                   </button>
-                )}
+                ))}
             </div>
           </div>
         </div>

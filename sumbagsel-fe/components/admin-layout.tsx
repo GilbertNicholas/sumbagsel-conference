@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Data Baju', path: '/admin/shirt-data', paths: ['/admin/shirt-data'], icon: 'M15 4l6 2v5h-3v8a1 1 0 01-1 1h-10a1 1 0 01-1-1v-8h-3v-5l6-2a3 3 0 006 0' },
   { label: 'Data Anak', path: '/admin/children', paths: ['/admin/children'], icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
   ...(FEATURES.arrivalSchedule ? [{ label: 'Arrival Schedules', path: '/admin/arrival-schedules', paths: ['/admin/arrival-schedules'], icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' }] : []),
+  { label: 'Registrasi Peserta', path: '/admin/registrations', paths: ['/admin/registrations'], icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
 const navActive = 'bg-green-600 text-white';

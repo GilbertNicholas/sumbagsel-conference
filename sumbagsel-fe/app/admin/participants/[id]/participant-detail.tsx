@@ -75,11 +75,9 @@ export function ParticipantDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectReasonError, setRejectReasonError] = useState<string | null>(null);
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showPaymentProofModal, setShowPaymentProofModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const [isCheckIn, setIsCheckIn] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -152,22 +150,6 @@ export function ParticipantDetailPage() {
     setShowRejectModal(true);
   };
 
-  const handleCheckIn = async () => {
-    try {
-      setIsCheckIn(true);
-      setError(null);
-      const updated = await apiClient.checkInParticipant(registrationId);
-      setParticipant(updated);
-      setShowCheckInModal(false);
-      setSuccess('Peserta berhasil check-in');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal melakukan check-in');
-    } finally {
-      setIsCheckIn(false);
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Belum terdaftar':
@@ -184,8 +166,6 @@ export function ParticipantDetailPage() {
   };
 
   const isPending = participant?.status === 'Pending';
-  const isTerdaftar = participant?.status === 'Terdaftar';
-  const canCheckIn = isTerdaftar && !participant?.checkedInAt;
   const hasCheckedIn = participant?.checkedInAt;
   const canApproveReject = adminInfo?.role === 'master';
 
@@ -276,16 +256,7 @@ export function ParticipantDetailPage() {
                     </button>
                   </>
                 )}
-                {canCheckIn && (
-                  <button
-                    onClick={() => setShowCheckInModal(true)}
-                    disabled={isCheckIn}
-                    className="px-6 py-3 lg:px-8 lg:py-4 rounded-md text-base lg:text-lg xl:text-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    Check-in Peserta
-                  </button>
-                )}
-                {isTerdaftar && hasCheckedIn && (
+                {participant.status === 'Terdaftar' && hasCheckedIn && (
                   <span className="px-6 py-3 lg:px-8 lg:py-4 rounded-md text-base lg:text-lg xl:text-xl font-medium bg-gray-200 text-gray-600">
                     Sudah check-in
                   </span>
@@ -434,19 +405,19 @@ export function ParticipantDetailPage() {
       <ParticipantDetailModals
         showConfirmModal={showConfirmModal}
         showRejectModal={showRejectModal}
-        showCheckInModal={showCheckInModal}
+        showCheckInModal={false}
         participant={participant}
         isApproving={isApproving}
         isRejecting={isRejecting}
-        isCheckIn={isCheckIn}
+        isCheckIn={false}
         rejectReason={rejectReason}
         rejectReasonError={rejectReasonError}
         onCloseConfirm={() => setShowConfirmModal(false)}
         onCloseReject={() => setShowRejectModal(false)}
-        onCloseCheckIn={() => setShowCheckInModal(false)}
+        onCloseCheckIn={() => {}}
         onApprove={handleApprove}
         onReject={handleReject}
-        onCheckIn={handleCheckIn}
+        onCheckIn={() => {}}
         onRejectReasonChange={(v) => { setRejectReason(v); setRejectReasonError(null); }}
       />
     </div>

@@ -10,6 +10,7 @@ export class ParticipantResponseDto {
   status: string;
   paymentProofUrl: string | null;
   checkedInAt: string | null;
+  shirtSize: string | null;
   createdAt: string;
   updatedAt: string;
 }

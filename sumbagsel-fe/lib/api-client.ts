@@ -538,6 +538,19 @@ class ApiClient {
     });
   }
 
+  async checkInChild(childId: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/children/${childId}/check-in`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+  }
+
   adminLogout(): void {
     localStorage.removeItem('admin_token');
   }
@@ -666,6 +679,7 @@ export interface ParticipantResponse {
   status: string;
   paymentProofUrl: string | null;
   checkedInAt: string | null;
+  shirtSize: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -674,6 +688,7 @@ export interface ParticipantDetailChild {
   id: string;
   name: string;
   age: number;
+  checkedInAt?: string | null;
 }
 
 export interface ParticipantDetailResponse {
