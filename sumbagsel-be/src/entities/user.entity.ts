@@ -26,9 +26,6 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
   email: string | null;
 
-  @Column({ type: 'text', nullable: true, name: 'password_hash' })
-  passwordHash: string | null;
-
   @Column({ type: 'boolean', default: false, name: 'is_email_verified' })
   isEmailVerified: boolean;
 

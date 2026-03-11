@@ -8,14 +8,13 @@ Akun utama dan status autentikasi.
 Columns
 - id uuid PK default UUID()
 - email varchar(255) unique not null
-- password_hash text null
 - is_email_verified boolean not null default false
 - status varchar(20) not null default 'active'
 - created_at datetime not null default CURRENT_TIMESTAMP
 - updated_at datetime not null default CURRENT_TIMESTAMP
 
 Notes
-- password_hash null untuk user yang hanya login lewat Google.
+- Auth menggunakan OTP (WhatsApp/Email), bukan password.
 
 ## Table user_identities
 Purpose

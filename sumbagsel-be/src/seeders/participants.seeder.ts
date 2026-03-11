@@ -7,7 +7,6 @@ import { Registration, RegistrationStatus } from '../entities/registration.entit
 import { RegistrationChild } from '../entities/registration-child.entity';
 import { ArrivalSchedule } from '../entities/arrival-schedule.entity';
 import { Admin } from '../entities/admin.entity';
-import * as bcrypt from 'bcrypt';
 
 const MINISTRY_FEE_TEENS = 150_000;
 const MINISTRY_FEE_SINGLE_MARRIED_BATAM = 150_000;
@@ -149,7 +148,6 @@ async function seedParticipants() {
 
       const user = userRepository.create({
         email,
-        passwordHash: await bcrypt.hash('password123', 10),
         isEmailVerified: true,
         status: UserStatus.ACTIVE,
       });
@@ -229,7 +227,6 @@ async function seedParticipants() {
     }
 
     console.log('\n✅ Seeding completed successfully!');
-    console.log('All participants created with password: password123');
 
     await dataSource.destroy();
   } catch (error) {

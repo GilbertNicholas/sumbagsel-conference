@@ -93,7 +93,6 @@ export class AuthService {
         const normalizedEmail = trimmed.toLowerCase();
         const newUser = this.usersRepository.create({
           email: normalizedEmail,
-          passwordHash: null,
           isEmailVerified: true,
           status: UserStatus.ACTIVE,
         });
@@ -111,7 +110,6 @@ export class AuthService {
         const normalizedPhone = this.normalizePhoneNumber(trimmed);
         const newUser = this.usersRepository.create({
           email: null,
-          passwordHash: null,
           isEmailVerified: false,
           status: UserStatus.ACTIVE,
         });
