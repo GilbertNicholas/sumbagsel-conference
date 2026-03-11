@@ -67,7 +67,7 @@ export function RegistrationsPage() {
     }
 
     return result;
-  }, [registeredOnly, churchFilter, searchQuery]);
+  }, [registeredOnly, churchFilter, checkInFilter, searchQuery]);
 
   if (isLoading) {
     return (
