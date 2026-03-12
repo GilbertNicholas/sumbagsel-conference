@@ -74,7 +74,7 @@ function calcRegistrationAmount(ministry: string, churchName: string, childFees:
   let baseAmount = 0;
   if (ministry === 'Teens/Campus') {
     baseAmount = MINISTRY_FEE_TEENS;
-  } else if (ministry === 'Single/S2/Mentor' || ministry === 'Married') {
+  } else if (ministry === 'Single/S2' || ministry === 'Married') {
     baseAmount = churchName === GKDI_BATAM ? MINISTRY_FEE_SINGLE_MARRIED_BATAM : MINISTRY_FEE_SINGLE_MARRIED_OTHER;
   } else {
     baseAmount = MINISTRY_FEE_SINGLE_MARRIED_OTHER;
