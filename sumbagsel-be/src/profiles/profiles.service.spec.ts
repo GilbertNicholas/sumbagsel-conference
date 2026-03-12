@@ -99,6 +99,7 @@ describe('ProfilesService', () => {
     const createDto: CreateProfileDto = {
       fullName: 'Test User',
       churchName: 'Test Church',
+      age: 25,
     };
 
     it('should create profile successfully', async () => {

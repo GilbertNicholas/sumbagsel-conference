@@ -7,7 +7,6 @@ import { DataSource } from 'typeorm';
 import { User } from '../src/entities/user.entity';
 import { Profile } from '../src/entities/profile.entity';
 import { UserIdentity, Provider } from '../src/entities/user-identity.entity';
-import * as bcrypt from 'bcrypt';
 import { UserStatus } from '../src/entities/user.entity';
 
 describe('ProfilesController (e2e)', () => {
@@ -33,7 +32,6 @@ describe('ProfilesController (e2e)', () => {
 
     const testUser = userRepo.create({
       email: 'profiletest@example.com',
-      passwordHash: await bcrypt.hash('password123', 10),
       isEmailVerified: true,
       status: UserStatus.ACTIVE,
     });

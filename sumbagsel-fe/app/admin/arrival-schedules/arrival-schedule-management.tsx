@@ -128,38 +128,8 @@ export function ArrivalScheduleManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Arrival Schedule Management
-              </h1>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Dashboard
-              </button>
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  apiClient.adminLogout();
-                  router.push('/admin');
-                }}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900"
-              >
-                Keluar
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto p-6 lg:p-8">
+    <>
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
@@ -402,6 +372,6 @@ export function ArrivalScheduleManagementPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

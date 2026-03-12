@@ -33,7 +33,6 @@ async function seed() {
     // Create test user with phone number
     const testUser = userRepository.create({
       email: 'test@example.com', // Optional email for test user
-      passwordHash: null, // No password needed for WA login
       isEmailVerified: false,
       status: UserStatus.ACTIVE,
     });

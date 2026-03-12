@@ -19,6 +19,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: sumbagsel-redis-dev
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     build:
       context: ./sumbagsel-be
@@ -28,15 +39,26 @@ services:
       PORT: 3000
       NODE_ENV: development
       DATABASE_URL: mysql://sumbagsel_dev:sumbagsel_dev@db:3306/sumbagsel_dev
+      OTP_BYPASS_DEV: "false"
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      GKDI_API_URL: ${GKDI_API_URL:-https://ticketapi.gkdi.org/api/v2}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@sumbagsel2026.gkdi.org}
     ports:
       - "3000:3000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./sumbagsel-be:/app
@@ -53,6 +75,7 @@ services:
       PORT: 3001
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_OTP_BYPASS_DEV: ${NEXT_PUBLIC_OTP_BYPASS_DEV:-false}
     ports:
       - "3001:3001"
     volumes:

@@ -14,10 +14,12 @@ export async function seedAdmins(dataSource: DataSource): Promise<void> {
     return;
   }
 
-  // Create default admin
+  // Create default admin (master)
   const admin = adminRepository.create({
     code: 'ADMIN123',
-    name: 'Admin Default',
+    name: 'Admin Master',
+    phoneNumber: '081234567890',
+    role: 'master',
     isActive: true,
   });
 

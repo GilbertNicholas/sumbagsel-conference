@@ -134,18 +134,18 @@ export function ArrivalSchedulePage() {
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 lg:h-12 lg:w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-            <p className="mt-4 text-sm lg:text-base xl:text-lg text-gray-600">Loading...</p>
+            <p className="mt-4 text-sm lg:text-base xl:text-lg text-gray-600">Memuat...</p>
           </div>
         </div>
       ) : (
-      <div className="mx-auto max-w-3xl lg:max-w-4xl">
+      <div className="mx-auto max-w-3xl lg:max-w-4xl pb-12 sm:pb-16 lg:pb-0">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-            Arrival Schedule in Batam
+            Jadwal Kedatangan di Batam
           </h1>
           <p className="text-base lg:text-lg text-gray-600">
-            Please provide your arrival details for proper arrangement
+            Mohon lengkapi detail kedatangan Anda untuk pengaturan yang tepat
           </p>
         </div>
 
@@ -162,10 +162,10 @@ export function ArrivalSchedulePage() {
         )}
 
         <form onSubmit={handleSubmit(handleSave)} className="space-y-6">
-          {/* Mode of Transportation */}
+          {/* Moda Transportasi */}
           <div>
             <label className="block mb-3 text-base lg:text-lg font-medium text-gray-700">
-              Mode of Transportation
+              Moda Transportasi
             </label>
             <div className="flex gap-4">
               <button
@@ -182,10 +182,10 @@ export function ArrivalSchedulePage() {
                     : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
                 } ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                 </svg>
-                <span className="font-medium">By Air</span>
+                <span className="font-medium">Via Udara</span>
               </button>
               <button
                 type="button"
@@ -201,25 +201,25 @@ export function ArrivalSchedulePage() {
                     : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
                 } ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.34-.42-.6-.5L20 10.62V6c0-1.1-.9-2-2-2h-3V1H9v3H6c-1.1 0-2 .9-2 2v4.62l-1.29.42c-.26.08-.48.26-.6.5s-.14.52-.05.78L3.95 19zM6 6h12v3.97L12 8 6 9.97V6z" />
                 </svg>
-                <span className="font-medium">By Sea</span>
+                <span className="font-medium">Via Laut</span>
               </button>
             </div>
             <input type="hidden" {...register('transportationType')} />
           </div>
 
-          {/* Flight Number (for Air) */}
+          {/* Nomor Penerbangan (untuk Udara) */}
           {isAirTransport && (
             <div>
               <label htmlFor="flightNumber" className="block mb-2 text-base lg:text-lg font-medium text-gray-700">
-                Flight Number
+                Nomor Penerbangan
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                   </svg>
                 </div>
                 <input
@@ -235,10 +235,10 @@ export function ArrivalSchedulePage() {
             </div>
           )}
 
-          {/* Airline Name (for Air) or Shipping Line (for Sea) */}
+          {/* Nama Maskapai (untuk Udara) atau Nama Kapal (untuk Laut) */}
           <div>
             <label htmlFor="carrierName" className="block mb-2 text-base lg:text-lg font-medium text-gray-700">
-              {isAirTransport ? 'Airline Name' : 'Shipping Line'}
+              {isAirTransport ? 'Nama Maskapai' : 'Nama Kapal/Pelabuhan'}
             </label>
             <input
               {...register('carrierName')}
@@ -251,10 +251,10 @@ export function ArrivalSchedulePage() {
             />
           </div>
 
-          {/* Arrival Date */}
+          {/* Tanggal Kedatangan */}
           <div>
             <label htmlFor="arrivalDate" className="block mb-2 text-base lg:text-lg font-medium text-gray-700">
-              Arrival Date
+              Tanggal Kedatangan
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -273,10 +273,10 @@ export function ArrivalSchedulePage() {
             </div>
           </div>
 
-          {/* Arrival Time in Batam */}
+          {/* Waktu Kedatangan di Batam */}
           <div>
             <label htmlFor="arrivalTime" className="block mb-2 text-base lg:text-lg font-medium text-gray-700">
-              Arrival Time in Batam
+              Waktu Kedatangan di Batam
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -295,28 +295,28 @@ export function ArrivalSchedulePage() {
             </div>
           </div>
 
-          {/* Arrival Summary */}
+          {/* Ringkasan Kedatangan */}
           {(transportationType || carrierName || flightNumber || arrivalDate || arrivalTime) && (
             <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-6">
-              <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-4">Arrival Summary</h3>
+              <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-4">Ringkasan Kedatangan</h3>
               <div className="space-y-2 text-base lg:text-lg text-gray-700">
                 <p>
-                  Mode: <span className="font-semibold">{transportationType === 'udara' ? 'By Air' : transportationType === 'laut' ? 'By Sea' : '-'}</span>
+                  Moda: <span className="font-semibold">{transportationType === 'udara' ? 'Via Udara' : transportationType === 'laut' ? 'Via Laut' : '-'}</span>
                 </p>
                 {isAirTransport && flightNumber && (
                   <p>
-                    Flight: <span className="font-semibold">{flightNumber}</span>
+                    Penerbangan: <span className="font-semibold">{flightNumber}</span>
                   </p>
                 )}
                 {carrierName && (
                   <p>
-                    {isAirTransport ? 'Airline' : 'Shipping Line'}: <span className="font-semibold">{carrierName}</span>
+                    {isAirTransport ? 'Maskapai' : 'Kapal'}: <span className="font-semibold">{carrierName}</span>
                   </p>
                 )}
                 {arrivalDate && arrivalTime && (
                   <p>
-                    Date & Time: <span className="font-semibold">
-                      {new Date(arrivalDate).toISOString().split('T')[0]} at {(() => {
+                    Tanggal & Waktu: <span className="font-semibold">
+                      {new Date(arrivalDate).toISOString().split('T')[0]} pukul {(() => {
                         const [hours, minutes] = arrivalTime.split(':');
                         const hour24 = parseInt(hours, 10);
                         return `${hour24}:${minutes}`;
@@ -328,7 +328,7 @@ export function ArrivalSchedulePage() {
             </div>
           )}
 
-          {/* Save Button */}
+          {/* Tombol Simpan */}
           <button
             type="submit"
             disabled={isSaving || !isEditMode}
@@ -341,10 +341,10 @@ export function ArrivalSchedulePage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>{isSaving ? 'Saving...' : 'Save Arrival Details'}</span>
+            <span>{isSaving ? 'Menyimpan...' : 'Simpan Jadwal Kedatangan'}</span>
           </button>
 
-          {/* Edit Button (when not in edit mode) */}
+          {/* Tombol Edit (saat tidak dalam mode edit) */}
           {!isEditMode && arrivalSchedule && (
             <button
               type="button"
@@ -354,7 +354,7 @@ export function ArrivalSchedulePage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              <span>Edit Arrival Details</span>
+              <span>Edit Jadwal Kedatangan</span>
             </button>
           )}
         </form>

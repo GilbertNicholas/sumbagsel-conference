@@ -1,4 +1,6 @@
-import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean, IsIn, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import { MINISTRY_OPTIONS, GENDER_OPTIONS } from './create-profile.dto';
 
 export class UpdateProfileDto {
   @IsString()
@@ -10,6 +12,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @MaxLength(150)
   churchName?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(MINISTRY_OPTIONS, { message: 'Ministry must be one of: Teens/Campus, Single/S2, Married' })
+  ministry?: string;
 
   @IsEmail()
   @IsOptional()
@@ -23,7 +30,15 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  photoUrl?: string;
+  @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
+  gender?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(13, { message: 'Usia minimal 13 tahun' })
+  @Max(100, { message: 'Usia maksimal 100 tahun' })
+  age?: number;
 
   @IsString()
   @IsOptional()

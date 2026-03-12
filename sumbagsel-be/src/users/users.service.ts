@@ -20,6 +20,24 @@ export class UsersService {
     });
   }
 
+  async findByContactEmail(email: string): Promise<User | null> {
+    const normalized = email.trim().toLowerCase();
+    const profile = await this.profilesRepository
+      .createQueryBuilder('profile')
+      .leftJoinAndSelect('profile.user', 'user')
+      .where('LOWER(profile.contact_email) = :email', { email: normalized })
+      .getOne();
+    return profile?.user || null;
+  }
+
+  async findByIdentifier(identifier: string): Promise<User | null> {
+    const trimmed = identifier.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return this.findByContactEmail(trimmed);
+    }
+    return this.findByPhoneNumber(trimmed);
+  }
+
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     const profile = await this.profilesRepository.findOne({
       where: { phoneNumber },

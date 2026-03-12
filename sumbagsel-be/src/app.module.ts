@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './entities/user.entity';
@@ -9,12 +10,16 @@ import { Profile } from './entities/profile.entity';
 import { Registration } from './entities/registration.entity';
 import { ArrivalSchedule } from './entities/arrival-schedule.entity';
 import { Admin } from './entities/admin.entity';
+import { OtpVerification } from './entities/otp-verification.entity';
+import { RegistrationChild } from './entities/registration-child.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { ArrivalSchedulesModule } from './arrival-schedules/arrival-schedules.module';
 import { AdminModule } from './admin/admin.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -37,7 +42,7 @@ import { AdminModule } from './admin/admin.module';
         return {
         type: 'mysql',
         url: configService.get<string>('DATABASE_URL'),
-          entities: [User, UserIdentity, Profile, Registration, ArrivalSchedule, Admin],
+          entities: [User, UserIdentity, Profile, Registration, RegistrationChild, ArrivalSchedule, Admin, OtpVerification],
           migrations: ['dist/migrations/*.js'],
           migrationsRun: false,
           // Only enable synchronize in development
@@ -47,12 +52,24 @@ import { AdminModule } from './admin/admin.module';
       },
       inject: [ConfigService],
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    MailModule,
     AuthModule,
     UsersModule,
     ProfilesModule,
     RegistrationsModule,
     ArrivalSchedulesModule,
     AdminModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

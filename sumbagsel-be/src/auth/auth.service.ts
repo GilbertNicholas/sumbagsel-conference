@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,10 +9,13 @@ import { JwtService } from '@nestjs/jwt';
 import { User, UserStatus } from '../entities/user.entity';
 import { Profile } from '../entities/profile.entity';
 import { UsersService } from '../users/users.service';
+import { OtpService } from '../otp/otp.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -19,6 +23,7 @@ export class AuthService {
     private profilesRepository: Repository<Profile>,
     private usersService: UsersService,
     private jwtService: JwtService,
+    private otpService: OtpService,
   ) {}
 
   /**
@@ -42,46 +47,90 @@ export class AuthService {
     return normalized;
   }
 
-  async loginWithPhone(phoneNumber: string): Promise<AuthResponseDto> {
-    // Normalize phone number
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+  /**
+   * Pre-fetch GKDI WhatsApp token so it is cached when user requests OTP.
+   * Best-effort: returns { ready: false } on failure instead of throwing.
+   */
+  async warmWhatsapp(): Promise<{ ready: boolean }> {
+    try {
+      return await this.otpService.warmWhatsapp();
+    } catch (err) {
+      this.logger.warn('Warm WhatsApp failed, token not cached', err);
+      return { ready: false };
+    }
+  }
 
-    // Check if user exists with this phone number
-    let user = await this.usersService.findByPhoneNumber(normalizedPhone);
+  private isEmail(identifier: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+  }
+
+  /**
+   * Request OTP to be sent via WhatsApp or Email.
+   * Rate limited per identifier.
+   */
+  async requestOtp(identifier: string): Promise<{ sent: boolean }> {
+    return this.otpService.create(identifier);
+  }
+
+  /**
+   * Verify OTP and login. Returns JWT on success.
+   */
+  async verifyOtpAndLogin(
+    identifier: string,
+    otp: string,
+  ): Promise<AuthResponseDto> {
+    await this.otpService.verify(identifier, otp);
+    return this.loginByIdentifier(identifier);
+  }
+
+  async loginByIdentifier(identifier: string): Promise<AuthResponseDto> {
+    const trimmed = identifier.trim();
+
+    let user = await this.usersService.findByIdentifier(trimmed);
 
     if (!user) {
-      // User doesn't exist, create new user and profile
-      // Create user with null email
-      const newUser = this.usersRepository.create({
-        email: null,
-        passwordHash: null,
-        isEmailVerified: false,
-        status: UserStatus.ACTIVE,
-      });
-      user = await this.usersRepository.save(newUser);
-
-      // Create profile with phone number
-      // Note: Profile requires fullName and churchName, so we set temporary placeholder values
-      // User will need to complete profile via /profile/setup
-      const newProfile = this.profilesRepository.create({
-        userId: user.id,
-        phoneNumber: normalizedPhone,
-        fullName: 'Belum diisi', // Temporary placeholder, user must complete profile
-        churchName: 'Belum diisi', // Temporary placeholder, user must complete profile
-        isCompleted: false,
-      });
-      await this.profilesRepository.save(newProfile);
+      if (this.isEmail(trimmed)) {
+        const normalizedEmail = trimmed.toLowerCase();
+        const newUser = this.usersRepository.create({
+          email: normalizedEmail,
+          isEmailVerified: true,
+          status: UserStatus.ACTIVE,
+        });
+        user = await this.usersRepository.save(newUser);
+        const newProfile = this.profilesRepository.create({
+          userId: user.id,
+          phoneNumber: null,
+          fullName: 'Belum diisi',
+          churchName: 'Belum diisi',
+          contactEmail: normalizedEmail,
+          isCompleted: false,
+        });
+        await this.profilesRepository.save(newProfile);
+      } else {
+        const normalizedPhone = this.normalizePhoneNumber(trimmed);
+        const newUser = this.usersRepository.create({
+          email: null,
+          isEmailVerified: false,
+          status: UserStatus.ACTIVE,
+        });
+        user = await this.usersRepository.save(newUser);
+        const newProfile = this.profilesRepository.create({
+          userId: user.id,
+          phoneNumber: normalizedPhone,
+          fullName: 'Belum diisi',
+          churchName: 'Belum diisi',
+          contactEmail: null,
+          isCompleted: false,
+        });
+        await this.profilesRepository.save(newProfile);
+      }
     } else {
-      // User exists, check if active
       if (user.status !== UserStatus.ACTIVE) {
         throw new UnauthorizedException('Account is not active');
       }
     }
 
-    // Check profile status
     const profileStatus = await this.usersService.checkProfileStatus(user.id);
-
-    // Generate JWT token
     const accessToken = this.generateToken(user);
 
     return {
@@ -95,6 +144,11 @@ export class AuthService {
       profileExists: profileStatus.profileExists,
       profileCompleted: profileStatus.profileCompleted,
     };
+  }
+
+  /** @deprecated Use loginByIdentifier instead */
+  async loginWithPhone(phoneNumber: string): Promise<AuthResponseDto> {
+    return this.loginByIdentifier(phoneNumber);
   }
 
   async validateUser(userId: string): Promise<User | null> {

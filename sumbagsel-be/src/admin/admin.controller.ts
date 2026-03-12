@@ -1,12 +1,19 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res, ForbiddenException } from '@nestjs/common';
 import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { AdminRequestOtpDto } from './dto/admin-request-otp.dto';
+import { AdminVerifyOtpDto } from './dto/admin-verify-otp.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
+import { AdminRejectDto } from './dto/admin-reject.dto';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
 import { ArrivalScheduleGroupedDto } from './dto/arrival-schedule-response.dto';
+import { ShirtDataFilterDto } from './dto/shirt-data-filter.dto';
+import { ShirtDataResponseDto } from './dto/shirt-data-response.dto';
+import { ChildrenFilterDto } from './dto/children-filter.dto';
+import { ChildrenResponseDto } from './dto/children-response.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { CurrentAdmin } from './decorators/current-admin.decorator';
 import { Admin } from '../entities/admin.entity';
@@ -20,6 +27,28 @@ export class AdminController {
     return this.adminService.login(loginDto);
   }
 
+  @Post('request-otp')
+  async requestOtp(@Body() dto: AdminRequestOtpDto): Promise<{ sent: boolean }> {
+    return this.adminService.requestOtp(dto.identifier);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: AdminVerifyOtpDto): Promise<AdminAuthResponseDto> {
+    return this.adminService.verifyOtpAndLogin(dto.identifier, dto.otp);
+  }
+
+  /**
+   * Bypass OTP - direct login with identifier (phone or email). Only works when OTP_BYPASS_DEV=true.
+   * For development/testing only.
+   */
+  @Post('login-with-phone')
+  async loginWithPhone(@Body() dto: AdminRequestOtpDto): Promise<AdminAuthResponseDto> {
+    if (process.env.OTP_BYPASS_DEV !== 'true') {
+      throw new ForbiddenException('OTP bypass hanya tersedia di mode development');
+    }
+    return this.adminService.loginByIdentifier(dto.identifier);
+  }
+
   @Get('me')
   @UseGuards(AdminAuthGuard)
   async getMe(@CurrentAdmin() admin: Admin) {
@@ -27,6 +56,7 @@ export class AdminController {
       id: admin.id,
       code: admin.code,
       name: admin.name,
+      role: admin.role,
     };
   }
 
@@ -34,6 +64,18 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   async getAllParticipants(): Promise<ParticipantResponseDto[]> {
     return this.adminService.getAllParticipants();
+  }
+
+  @Get('shirt-data')
+  @UseGuards(AdminAuthGuard)
+  async getShirtData(@Query() filter: ShirtDataFilterDto): Promise<ShirtDataResponseDto> {
+    return this.adminService.getShirtData(filter);
+  }
+
+  @Get('children')
+  @UseGuards(AdminAuthGuard)
+  async getChildren(@Query() filter: ChildrenFilterDto): Promise<ChildrenResponseDto> {
+    return this.adminService.getChildren(filter);
   }
 
   @Get('participants/:id')
@@ -44,8 +86,33 @@ export class AdminController {
 
   @Patch('participants/:id/approve')
   @UseGuards(AdminAuthGuard)
-  async approveRegistration(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
-    return this.adminService.approveRegistration(id);
+  async approveRegistration(
+    @Param('id') id: string,
+    @CurrentAdmin() admin: Admin,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.approveRegistration(id, admin);
+  }
+
+  @Patch('participants/:id/reject')
+  @UseGuards(AdminAuthGuard)
+  async rejectRegistration(
+    @Param('id') id: string,
+    @Body() dto: AdminRejectDto,
+    @CurrentAdmin() admin: Admin,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.rejectRegistration(id, dto.reason, admin);
+  }
+
+  @Patch('participants/:id/check-in')
+  @UseGuards(AdminAuthGuard)
+  async checkInParticipant(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.checkInParticipant(id);
+  }
+
+  @Patch('children/:id/check-in')
+  @UseGuards(AdminAuthGuard)
+  async checkInChild(@Param('id') id: string): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.checkInChild(id);
   }
 
   @Get('arrival-schedules')

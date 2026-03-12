@@ -1,0 +1,25 @@
+-- Seed migrations table so TypeORM thinks all migrations are already applied.
+-- Use when DB was created with synchronize or manual setup and migrations table is empty.
+INSERT INTO migrations (timestamp, name) VALUES
+(1700000000000, 'CreateInitialTables1700000000000'),
+(1700000001000, 'CreateRegistrationsAndArrivalSchedules1700000001000'),
+(1700000002000, 'AlterRegistrationsToProfileFK1700000002000'),
+(1700000003000, 'AlterRegistrationsToUserFK1700000003000'),
+(1700000004000, 'AddSpecialNotesToRegistrations1700000004000'),
+(1700000005000, 'MoveSpecialNotesToProfiles1700000005000'),
+(1700000006000, 'AddPhoneNumberToProfiles1700000006000'),
+(1700000007000, 'CreateAdminsTable1700000007000'),
+(1739090000000, 'AddPhoneNumberToUser1739090000000'),
+(1740000000000, 'CreateOtpVerificationsTable1740000000000'),
+(1750000000000, 'AddMinistryToProfiles1750000000000'),
+(1750000001000, 'CreateRegistrationChildrenTable1750000001000'),
+(1750000002000, 'AddPaymentFieldsToRegistrations1750000002000'),
+(1750000003000, 'AddCheckedInAtToRegistrations1750000003000'),
+(1750000004000, 'AddPhoneNumberToAdmins1750000004000'),
+(1760000000000, 'RemovePhotoUrlFromProfiles1760000000000'),
+(1770000000000, 'AddRejectReasonToRegistrations1770000000000'),
+(1780000000000, 'AddEmailToOtpVerifications1780000000000'),
+(1790000000000, 'AddGenderToProfiles1790000000000'),
+(1790000001000, 'AddShirtSizeToRegistrations1790000001000'),
+(1790000002000, 'AddRoleToAdminsAndRecreate1790000002000'),
+(1790000003000, 'AddEmailToAdminsAndSeed1790000003000');

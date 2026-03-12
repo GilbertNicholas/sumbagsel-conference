@@ -3,10 +3,14 @@ export class ParticipantResponseDto {
   userId: string;
   fullName: string;
   churchName: string;
+  ministry: string | null;
+  gender: string | null;
   phoneNumber: string | null;
   email: string;
   status: string;
   paymentProofUrl: string | null;
+  checkedInAt: string | null;
+  shirtSize: string | null;
   createdAt: string;
   updatedAt: string;
 }

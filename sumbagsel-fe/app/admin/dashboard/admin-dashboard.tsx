@@ -3,9 +3,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, ParticipantResponse } from '@/lib/api-client';
+import { MAIN_CHURCH_OPTIONS, CHURCH_FILTER_OTHER, MINISTRY_OPTIONS, GENDER_OPTIONS } from '@/lib/admin-filter-constants';
+import { adminTableTh, adminTableTd, adminTableTdMuted, adminTableEmpty, adminTableWrapper } from '@/lib/admin-table-styles';
 
 type SortOption = 'none' | 'date-desc' | 'status';
 type FilterOption = 'none' | 'Pending' | 'Terdaftar' | 'Belum terdaftar';
+type CheckInFilterOption = 'none' | 'checked-in' | 'not-checked-in';
 
 export function AdminDashboardPage() {
   const router = useRouter();
@@ -14,7 +17,12 @@ export function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('none');
   const [filterBy, setFilterBy] = useState<FilterOption>('none');
+  const [checkInFilter, setCheckInFilter] = useState<CheckInFilterOption>('none');
+  const [ministryFilter, setMinistryFilter] = useState<string>('');
+  const [churchFilter, setChurchFilter] = useState<string>('');
+  const [genderFilter, setGenderFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -38,11 +46,6 @@ export function AdminDashboardPage() {
 
     loadData();
   }, [router]);
-
-  const handleLogout = () => {
-    apiClient.adminLogout();
-    router.push('/admin');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -83,6 +86,32 @@ export function AdminDashboardPage() {
       result = result.filter((p) => p.status === filterBy);
     }
 
+    // Apply ministry filter
+    if (ministryFilter) {
+      result = result.filter((p) => p.ministry === ministryFilter);
+    }
+
+    // Apply church/kota filter
+    if (churchFilter) {
+      if (churchFilter === CHURCH_FILTER_OTHER) {
+        result = result.filter((p) => !MAIN_CHURCH_OPTIONS.some((opt) => opt === (p.churchName || '')));
+      } else {
+        result = result.filter((p) => p.churchName === churchFilter);
+      }
+    }
+
+    // Apply gender filter
+    if (genderFilter) {
+      result = result.filter((p) => p.gender === genderFilter);
+    }
+
+    // Apply check-in filter
+    if (checkInFilter === 'checked-in') {
+      result = result.filter((p) => !!p.checkedInAt);
+    } else if (checkInFilter === 'not-checked-in') {
+      result = result.filter((p) => p.status === 'Terdaftar' && !p.checkedInAt);
+    }
+
     // Apply sort
     if (sortBy === 'date-desc') {
       result.sort((a, b) => {
@@ -105,11 +134,11 @@ export function AdminDashboardPage() {
     }
 
     return result;
-  }, [participants, filterBy, sortBy, searchQuery]);
+  }, [participants, filterBy, checkInFilter, sortBy, searchQuery, ministryFilter, churchFilter, genderFilter]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Memuat data...</p>
@@ -120,7 +149,7 @@ export function AdminDashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
@@ -135,61 +164,39 @@ export function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%]">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Dashboard Admin
-              </h1>
-              <button
-                onClick={() => router.push('/admin/arrival-schedules')}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Arrival Schedules
-              </button>
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm lg:text-base font-medium text-gray-700 hover:text-gray-900"
-              >
-                Keluar
-              </button>
+      <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto relative">
+        {navigatingToId && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
+            <div className="flex flex-col items-center gap-4">
+              <span className="animate-spin inline-block w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full" />
+              <p className="text-gray-700 font-medium">Memuat detail peserta...</p>
             </div>
           </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="max-w-7xl xl:max-w-[95%] 2xl:max-w-[98%] mx-auto px-[10%] py-8">
+        )}
         <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-10 xl:px-8 border-b border-gray-200">
+          <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-8 xl:px-8 border-b border-gray-200">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900">
+                <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-900">
                   Data Peserta Konferensi
                 </h2>
-                <p className="mt-2 text-base lg:text-lg xl:text-xl text-gray-500">
+                <p className="mt-1 text-sm lg:text-base text-gray-500">
                   Total: {filteredAndSortedParticipants.length} dari {participants.length} peserta
                 </p>
               </div>
                 
-                {/* Filter and Sort Controls */}
-                <div className="flex flex-col sm:flex-row gap-3">
+                {/* Filter and Sort Controls - flex-wrap agar tidak tembus di layar medium */}
+                <div className="flex flex-wrap gap-3">
                 {/* Filter Dropdown */}
                 <div className="w-full sm:w-auto">
-                  <label htmlFor="filter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                  <label htmlFor="filter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
                     Filter
                   </label>
                   <select
                     id="filter"
                     value={filterBy}
                     onChange={(e) => setFilterBy(e.target.value as FilterOption)}
-                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
                     style={{
                       fontSize: '16px', // Prevent zoom on iOS
                       WebkitAppearance: 'none',
@@ -203,16 +210,108 @@ export function AdminDashboardPage() {
                   </select>
                 </div>
 
+                {/* Ministry Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="ministryFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                    Ministry
+                  </label>
+                  <select
+                    id="ministryFilter"
+                    value={ministryFilter}
+                    onChange={(e) => setMinistryFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {MINISTRY_OPTIONS.map((m) => (
+                      <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gender Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="genderFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    id="genderFilter"
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g} style={{ fontSize: '16px', padding: '12px' }}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Kota/Gereja Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="churchFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                    Kota / Gereja
+                  </label>
+                  <select
+                    id="churchFilter"
+                    value={churchFilter}
+                    onChange={(e) => setChurchFilter(e.target.value)}
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    {MAIN_CHURCH_OPTIONS.map((c) => (
+                      <option key={c} value={c} style={{ fontSize: '16px', padding: '12px' }}>{c}</option>
+                    ))}
+                    <option value={CHURCH_FILTER_OTHER} style={{ fontSize: '16px', padding: '12px' }}>Lainnya</option>
+                  </select>
+                </div>
+
+                {/* Check-in Filter */}
+                <div className="w-full sm:w-auto">
+                  <label htmlFor="checkInFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                    Check-in
+                  </label>
+                  <select
+                    id="checkInFilter"
+                    value={checkInFilter}
+                    onChange={(e) => setCheckInFilter(e.target.value as CheckInFilterOption)}
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
+                    style={{
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                  >
+                    <option value="none" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
+                    <option value="checked-in" style={{ fontSize: '16px', padding: '12px' }}>Sudah check-in</option>
+                    <option value="not-checked-in" style={{ fontSize: '16px', padding: '12px' }}>Belum check-in</option>
+                  </select>
+                </div>
+
                 {/* Sort Dropdown */}
                 <div className="w-full sm:w-auto">
-                  <label htmlFor="sort" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                  <label htmlFor="sort" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
                     Urutkan
                   </label>
                   <select
                     id="sort"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="block w-full sm:w-auto min-w-[200px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 bg-white appearance-none cursor-pointer"
+                    className="block w-full sm:w-auto min-w-[130px] rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 bg-white appearance-none cursor-pointer"
                     style={{
                       fontSize: '16px', // Prevent zoom on iOS
                       WebkitAppearance: 'none',
@@ -225,11 +324,10 @@ export function AdminDashboardPage() {
                   </select>
                 </div>
                 </div>
-              </div>
-              
+
               {/* Search Bar */}
               <div className="w-full">
-                <label htmlFor="search" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                <label htmlFor="search" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
                   Cari
                 </label>
                 <div className="relative">
@@ -239,7 +337,7 @@ export function AdminDashboardPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari berdasarkan nama atau no. telp..."
-                    className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base lg:text-base px-4 py-3 pl-10"
+                    className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 pl-9"
                     style={{
                       fontSize: '16px', // Prevent zoom on iOS
                     }}
@@ -264,66 +362,62 @@ export function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto w-full">
-            <table className="w-full divide-y divide-gray-200 lg:table-fixed">
+          {/* Table - scroll horizontal di layar kecil */}
+          <div className={adminTableWrapper}>
+            <table className="w-full min-w-[560px] divide-y divide-gray-200 lg:table-fixed lg:min-w-0">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[18%]">
-                    Nama
-                  </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[15%]">
-                    Asal Gereja
-                  </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[12%]">
-                    No. Telp
-                  </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[25%]">
-                    Email
-                  </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[15%]">
-                    Status
-                  </th>
-                  <th className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 text-left text-sm lg:text-base xl:text-lg font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap lg:w-[15%]">
-                    Aksi
-                  </th>
+                  <th className={`${adminTableTh} lg:w-[18%]`}>Nama</th>
+                  <th className={`${adminTableTh} lg:w-[12%]`}>Asal Gereja</th>
+                  <th className={`${adminTableTh} lg:w-[8%]`}>Gender</th>
+                  <th className={`${adminTableTh} lg:w-[12%]`}>No. Telp</th>
+                  <th className={`${adminTableTh} lg:w-[25%]`}>Email</th>
+                  <th className={`${adminTableTh} lg:w-[15%]`}>Status</th>
+                  <th className={`${adminTableTh} lg:w-[15%]`}>Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredAndSortedParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 lg:py-16 text-center text-base lg:text-lg xl:text-xl text-gray-500">
+                    <td colSpan={7} className={adminTableEmpty}>
                       {participants.length === 0 ? 'Tidak ada data peserta' : 'Tidak ada peserta yang sesuai filter'}
                     </td>
                   </tr>
                 ) : (
                   filteredAndSortedParticipants.map((participant) => (
                     <tr key={participant.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-900 overflow-hidden text-ellipsis">
-                        {participant.fullName}
+                      <td className={adminTableTd}>{participant.fullName}</td>
+                      <td className={adminTableTd}>{participant.churchName}</td>
+                      <td className={adminTableTdMuted}>{participant.gender || '-'}</td>
+                      <td className={adminTableTdMuted}>{participant.phoneNumber || '-'}</td>
+                      <td className={adminTableTdMuted}>{participant.email}</td>
+                      <td className={adminTableTd}>
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`font-medium ${getStatusColor(participant.status)}`}>
+                            {getStatusDisplay(participant.status)}
+                          </span>
+                          {participant.status === 'Terdaftar' && participant.checkedInAt && (
+                            <span className="text-green-600 font-medium">✓ Check-in</span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-900 overflow-hidden text-ellipsis">
-                        {participant.churchName}
-                      </td>
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-500 overflow-hidden text-ellipsis">
-                        {participant.phoneNumber || '-'}
-                      </td>
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl text-gray-500 overflow-hidden text-ellipsis">
-                        {participant.email}
-                      </td>
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap overflow-hidden text-ellipsis">
-                        <span className={`text-base lg:text-lg xl:text-xl font-medium ${getStatusColor(participant.status)}`}>
-                          {getStatusDisplay(participant.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 lg:px-5 lg:py-4 xl:px-6 xl:py-5 whitespace-nowrap text-base lg:text-lg xl:text-xl font-medium">
+                      <td className={`${adminTableTd} font-medium`}>
                         <button
                           onClick={() => {
+                            setNavigatingToId(participant.id);
                             router.push(`/admin/participants/${participant.id}`);
                           }}
-                          className="px-3 py-2 lg:px-4 lg:py-2 xl:px-5 xl:py-3 border-2 border-red-600 text-red-600 rounded-md transition-colors font-medium whitespace-nowrap"
+                          disabled={!!navigatingToId}
+                          className="px-2 py-1.5 lg:px-3 lg:py-2 border-2 border-red-600 text-red-600 rounded-md transition-colors font-medium whitespace-nowrap text-sm disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
                         >
-                          Lihat Detail
+                          {navigatingToId === participant.id ? (
+                            <>
+                              <span className="animate-spin inline-block w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full" />
+                              Membuka...
+                            </>
+                          ) : (
+                            'Lihat Detail'
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -334,6 +428,5 @@ export function AdminDashboardPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

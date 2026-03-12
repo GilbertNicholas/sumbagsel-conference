@@ -40,3 +40,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Uploaded files (folder where payment proofs are stored)
+uploads/
+# Jangan abaikan modul source code uploads
+!src/uploads/

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiClient, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
+import { capitalizeWords } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard-layout';
 
 const CHURCH_OPTIONS = [
@@ -16,9 +17,19 @@ const CHURCH_OPTIONS = [
   'GKDI Pekanbaru',
 ] as const;
 
+const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
+const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
+
 const profileFormSchema = z.object({
   fullName: z.string().min(1, 'Nama lengkap harus diisi').max(150, 'Nama lengkap maksimal 150 karakter'),
   churchName: z.string().min(1, 'Pilih asal gereja'),
+  ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
+  gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }).optional().or(z.literal('')),
+  age: z.union([z.string(), z.number()]).refine((val) => {
+    if (val === '' || val === undefined || val === null) return false;
+    const n = typeof val === 'string' ? parseInt(val, 10) : val;
+    return !isNaN(n) && n >= 13 && n <= 100;
+  }, { message: 'Usia wajib diisi, minimal 13 dan maksimal 100 tahun' }),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
@@ -93,6 +104,10 @@ export function ProfileMePage() {
           setValue('churchName', profileData.churchName);
         }
         
+        const ministryVal = profileData.ministry;
+        setValue('ministry', MINISTRY_OPTIONS.includes(ministryVal as typeof MINISTRY_OPTIONS[number]) ? ministryVal as typeof MINISTRY_OPTIONS[number] : MINISTRY_OPTIONS[0]);
+        setValue('gender', profileData.gender && GENDER_OPTIONS.includes(profileData.gender as typeof GENDER_OPTIONS[number]) ? profileData.gender as typeof GENDER_OPTIONS[number] : '');
+        setValue('age', profileData.age != null && profileData.age >= 13 && profileData.age <= 100 ? String(profileData.age) : '');
         setValue('contactEmail', profileData.contactEmail || '');
         setValue('phoneNumber', profileData.phoneNumber || '');
         setValue('specialNotes', profileData.specialNotes || '');
@@ -122,9 +137,16 @@ export function ProfileMePage() {
         : data.churchName;
       
       // Update profile
+      const ageVal = data.age;
+      const ageNum = ageVal === '' || ageVal === undefined || ageVal === null
+        ? undefined
+        : (typeof ageVal === 'string' ? parseInt(ageVal, 10) : ageVal);
       const profileData = {
-        fullName: data.fullName,
+        fullName: capitalizeWords(data.fullName.trim()),
         churchName: finalChurchName,
+        ministry: data.ministry,
+        gender: data.gender || undefined,
+        age: ageNum != null && !isNaN(ageNum) && ageNum >= 13 && ageNum <= 100 ? ageNum : undefined,
         contactEmail: data.contactEmail || undefined,
         phoneNumber: data.phoneNumber || undefined,
         specialNotes: data.specialNotes || undefined,
@@ -213,8 +235,13 @@ export function ProfileMePage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4 mb-6">
-                <p className="text-sm lg:text-base text-red-800">{error}</p>
+              <div className="rounded-lg bg-red-50 border-2 border-red-300 p-4 mb-6">
+                <p className="text-base lg:text-lg font-semibold text-red-800">{error}</p>
+                {(error === 'No. WA sudah terdaftar!' || error === 'Email sudah terdaftar!') && (
+                  <p className="mt-2 text-sm lg:text-base text-red-700">
+                    Silakan gunakan nomor atau email lain.
+                  </p>
+                )}
               </div>
             )}
 
@@ -297,6 +324,92 @@ export function ProfileMePage() {
                   )}
                 </div>
 
+                {/* Ministry */}
+                <div>
+                  <label htmlFor="ministry" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Ministry *
+                  </label>
+                  <div className="relative">
+                    <select
+                      {...register('ministry')}
+                      defaultValue=""
+                      className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 pr-10 lg:pr-12 xl:pr-14 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-base lg:text-base xl:text-lg appearance-none bg-white cursor-pointer ${
+                        !watch('ministry') ? 'text-gray-400' : 'text-gray-900'
+                      }`}
+                      style={{
+                        fontSize: '16px',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                      }}
+                    >
+                      <option value="" disabled style={{ fontSize: '16px', padding: '12px' }}>Pilih pelayanan</option>
+                      {MINISTRY_OPTIONS.map((m) => (
+                        <option key={m} value={m} style={{ fontSize: '16px', padding: '12px' }}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 lg:pr-4 xl:pr-5 pointer-events-none">
+                      <svg className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.ministry && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">
+                      {errors.ministry.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label htmlFor="gender" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Gender
+                  </label>
+                  <div className="relative">
+                    <select
+                      {...register('gender')}
+                      defaultValue=""
+                      className={`block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 pr-10 lg:pr-12 xl:pr-14 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-base lg:text-base xl:text-lg appearance-none bg-white cursor-pointer ${
+                        !watch('gender') ? 'text-gray-400' : 'text-gray-900'
+                      }`}
+                      style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    >
+                      <option value="" style={{ fontSize: '16px', padding: '12px' }}>Pilih gender</option>
+                      {GENDER_OPTIONS.map((g) => (
+                        <option key={g} value={g} style={{ fontSize: '16px', padding: '12px' }}>{g}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 lg:pr-4 xl:pr-5 pointer-events-none">
+                      <svg className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.gender && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.gender.message}</p>
+                  )}
+                </div>
+
+                {/* Usia */}
+                <div>
+                  <label htmlFor="age" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Usia (tahun) *
+                  </label>
+                  <input
+                    {...register('age')}
+                    type="number"
+                    min={13}
+                    max={100}
+                    className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg bg-white"
+                    placeholder="Contoh: 25"
+                  />
+                  {errors.age && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.age.message}</p>
+                  )}
+                </div>
+
                 {/* Email */}
                 <div>
                   <label htmlFor="contactEmail" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
@@ -336,7 +449,7 @@ export function ProfileMePage() {
                 {/* Catatan Khusus */}
                 <div>
                   <label htmlFor="specialNotes" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Catatan Khusus
+                    Catatan Khusus (Alergi/Penyakit/Catatan lainnya)
                   </label>
                   <textarea
                     {...register('specialNotes')}
@@ -384,6 +497,36 @@ export function ProfileMePage() {
                   </p>
                 </div>
 
+                {/* Ministry */}
+                <div>
+                  <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Ministry
+                  </label>
+                  <p className="text-sm lg:text-base xl:text-lg text-gray-900">
+                    {profile?.ministry || '-'}
+                  </p>
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Gender
+                  </label>
+                  <p className="text-sm lg:text-base xl:text-lg text-gray-900">
+                    {profile?.gender || '-'}
+                  </p>
+                </div>
+
+                {/* Usia */}
+                <div>
+                  <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Usia
+                  </label>
+                  <p className="text-sm lg:text-base xl:text-lg text-gray-900">
+                    {profile?.age != null ? `${profile.age} tahun` : '-'}
+                  </p>
+                </div>
+
                 {/* Email */}
                 <div>
                   <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
@@ -407,7 +550,7 @@ export function ProfileMePage() {
                 {/* Catatan Khusus */}
                 <div>
                   <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Catatan Khusus
+                    Catatan Khusus (Alergi/Penyakit/Catatan lainnya)  
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900 whitespace-pre-wrap">
                     {profile?.specialNotes || '-'}

@@ -1,4 +1,7 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, IsEmail } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsEmail, IsIn, IsInt, Min, Max } from 'class-validator';
+
+export const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
+export const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
 
 export class CreateProfileDto {
   @IsString()
@@ -10,6 +13,11 @@ export class CreateProfileDto {
   @IsNotEmpty()
   @MaxLength(150)
   churchName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(MINISTRY_OPTIONS, { message: 'Ministry must be one of: Teens/Campus, Single/S2, Married' })
+  ministry: string;
 
   @IsEmail()
   @IsOptional()
@@ -23,7 +31,13 @@ export class CreateProfileDto {
 
   @IsString()
   @IsOptional()
-  photoUrl?: string;
+  @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
+  gender?: string;
+
+  @IsInt()
+  @Min(13, { message: 'Usia minimal 13 tahun' })
+  @Max(100, { message: 'Usia maksimal 100 tahun' })
+  age: number;
 
   @IsString()
   @IsOptional()

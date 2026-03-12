@@ -23,14 +23,20 @@ export class Profile {
   @Column({ type: 'varchar', length: 150, name: 'church_name' })
   churchName: string;
 
+  @Column({ type: 'varchar', length: 30, nullable: true, name: 'ministry' })
+  ministry: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'gender' })
+  gender: string | null;
+
+  @Column({ type: 'smallint', nullable: true, name: 'age' })
+  age: number | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true, name: 'contact_email' })
   contactEmail: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'phone_number' })
   phoneNumber: string | null;
-
-  @Column({ type: 'text', nullable: true, name: 'photo_url' })
-  photoUrl: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'special_notes' })
   specialNotes: string | null;

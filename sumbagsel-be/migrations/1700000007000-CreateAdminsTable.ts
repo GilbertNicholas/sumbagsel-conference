@@ -8,7 +8,8 @@ export class CreateAdminsTable1700000007000 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'uuid',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
             default: '(UUID())',
           },
