@@ -149,7 +149,10 @@ export function ProfileSetupPage() {
         if (msg.includes('sudah terdaftar')) {
           throw updateError;
         }
-        await apiClient.createProfile(profileData);
+        if (profileData.age == null) {
+          throw new Error('Usia wajib diisi');
+        }
+        await apiClient.createProfile({ ...profileData, age: profileData.age });
       }
 
       window.location.href = '/dashboard';
