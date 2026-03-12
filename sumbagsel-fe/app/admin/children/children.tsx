@@ -239,17 +239,18 @@ export function ChildrenPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className={`${adminTableTh} lg:w-[18%]`}>Nama Anak</th>
-                  <th className={`${adminTableTh} lg:w-[18%]`}>Asal Gereja</th>
-                  <th className={`${adminTableTh} lg:w-[8%]`}>Usia</th>
-                  <th className={`${adminTableTh} lg:w-[18%]`}>Atas Nama</th>
-                  <th className={`${adminTableTh} lg:w-[12%]`}>Check-in</th>
-                  <th className={`${adminTableTh} lg:w-[15%]`}>Aksi</th>
+                  <th className={`${adminTableTh} lg:w-[12%]`}>Asal Gereja</th>
+                  <th className={`${adminTableTh} lg:w-[6%]`}>Usia</th>
+                  <th className={`${adminTableTh} lg:w-[10%]`}>Konsumsi</th>
+                  <th className={`${adminTableTh} lg:w-[14%]`}>Atas Nama</th>
+                  <th className={`${adminTableTh} lg:w-[10%]`}>Check-in</th>
+                  <th className={`${adminTableTh} lg:w-[12%]`}>Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {!data?.rows.length ? (
                   <tr>
-                    <td colSpan={6} className={adminTableEmpty}>Tidak ada data</td>
+                    <td colSpan={7} className={adminTableEmpty}>Tidak ada data</td>
                   </tr>
                 ) : (
                   data.rows.map((row) => (
@@ -257,6 +258,11 @@ export function ChildrenPage() {
                       <td className={adminTableTd}>{row.childName}</td>
                       <td className={adminTableTd}>{row.churchName}</td>
                       <td className={adminTableTd}>{row.age} tahun</td>
+                      <td className={adminTableTd}>
+                        <span className={`font-medium ${(row.needsConsumption ?? true) ? 'text-green-600' : 'text-red-600'}`}>
+                          {(row.needsConsumption ?? true) ? 'Ya' : 'Tidak'}
+                        </span>
+                      </td>
                       <td className={adminTableTd}>{row.parentName}</td>
                       <td className={adminTableTd}>
                         {row.checkedInAt ? (
@@ -295,6 +301,12 @@ export function ChildrenPage() {
             <div className="space-y-2 mb-6">
               <p><span className="font-medium text-gray-700">Nama:</span> {detailChild.childName}</p>
               <p><span className="font-medium text-gray-700">Usia:</span> {detailChild.age} tahun</p>
+              <p>
+                <span className="font-medium text-gray-700">Konsumsi:</span>{' '}
+                <span className={`font-medium ${(detailChild.needsConsumption ?? true) ? 'text-green-600' : 'text-red-600'}`}>
+                  {(detailChild.needsConsumption ?? true) ? 'Ya' : 'Tidak'}
+                </span>
+              </p>
             </div>
 
             <div className="border-t border-gray-200 pt-4 mb-6">

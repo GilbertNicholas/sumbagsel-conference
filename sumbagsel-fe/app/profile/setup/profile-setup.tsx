@@ -26,6 +26,11 @@ const profileSetupSchema = z
     churchName: z.string().min(1, 'Pilih nama gereja'),
     ministry: z.string().refine((val) => val !== '' && MINISTRY_OPTIONS.includes(val as (typeof MINISTRY_OPTIONS)[number]), { message: 'Pilih Ministry' }),
     gender: z.string().refine((val) => val !== '' && GENDER_OPTIONS.includes(val as (typeof GENDER_OPTIONS)[number]), { message: 'Pilih Gender' }),
+    age: z.union([z.string(), z.number()]).refine((val) => {
+      if (val === '' || val === undefined || val === null) return false;
+      const n = typeof val === 'string' ? parseInt(val, 10) : val;
+      return !isNaN(n) && n >= 13 && n <= 100;
+    }, { message: 'Usia wajib diisi, minimal 13 dan maksimal 100 tahun' }),
     customChurchName: z.string().optional(),
     phoneNumber: z
       .string()
@@ -59,9 +64,9 @@ export function ProfileSetupPage() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<ProfileSetupFormData>({
+  } =   useForm<ProfileSetupFormData>({
     resolver: zodResolver(profileSetupSchema),
-    defaultValues: { ministry: '', gender: '' },
+    defaultValues: { ministry: '', gender: '', age: '' },
   });
 
   const churchName = watch('churchName');
@@ -76,9 +81,10 @@ export function ProfileSetupPage() {
         const hasValidChurchName = profileData.churchName && profileData.churchName.trim() !== '' && profileData.churchName !== 'Belum diisi';
         const hasValidMinistry = profileData.ministry && profileData.ministry.trim() !== '';
         const hasValidGender = (profileData as { gender?: string }).gender && (profileData as { gender?: string }).gender!.trim() !== '';
+        const hasValidAge = (profileData as { age?: number | null }).age != null && (profileData as { age?: number | null }).age! >= 13 && (profileData as { age?: number | null }).age! <= 100;
         const hasValidPhone = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
         const hasValidEmail = profileData.contactEmail && profileData.contactEmail.trim() !== '';
-        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender && hasValidPhone && hasValidEmail;
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender && hasValidAge && hasValidPhone && hasValidEmail;
 
         // Tentukan credential login: email jika contactEmail ada & phone kosong, phone jika sebaliknya
         const hasEmail = !!profileData.contactEmail?.trim();
@@ -93,12 +99,15 @@ export function ProfileSetupPage() {
           const isCustomChurch = profileData.churchName && profileData.churchName !== 'Belum diisi' && !CHURCH_OPTIONS.includes(profileData.churchName as (typeof CHURCH_OPTIONS)[number]);
           setValue('churchName', isCustomChurch ? 'Lainnya' : (profileData.churchName && profileData.churchName !== 'Belum diisi' ? profileData.churchName : ''));
           setValue('customChurchName', isCustomChurch ? profileData.churchName : '');
-          const ministry = profileData.ministry && MINISTRY_OPTIONS.includes(profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
-            ? (profileData.ministry as (typeof MINISTRY_OPTIONS)[number])
+          const ministryVal = profileData.ministry;
+          const ministry = ministryVal && MINISTRY_OPTIONS.includes(ministryVal as (typeof MINISTRY_OPTIONS)[number])
+            ? (ministryVal as (typeof MINISTRY_OPTIONS)[number])
             : '';
           setValue('ministry', ministry);
           const profileGender = (profileData as { gender?: string }).gender;
           setValue('gender', profileGender && GENDER_OPTIONS.includes(profileGender as (typeof GENDER_OPTIONS)[number]) ? profileGender as (typeof GENDER_OPTIONS)[number] : '');
+          const profileAge = (profileData as { age?: number | null }).age;
+          setValue('age', profileAge != null && profileAge >= 13 && profileAge <= 100 ? String(profileAge) : '');
           const hasValidPhoneVal = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
           const hasValidEmailVal = profileData.contactEmail && profileData.contactEmail.trim() !== '';
           setValue('contactEmail', hasValidEmailVal ? profileData.contactEmail! : '');
@@ -118,11 +127,16 @@ export function ProfileSetupPage() {
       setError(null);
       setIsLoading(true);
 
+      const ageVal = data.age;
+      const ageNum = ageVal === '' || ageVal === undefined || ageVal === null
+        ? undefined
+        : (typeof ageVal === 'string' ? parseInt(ageVal, 10) : ageVal);
       const profileData = {
         fullName: capitalizeWords(data.fullName.trim()),
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
         gender: data.gender,
+        age: ageNum != null && !isNaN(ageNum) && ageNum >= 13 && ageNum <= 100 ? ageNum : undefined,
         contactEmail: data.contactEmail?.trim() || undefined,
         phoneNumber: data.phoneNumber?.trim() || undefined,
       };
@@ -321,6 +335,22 @@ export function ProfileSetupPage() {
               </div>
               {errors.gender && (
                 <p className="mt-2 text-sm lg:text-base text-red-600">{errors.gender.message}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="age" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                Usia (tahun) *
+              </label>
+              <input
+                {...register('age')}
+                type="number"
+                min={13}
+                max={100}
+                className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
+                placeholder="Contoh: 25"
+              />
+              {errors.age && (
+                <p className="mt-2 text-sm lg:text-base text-red-600">{errors.age.message}</p>
               )}
             </div>
             <div>

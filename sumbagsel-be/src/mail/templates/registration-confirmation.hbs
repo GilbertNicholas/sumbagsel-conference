@@ -19,8 +19,8 @@
     {{/if}}
     {{#each children}}
     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-      <span style="color: #4b5563;">Anak: {{name}} (usia {{age}} tahun)</span>
-      <span style="font-weight: 500;">Rp {{../childFeeFormatted}}</span>
+      <span style="color: #4b5563;">Anak: {{name}} (usia {{age}} tahun){{#unless needsConsumption}} - tanpa konsumsi{{/unless}}</span>
+      <span style="font-weight: 500;">Rp {{#if needsConsumption}}{{../childFeeFormatted}}{{else}}0{{/if}}</span>
     </div>
     {{/each}}
     <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between;">

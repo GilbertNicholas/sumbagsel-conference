@@ -4,6 +4,7 @@ export class ProfileResponseDto {
   churchName: string;
   ministry: string | null;
   gender: string | null;
+  age: number | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   specialNotes: string | null;

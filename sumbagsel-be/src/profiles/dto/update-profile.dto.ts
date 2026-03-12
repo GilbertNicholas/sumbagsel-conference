@@ -1,4 +1,5 @@
-import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean, IsIn } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsEmail, IsBoolean, IsIn, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 import { MINISTRY_OPTIONS, GENDER_OPTIONS } from './create-profile.dto';
 
 export class UpdateProfileDto {
@@ -31,6 +32,13 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
   gender?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(13, { message: 'Usia minimal 13 tahun' })
+  @Max(100, { message: 'Usia maksimal 100 tahun' })
+  age?: number;
 
   @IsString()
   @IsOptional()

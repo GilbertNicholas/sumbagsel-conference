@@ -29,6 +29,9 @@ export class Profile {
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'gender' })
   gender: string | null;
 
+  @Column({ type: 'smallint', nullable: true, name: 'age' })
+  age: number | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true, name: 'contact_email' })
   contactEmail: string | null;
 

@@ -29,6 +29,7 @@ export interface ProfileResponse {
   churchName: string;
   ministry: string | null;
   gender: string | null;
+  age: number | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   photoUrl: string | null;
@@ -41,6 +42,7 @@ export interface CreateProfileDto {
   churchName: string;
   ministry?: string;
   gender?: string;
+  age: number;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -52,6 +54,7 @@ export interface UpdateProfileDto {
   churchName?: string;
   ministry?: string;
   gender?: string;
+  age?: number;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -64,6 +67,7 @@ export interface RegistrationChildResponse {
   id: string;
   name: string;
   age: number;
+  needsConsumption: boolean;
 }
 
 export interface RegistrationResponse {
@@ -294,7 +298,7 @@ class ApiClient {
     });
   }
 
-  async createRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number }[] }): Promise<RegistrationResponse> {
+  async createRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/with-children', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -302,7 +306,7 @@ class ApiClient {
     });
   }
 
-  async updateRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number }[] }): Promise<RegistrationResponse> {
+  async updateRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/me/with-children', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -657,6 +661,7 @@ export interface ChildRow {
   childName: string;
   churchName: string;
   age: number;
+  needsConsumption: boolean;
   parentName: string;
   registrationId: string;
   checkedInAt: string | null;
@@ -688,6 +693,7 @@ export interface ParticipantDetailChild {
   id: string;
   name: string;
   age: number;
+  needsConsumption: boolean;
   checkedInAt?: string | null;
 }
 
@@ -698,6 +704,7 @@ export interface ParticipantDetailResponse {
   churchName: string;
   ministry?: string | null;
   gender?: string | null;
+  age?: number | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;

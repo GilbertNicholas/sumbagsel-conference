@@ -211,6 +211,10 @@ export function RegisterPage() {
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.gender || '-'}</p>
             </div>
             <div>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Usia</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.age != null ? `${profile.age} tahun` : '-'}</p>
+            </div>
+            <div>
               <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Email</label>
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.contactEmail || '-'}</p>
             </div>

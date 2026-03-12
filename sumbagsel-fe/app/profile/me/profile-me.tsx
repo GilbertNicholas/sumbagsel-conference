@@ -25,6 +25,11 @@ const profileFormSchema = z.object({
   churchName: z.string().min(1, 'Pilih asal gereja'),
   ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
   gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }).optional().or(z.literal('')),
+  age: z.union([z.string(), z.number()]).refine((val) => {
+    if (val === '' || val === undefined || val === null) return false;
+    const n = typeof val === 'string' ? parseInt(val, 10) : val;
+    return !isNaN(n) && n >= 13 && n <= 100;
+  }, { message: 'Usia wajib diisi, minimal 13 dan maksimal 100 tahun' }),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
@@ -99,8 +104,10 @@ export function ProfileMePage() {
           setValue('churchName', profileData.churchName);
         }
         
-        setValue('ministry', MINISTRY_OPTIONS.includes(profileData.ministry as typeof MINISTRY_OPTIONS[number]) ? profileData.ministry as typeof MINISTRY_OPTIONS[number] : MINISTRY_OPTIONS[0]);
+        const ministryVal = profileData.ministry;
+        setValue('ministry', MINISTRY_OPTIONS.includes(ministryVal as typeof MINISTRY_OPTIONS[number]) ? ministryVal as typeof MINISTRY_OPTIONS[number] : MINISTRY_OPTIONS[0]);
         setValue('gender', profileData.gender && GENDER_OPTIONS.includes(profileData.gender as typeof GENDER_OPTIONS[number]) ? profileData.gender as typeof GENDER_OPTIONS[number] : '');
+        setValue('age', profileData.age != null && profileData.age >= 13 && profileData.age <= 100 ? String(profileData.age) : '');
         setValue('contactEmail', profileData.contactEmail || '');
         setValue('phoneNumber', profileData.phoneNumber || '');
         setValue('specialNotes', profileData.specialNotes || '');
@@ -130,11 +137,16 @@ export function ProfileMePage() {
         : data.churchName;
       
       // Update profile
+      const ageVal = data.age;
+      const ageNum = ageVal === '' || ageVal === undefined || ageVal === null
+        ? undefined
+        : (typeof ageVal === 'string' ? parseInt(ageVal, 10) : ageVal);
       const profileData = {
         fullName: capitalizeWords(data.fullName.trim()),
         churchName: finalChurchName,
         ministry: data.ministry,
         gender: data.gender || undefined,
+        age: ageNum != null && !isNaN(ageNum) && ageNum >= 13 && ageNum <= 100 ? ageNum : undefined,
         contactEmail: data.contactEmail || undefined,
         phoneNumber: data.phoneNumber || undefined,
         specialNotes: data.specialNotes || undefined,
@@ -380,6 +392,24 @@ export function ProfileMePage() {
                   )}
                 </div>
 
+                {/* Usia */}
+                <div>
+                  <label htmlFor="age" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Usia (tahun) *
+                  </label>
+                  <input
+                    {...register('age')}
+                    type="number"
+                    min={13}
+                    max={100}
+                    className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg bg-white"
+                    placeholder="Contoh: 25"
+                  />
+                  {errors.age && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.age.message}</p>
+                  )}
+                </div>
+
                 {/* Email */}
                 <div>
                   <label htmlFor="contactEmail" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
@@ -484,6 +514,16 @@ export function ProfileMePage() {
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900">
                     {profile?.gender || '-'}
+                  </p>
+                </div>
+
+                {/* Usia */}
+                <div>
+                  <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Usia
+                  </label>
+                  <p className="text-sm lg:text-base xl:text-lg text-gray-900">
+                    {profile?.age != null ? `${profile.age} tahun` : '-'}
                   </p>
                 </div>
 

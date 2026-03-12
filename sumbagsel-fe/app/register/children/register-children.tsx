@@ -13,6 +13,7 @@ interface ChildInput {
   id: string;
   name: string;
   age: number;
+  needsConsumption: boolean | null;
 }
 
 export function RegisterChildrenPage() {
@@ -24,7 +25,7 @@ export function RegisterChildrenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, { name?: string; age?: string }>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, { name?: string; age?: string; needsConsumption?: string }>>({});
 
   const canAddChildren = profile?.ministry === 'Single/S2' || profile?.ministry === 'Married';
 
@@ -53,10 +54,11 @@ export function RegisterChildrenPage() {
                 id: c.id,
                 name: c.name,
                 age: c.age,
+                needsConsumption: c.needsConsumption ?? true,
               })),
             );
           } else {
-            setChildren([{ id: crypto.randomUUID(), name: '', age: 0 }]);
+            setChildren([{ id: crypto.randomUUID(), name: '', age: 0, needsConsumption: null }]);
           }
         }
       } catch (err) {
@@ -75,13 +77,13 @@ export function RegisterChildrenPage() {
   }, [canAddChildren, isLoading, router]);
 
   const addChild = () => {
-    setChildren((prev) => [...prev, { id: crypto.randomUUID(), name: '', age: 0 }]);
+    setChildren((prev) => [...prev, { id: crypto.randomUUID(), name: '', age: 0, needsConsumption: null }]);
   };
 
   // Pastikan minimal 1 slot saat pertama masuk
   useEffect(() => {
     if (!isLoading && canAddChildren && children.length === 0) {
-      setChildren([{ id: crypto.randomUUID(), name: '', age: 0 }]);
+      setChildren([{ id: crypto.randomUUID(), name: '', age: 0, needsConsumption: null }]);
     }
   }, [isLoading, canAddChildren, children.length]);
 
@@ -89,7 +91,7 @@ export function RegisterChildrenPage() {
     setChildren((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const updateChild = (id: string, field: 'name' | 'age', value: string | number) => {
+  const updateChild = (id: string, field: 'name' | 'age' | 'needsConsumption', value: string | number | boolean | null) => {
     setChildren((prev) =>
       prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
     );
@@ -104,18 +106,23 @@ export function RegisterChildrenPage() {
       return;
     }
 
-    const newErrors: Record<string, { name?: string; age?: string }> = {};
+    const newErrors: Record<string, { name?: string; age?: string; needsConsumption?: string }> = {};
     let hasError = false;
 
     children.forEach((child) => {
       const hasName = !!child.name.trim();
       const hasValidAge = child.age >= 7 && child.age <= 12;
+      const hasNeedsConsumption = child.needsConsumption === true || child.needsConsumption === false;
 
+      if (hasName && hasValidAge && !hasNeedsConsumption) {
+        newErrors[child.id] = { ...newErrors[child.id], needsConsumption: 'Pilih perlu konsumsi atau tidak' };
+        hasError = true;
+      }
       if (hasName && !hasValidAge) {
-        newErrors[child.id] = { age: 'Pilih usia anak' };
+        newErrors[child.id] = { ...newErrors[child.id], age: 'Pilih usia anak' };
         hasError = true;
       } else if (!hasName && hasValidAge) {
-        newErrors[child.id] = { name: 'Nama anak harus diisi' };
+        newErrors[child.id] = { ...newErrors[child.id], name: 'Nama anak harus diisi' };
         hasError = true;
       }
     });
@@ -126,8 +133,8 @@ export function RegisterChildrenPage() {
     }
 
     const childrenPayload = children
-      .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12)
-      .map((c) => ({ name: capitalizeWords(c.name.trim()), age: c.age }));
+      .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false))
+      .map((c) => ({ name: capitalizeWords(c.name.trim()), age: c.age, needsConsumption: c.needsConsumption! }));
 
     try {
       setIsSubmitting(true);
@@ -167,7 +174,7 @@ export function RegisterChildrenPage() {
     return null;
   }
 
-  const validChildrenCount = children.filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12).length;
+  const validChildrenCount = children.filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false)).length;
 
   return (
     <DashboardLayout>
@@ -178,7 +185,7 @@ export function RegisterChildrenPage() {
 
         <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
           <p className="text-sm lg:text-base text-amber-800">
-            <strong>Biaya per anak Rp{new Intl.NumberFormat('id-ID').format(CHILD_FEE)} / anak</strong> untuk konsumsi
+            <strong>Biaya konsumsi Rp{new Intl.NumberFormat('id-ID').format(CHILD_FEE)} / anak</strong> jika anak perlu konsumsi
           </p>
           <p className="mt-2 text-sm lg:text-base text-amber-800">
             Anak usia 7-12 Tahun tidak mendapatkan baju Sumbagsel (jika ingin dapat dibeli secara terpisah)
@@ -245,6 +252,36 @@ export function RegisterChildrenPage() {
                 <div className="mt-1 min-h-[1.25rem]">
                   {fieldErrors[child.id]?.age && (
                     <p className="text-sm text-red-600">{fieldErrors[child.id].age}</p>
+                  )}
+                </div>
+              </div>
+              <div className="w-full sm:w-auto flex flex-col sm:self-center">
+                <label className="block mb-1 text-sm font-medium text-gray-700">Perlu konsumsi untuk anak?</label>
+                <div className="flex gap-4 flex-wrap">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`needsConsumption-${child.id}`}
+                      checked={child.needsConsumption === true}
+                      onChange={() => updateChild(child.id, 'needsConsumption', true)}
+                      className="rounded-full border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">Ya</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`needsConsumption-${child.id}`}
+                      checked={child.needsConsumption === false}
+                      onChange={() => updateChild(child.id, 'needsConsumption', false)}
+                      className="rounded-full border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">Tidak</span>
+                  </label>
+                </div>
+                <div className="mt-1 min-h-[1.25rem]">
+                  {fieldErrors[child.id]?.needsConsumption && (
+                    <p className="text-sm text-red-600">{fieldErrors[child.id].needsConsumption}</p>
                   )}
                 </div>
               </div>

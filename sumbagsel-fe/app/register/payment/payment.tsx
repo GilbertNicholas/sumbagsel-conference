@@ -155,9 +155,13 @@ export function PaymentPage() {
     }
   };
 
+  const childFeesTotal = (registration?.children ?? []).reduce(
+    (sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0),
+    0,
+  );
   const ministryFee =
     registration?.baseAmount != null
-      ? registration.baseAmount - (registration.children?.length ?? 0) * CHILD_FEE
+      ? registration.baseAmount - childFeesTotal
       : 0;
 
   const handleUbahDataPendaftaran = async () => {
@@ -253,8 +257,8 @@ export function PaymentPage() {
             </div>
             {registration.children?.map((c) => (
               <div key={c.id} className="flex justify-between text-sm lg:text-base">
-                <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun)</span>
-                <span className="text-gray-900">Rp {formatRupiah(CHILD_FEE)}</span>
+                <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun){!(c.needsConsumption ?? true) && ' - tanpa konsumsi'}</span>
+                <span className="text-gray-900">Rp {formatRupiah((c.needsConsumption ?? true) ? CHILD_FEE : 0)}</span>
               </div>
             ))}
             <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-sm lg:text-base">

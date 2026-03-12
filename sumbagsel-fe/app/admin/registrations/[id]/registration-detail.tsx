@@ -190,6 +190,7 @@ export function RegistrationDetailPage() {
             <DataRow label="Asal Gereja" value={participant.churchName} />
             <DataRow label="Ministry" value={participant.ministry} />
             <DataRow label="Gender" value={participant.gender} />
+            <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
             <DataRow label="Email" value={participant.email} />
             <DataRow label="No. Telp" value={participant.phoneNumber} />
             <DataRow label="Size Baju" value={participant.shirtSize} />
@@ -214,6 +215,12 @@ export function RegistrationDetailPage() {
                   <div>
                     <p className="font-medium text-gray-900 text-base lg:text-lg">{child.name}</p>
                     <p className="text-sm text-gray-500">Usia: {child.age} tahun</p>
+                    <p className="text-sm mt-0.5">
+                      Konsumsi:{' '}
+                      <span className={`font-medium ${(child.needsConsumption ?? true) ? 'text-green-600' : 'text-red-600'}`}>
+                        {(child.needsConsumption ?? true) ? 'Ya' : 'Tidak'}
+                      </span>
+                    </p>
                     {child.checkedInAt && (
                       <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         ✓ Sudah check-in

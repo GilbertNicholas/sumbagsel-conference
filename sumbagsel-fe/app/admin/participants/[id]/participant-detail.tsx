@@ -280,6 +280,7 @@ export function ParticipantDetailPage() {
               <DataRow label="Asal Gereja" value={participant.churchName} />
               <DataRow label="Ministry" value={participant.ministry} />
               <DataRow label="Gender" value={participant.gender} />
+              <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
               <DataRow label="Email" value={participant.email} />
               <DataRow label="No. Telp" value={participant.phoneNumber} />
               <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />
@@ -310,7 +311,7 @@ export function ParticipantDetailPage() {
                       <span className="text-gray-900">
                         Rp {formatRupiah(
                           participant.baseAmount -
-                            ((participant.children?.length ?? 0) * CHILD_FEE)
+                            (participant.children ?? []).reduce((sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0), 0)
                         )}
                       </span>
                     </div>
@@ -320,8 +321,8 @@ export function ParticipantDetailPage() {
                   </div>
                   {(participant.children ?? []).map((c) => (
                     <div key={c.id} className="flex justify-between text-sm lg:text-base">
-                      <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun)</span>
-                      <span className="text-gray-900">Rp {formatRupiah(CHILD_FEE)}</span>
+                      <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun){(c.needsConsumption ?? true) ? '' : ' - tanpa konsumsi'}</span>
+                      <span className="text-gray-900">Rp {formatRupiah((c.needsConsumption ?? true) ? CHILD_FEE : 0)}</span>
                     </div>
                   ))}
                   <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between text-sm lg:text-base">

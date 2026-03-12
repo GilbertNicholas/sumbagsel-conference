@@ -54,15 +54,16 @@ export class ProfilesService {
       throw new NotFoundException('User not found');
     }
 
-    const { fullName, churchName, ministry, contactEmail, phoneNumber, gender, specialNotes } = createProfileDto;
+    const { fullName, churchName, ministry, contactEmail, phoneNumber, gender, age, specialNotes } = createProfileDto;
 
-    // Determine if profile is completed (phone + email wajib)
+    // Determine if profile is completed (phone + email + age wajib)
     const hasValidFullName = fullName && fullName.trim() !== '' && fullName !== 'Belum diisi';
     const hasValidChurchName = churchName && churchName.trim() !== '' && churchName !== 'Belum diisi';
     const hasValidMinistry = ministry && ministry.trim() !== '';
+    const hasValidAge = age != null && age >= 13 && age <= 100;
     const hasValidPhone = phoneNumber && phoneNumber.trim() !== '' && phoneNumber !== 'Belum diisi';
     const hasValidEmail = (contactEmail || user.email) && (contactEmail || user.email)!.trim() !== '';
-    const isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidPhone && hasValidEmail);
+    const isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidAge && hasValidPhone && hasValidEmail);
     const completedAt = isCompleted ? new Date() : null;
 
     // Check if phone/email already registered by another user
@@ -87,6 +88,7 @@ export class ProfilesService {
       churchName,
       ministry: ministry || null,
       gender: gender || null,
+      age: age != null ? age : null,
       contactEmail: contactEmail || user.email,
       phoneNumber: phoneNumber || null,
       specialNotes: specialNotes || null,
@@ -133,6 +135,9 @@ export class ProfilesService {
     if (updateProfileDto.gender !== undefined) {
       profile.gender = updateProfileDto.gender || null;
     }
+    if (updateProfileDto.age !== undefined) {
+      profile.age = updateProfileDto.age ?? null;
+    }
     if (updateProfileDto.contactEmail !== undefined) {
       const existingEmail = (profile.contactEmail || user.email)?.trim().toLowerCase();
       const newEmail = (updateProfileDto.contactEmail || user.email)?.trim().toLowerCase() || null;
@@ -170,7 +175,7 @@ export class ProfilesService {
       profile.specialNotes = updateProfileDto.specialNotes?.trim() || null;
     }
 
-    // Always recalculate isCompleted based on current fullName, churchName, and ministry
+    // Always recalculate isCompleted based on current fullName, churchName, ministry, and age
     const wasCompleted = profile.isCompleted;
     const hasValidFullName = profile.fullName && 
       profile.fullName.trim() !== '' && 
@@ -179,10 +184,11 @@ export class ProfilesService {
       profile.churchName.trim() !== '' && 
       profile.churchName !== 'Belum diisi';
     const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
+    const hasValidAge = profile.age != null && profile.age >= 13 && profile.age <= 100;
     const hasValidPhone = profile.phoneNumber && profile.phoneNumber.trim() !== '' && profile.phoneNumber !== 'Belum diisi';
     const hasValidEmail = (profile.contactEmail || user.email) && (profile.contactEmail || user.email)!.trim() !== '';
     
-    profile.isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidPhone && hasValidEmail);
+    profile.isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidAge && hasValidPhone && hasValidEmail);
     
     if (profile.isCompleted && !wasCompleted) {
       profile.completedAt = new Date();
@@ -254,6 +260,7 @@ export class ProfilesService {
       churchName: profile.churchName,
       ministry: profile.ministry,
       gender: profile.gender,
+      age: profile.age ?? null,
       contactEmail: profile.contactEmail,
       phoneNumber: profile.phoneNumber,
       specialNotes: profile.specialNotes,

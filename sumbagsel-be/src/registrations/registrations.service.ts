@@ -86,8 +86,8 @@ export class RegistrationsService {
       baseAmount = MINISTRY_FEE_SINGLE_MARRIED_OTHER;
     }
 
-    const childCount = dto.children?.length ?? 0;
-    baseAmount += childCount * CHILD_FEE;
+    const childFees = (dto.children ?? []).reduce((sum, c) => sum + (c.needsConsumption ? CHILD_FEE : 0), 0);
+    baseAmount += childFees;
 
     const uniqueCode = String(Math.floor(100 + Math.random() * 900));
     const totalAmount = baseAmount + parseInt(uniqueCode, 10);
@@ -108,6 +108,7 @@ export class RegistrationsService {
           registrationId: savedRegistration.id,
           name: c.name,
           age: c.age,
+          needsConsumption: c.needsConsumption ?? true,
         }),
       );
       await this.registrationChildrenRepository.save(children);
@@ -178,8 +179,8 @@ export class RegistrationsService {
       baseAmount = MINISTRY_FEE_SINGLE_MARRIED_OTHER;
     }
 
-    const childCount = dto.children?.length ?? 0;
-    baseAmount += childCount * CHILD_FEE;
+    const childFees = (dto.children ?? []).reduce((sum, c) => sum + (c.needsConsumption ? CHILD_FEE : 0), 0);
+    baseAmount += childFees;
 
     // Daftar ulang: hapus bukti pembayaran dan generate invoice baru (uniqueCode baru)
     const isDaftarUlang = registration.status === RegistrationStatus.DAFTAR_ULANG;
@@ -206,6 +207,7 @@ export class RegistrationsService {
           registrationId: registration.id,
           name: c.name,
           age: c.age,
+          needsConsumption: c.needsConsumption ?? true,
         }),
       );
       await this.registrationChildrenRepository.save(children);
@@ -319,6 +321,7 @@ export class RegistrationsService {
       id: c.id,
       name: c.name,
       age: c.age,
+      needsConsumption: c.needsConsumption ?? true,
     })) ?? [];
     return {
       id: registration.id,

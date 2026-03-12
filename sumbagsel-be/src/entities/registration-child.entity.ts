@@ -22,6 +22,9 @@ export class RegistrationChild {
   @Column({ type: 'int', name: 'age' })
   age: number;
 
+  @Column({ type: 'boolean', name: 'needs_consumption', default: true })
+  needsConsumption: boolean;
+
   @Column({ type: 'datetime', nullable: true, name: 'checked_in_at' })
   checkedInAt: Date | null;
 

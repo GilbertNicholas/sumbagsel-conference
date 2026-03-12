@@ -70,16 +70,16 @@ const REJECT_REASONS = [
   'Nominal transfer tidak sesuai',
 ];
 
-function calcRegistrationAmount(ministry: string, churchName: string, childCount: number): { baseAmount: number; uniqueCode: string; totalAmount: number } {
+function calcRegistrationAmount(ministry: string, churchName: string, childFees: number): { baseAmount: number; uniqueCode: string; totalAmount: number } {
   let baseAmount = 0;
   if (ministry === 'Teens/Campus') {
     baseAmount = MINISTRY_FEE_TEENS;
-  } else if (ministry === 'Single/S2' || ministry === 'Married') {
+  } else if (ministry === 'Single/S2/Mentor' || ministry === 'Married') {
     baseAmount = churchName === GKDI_BATAM ? MINISTRY_FEE_SINGLE_MARRIED_BATAM : MINISTRY_FEE_SINGLE_MARRIED_OTHER;
   } else {
     baseAmount = MINISTRY_FEE_SINGLE_MARRIED_OTHER;
   }
-  baseAmount += childCount * CHILD_FEE;
+  baseAmount += childFees;
   const uniqueCode = String(Math.floor(100 + Math.random() * 900));
   const totalAmount = baseAmount + parseInt(uniqueCode, 10);
   return { baseAmount, uniqueCode, totalAmount };
@@ -160,12 +160,14 @@ async function seedParticipants() {
       });
       await identityRepository.save(identity);
 
+      const age = Math.floor(13 + Math.random() * 88);
       const profile = profileRepository.create({
         userId: savedUser.id,
         fullName,
         churchName,
         ministry,
         gender,
+        age,
         contactEmail: email,
         phoneNumber,
         specialNotes,
@@ -181,9 +183,11 @@ async function seedParticipants() {
       const childCount = (ministry === 'Single/S2' || ministry === 'Married') && Math.random() > 0.4
         ? Math.floor(Math.random() * 4) // 0, 1, 2, 3
         : 0;
+      const childNeedsConsumption = Array.from({ length: childCount }, () => Math.random() > 0.2);
+      const childFees = childNeedsConsumption.reduce((sum, nc) => sum + (nc ? CHILD_FEE : 0), 0);
 
       const { baseAmount, uniqueCode, totalAmount } = hasPaymentProof
-        ? calcRegistrationAmount(ministry, churchName, childCount)
+        ? calcRegistrationAmount(ministry, churchName, childFees)
         : { baseAmount: null, uniqueCode: null, totalAmount: null };
 
       // Shirt size: hanya untuk Pending dan Terdaftar
@@ -213,10 +217,12 @@ async function seedParticipants() {
           const childAge = 7 + Math.floor(Math.random() * 6);
           // Beberapa anak check-in jika peserta sudah check-in (~50% chance per child)
           const childCheckedIn = participantCheckedIn && Math.random() < 0.5;
+          const needsConsumption = childNeedsConsumption[idx] ?? true;
           return registrationChildRepository.create({
             registrationId: savedRegistration.id,
             name: childName,
             age: childAge,
+            needsConsumption,
             checkedInAt: childCheckedIn ? new Date() : null,
           });
         });

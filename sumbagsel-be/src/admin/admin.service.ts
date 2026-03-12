@@ -243,6 +243,7 @@ export class AdminService implements OnModuleInit {
         id: c.id,
         name: c.name,
         age: c.age,
+        needsConsumption: c.needsConsumption ?? true,
         checkedInAt: c.checkedInAt?.toISOString() ?? null,
       }));
 
@@ -253,6 +254,7 @@ export class AdminService implements OnModuleInit {
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
         gender: profile?.gender || null,
+        age: profile?.age ?? null,
         phoneNumber: profile?.phoneNumber || null,
         email: registration.user?.email || profile?.contactEmail || '-',
         specialNotes: profile?.specialNotes || null,
@@ -288,6 +290,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile.churchName || '-',
       ministry: profile.ministry || null,
       gender: profile.gender || null,
+      age: profile.age ?? null,
       phoneNumber: profile.phoneNumber || null,
       email: user.email || profile?.contactEmail || '-',
       specialNotes: profile.specialNotes || null,
@@ -329,15 +332,15 @@ export class AdminService implements OnModuleInit {
     const recipientEmail = registration.user?.email || registration.user?.profile?.contactEmail;
     if (recipientEmail && recipientEmail.trim() !== '' && recipientEmail !== '-') {
       const profile = registration.user?.profile;
-      const childCount = registration.children?.length ?? 0;
+      const childFees = (registration.children ?? []).reduce((sum, c) => sum + (c.needsConsumption ? CHILD_FEE : 0), 0);
       const ministryFee =
-        (registration.baseAmount != null ? Number(registration.baseAmount) : 0) - childCount * CHILD_FEE;
+        (registration.baseAmount != null ? Number(registration.baseAmount) : 0) - childFees;
       this.mailService
         .sendRegistrationConfirmationEmail(recipientEmail.trim(), {
           fullName: profile?.fullName || '-',
           ministry: profile?.ministry || '-',
           shirtSize: registration.shirtSize ?? null,
-          children: (registration.children || []).map((c) => ({ name: c.name, age: c.age })),
+          children: (registration.children || []).map((c) => ({ name: c.name, age: c.age, needsConsumption: c.needsConsumption ?? true })),
           ministryFee,
           baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : 0,
           uniqueCode: registration.uniqueCode,
@@ -353,6 +356,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      needsConsumption: c.needsConsumption ?? true,
       checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
@@ -363,6 +367,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
+      age: profile?.age ?? null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -407,6 +412,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      needsConsumption: c.needsConsumption ?? true,
       checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
@@ -417,6 +423,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
+      age: profile?.age ?? null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -460,6 +467,7 @@ export class AdminService implements OnModuleInit {
       id: c.id,
       name: c.name,
       age: c.age,
+      needsConsumption: c.needsConsumption ?? true,
       checkedInAt: c.checkedInAt?.toISOString() ?? null,
     }));
 
@@ -470,6 +478,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
+      age: profile?.age ?? null,
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -828,6 +837,7 @@ export class AdminService implements OnModuleInit {
         childName: child.name,
         churchName: profile?.churchName || '-',
         age: child.age,
+        needsConsumption: child.needsConsumption ?? true,
         parentName: profile?.fullName || '-',
         registrationId: child.registrationId,
         checkedInAt: child.checkedInAt?.toISOString() ?? null,

@@ -5,13 +5,14 @@ import {
   ArrayMaxSize,
   IsString,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
   MinLength,
   IsIn,
   IsOptional,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 const SHIRT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const;
 
@@ -24,6 +25,14 @@ class ChildDto {
   @Min(7)
   @Max(12)
   age: number;
+
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  needsConsumption: boolean;
 }
 
 export class CreateRegistrationWithChildrenDto {
@@ -37,5 +46,5 @@ export class CreateRegistrationWithChildrenDto {
   @Type(() => ChildDto)
   @ArrayMinSize(0)
   @ArrayMaxSize(10)
-  children: { name: string; age: number }[];
+  children: { name: string; age: number; needsConsumption: boolean }[];
 }
