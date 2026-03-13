@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,280 +8,104 @@ import { z } from 'zod';
 import Image from 'next/image';
 import { apiClient } from '@/lib/api-client';
 
-const identifierSchema = z
-  .string()
-  .min(1, 'Nomor WhatsApp atau email harus diisi')
-  .refine(
-    (val) =>
-      /^(\+62|0)[0-9]{9,12}$/.test(val.trim()) ||
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
-    'Masukkan nomor WhatsApp (08xx atau +628xx) atau alamat email yang valid',
-  );
-
 const loginFormSchema = z.object({
-  identifier: identifierSchema,
-});
-
-const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(6, 'Kode OTP harus 6 digit')
-    .regex(/^[0-9]{6}$/, 'Kode OTP harus berupa angka'),
+  adminId: z.string().min(1, 'Admin ID harus diisi'),
 });
 
 type LoginFormData = z.infer<typeof loginFormSchema>;
-type OtpFormData = z.infer<typeof otpSchema>;
-
-const RESEND_COOLDOWN_SECONDS = 240; // 4 menit, sama seperti peserta
-
-// Bypass OTP untuk development. Set NEXT_PUBLIC_OTP_BYPASS_DEV=true
-const OTP_BYPASS_DEV = process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true';
 
 export function AdminLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('sessionExpired') === '1';
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [identifier, setIdentifier] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
   });
 
-  const otpForm = useForm<OtpFormData>({
-    resolver: zodResolver(otpSchema),
-  });
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
-
-  const onRequestOtp = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
       setIsLoading(true);
-
-      if (OTP_BYPASS_DEV) {
-        await apiClient.adminLoginByIdentifier(data.identifier);
-        router.push('/admin/dashboard');
-        return;
-      }
-
-      await apiClient.adminRequestOtp(data.identifier);
-      setIdentifier(data.identifier);
-      setShowOtpModal(true);
-      setResendCooldown(RESEND_COOLDOWN_SECONDS);
-      otpForm.reset();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Gagal mengirim kode verifikasi';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    try {
-      setError(null);
-      setIsLoading(true);
-      await apiClient.adminRequestOtp(identifier);
-      setResendCooldown(RESEND_COOLDOWN_SECONDS);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Gagal mengirim ulang kode';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onVerifyOtp = async (data: OtpFormData) => {
-    try {
-      setError(null);
-      setIsLoading(true);
-      await apiClient.adminVerifyOtp(identifier, data.otp);
+      await apiClient.adminLogin(data.adminId.trim());
       router.push('/admin/dashboard');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Verifikasi gagal';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Login gagal');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCloseOtpModal = () => {
-    setShowOtpModal(false);
-    setError(null);
-    setResendCooldown(0);
-    otpForm.reset();
   };
 
   return (
     <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col bg-gray-50">
-    <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-8 lg:space-y-10">
-        <div>
-          <div className="flex justify-center mb-6 lg:mb-8">
-            <Image
-              src="/images/sumbagsel-logo.png"
-              alt="SumBagSel Conference Logo"
-              width={1800}
-              height={120}
-              className="h-auto w-auto max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px] drop-shadow-lg"
-              priority
-            />
-          </div>
-          <h2 className="mt-6 lg:mt-8 text-center text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
-            Login Admin
-          </h2>
-          <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
-            {OTP_BYPASS_DEV
-              ? 'Mode dev: Masukkan nomor WA atau email admin untuk langsung masuk (OTP bypass)'
-              : 'Masukkan nomor WA atau email yang terdaftar sebagai admin untuk menerima kode verifikasi'}
-          </p>
-        </div>
-
-        <form
-          className="mt-8 space-y-6"
-          onSubmit={loginForm.handleSubmit(onRequestOtp)}
-        >
-          {sessionExpired && (
-            <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
-              <p className="text-sm lg:text-base text-amber-800">Session admin telah berakhir. Silakan login admin kembali.</p>
-            </div>
-          )}
-          {error && !showOtpModal && (
-            <div className="rounded-md bg-red-50 p-4 lg:p-5">
-              <p className="text-sm lg:text-base text-red-800">{error}</p>
-            </div>
-          )}
-          <div className="space-y-4 lg:space-y-5 rounded-md shadow-sm">
-            <div>
-              <label htmlFor="identifier" className="sr-only">
-                Nomor WhatsApp atau Email
-              </label>
-              <input
-                {...loginForm.register('identifier')}
-                type="text"
-                autoComplete="username"
-                className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 text-sm lg:text-base xl:text-lg"
-                placeholder="Nomor WhatsApp (08xx atau +628xx) atau Email"
-              />
-              {loginForm.formState.errors.identifier && (
-                <p className="mt-1 text-sm lg:text-base text-red-600">
-                  {loginForm.formState.errors.identifier.message}
-                </p>
-              )}
-            </div>
-          </div>
+      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-8 lg:space-y-10">
           <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (OTP_BYPASS_DEV ? 'Memproses...' : 'Mengirim...') : (OTP_BYPASS_DEV ? 'Masuk' : 'Kirim Kode Verifikasi')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-      {/* OTP Modal */}
-      {showOtpModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          aria-modal="true"
-          role="dialog"
-          aria-labelledby="otp-modal-title"
-        >
-          <div
-            className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3
-              id="otp-modal-title"
-              className="text-lg font-semibold text-gray-900"
-            >
-              Masukkan Kode Verifikasi
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Kode 6 digit telah dikirim ke {identifier}
+            <div className="flex justify-center mb-6 lg:mb-8">
+              <Image
+                src="/images/sumbagsel-logo.png"
+                alt="SumBagSel Conference Logo"
+                width={1800}
+                height={120}
+                className="h-auto w-auto max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px] drop-shadow-lg"
+                priority
+              />
+            </div>
+            <h2 className="mt-6 lg:mt-8 text-center text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
+              Login Admin
+            </h2>
+            <p className="mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
+              Masukkan Admin ID untuk masuk
             </p>
+          </div>
 
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={otpForm.handleSubmit(onVerifyOtp)}
-            >
-              {error && (
-                <div className="rounded-md bg-red-50 p-3">
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
-              )}
+          <form
+            className="mt-8 space-y-6"
+            onSubmit={loginForm.handleSubmit(onSubmit)}
+          >
+            {sessionExpired && (
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
+                <p className="text-sm lg:text-base text-amber-800">Session admin telah berakhir. Silakan login admin kembali.</p>
+              </div>
+            )}
+            {error && (
+              <div className="rounded-md bg-red-50 p-4 lg:p-5">
+                <p className="text-sm lg:text-base text-red-800">{error}</p>
+              </div>
+            )}
+            <div className="space-y-4 lg:space-y-5 rounded-md shadow-sm">
               <div>
-                <label htmlFor="otp" className="sr-only">
-                  Kode OTP
+                <label htmlFor="adminId" className="sr-only">
+                  Admin ID
                 </label>
                 <input
-                  {...otpForm.register('otp')}
+                  {...loginForm.register('adminId')}
                   type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="Masukkan 6 digit kode"
-                  className="relative block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 text-lg text-center tracking-[0.5em]"
-                  autoFocus
+                  autoComplete="username"
+                  className="relative block w-full rounded-md border border-gray-300 px-3 py-2 lg:px-4 lg:py-3 xl:px-5 xl:py-4 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 text-sm lg:text-base xl:text-lg"
+                  placeholder="Admin ID"
                 />
-                {otpForm.formState.errors.otp && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {otpForm.formState.errors.otp.message}
+                {loginForm.formState.errors.adminId && (
+                  <p className="mt-1 text-sm lg:text-base text-red-600">
+                    {loginForm.formState.errors.adminId.message}
                   </p>
                 )}
               </div>
-              <div className="space-y-3">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full rounded-md bg-green-600 px-4 py-3 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Memverifikasi...' : 'Verifikasi & Masuk'}
-                </button>
-                <div className="flex flex-col items-center gap-2 text-sm">
-                  {resendCooldown > 0 ? (
-                    <p className="text-red-600 font-medium">
-                      Kirim ulang dalam {resendCooldown} detik
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={onResendOtp}
-                      disabled={isLoading}
-                      className="text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
-                    >
-                      Kirim ulang kode
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCloseOtpModal}
-                    className="text-base text-gray-500 hover:text-gray-700"
-                  >
-                    Ubah nomor
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative flex w-full justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 lg:px-6 lg:py-3 xl:px-8 xl:py-4 text-sm lg:text-base xl:text-lg font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Memproses...' : 'Masuk'}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }

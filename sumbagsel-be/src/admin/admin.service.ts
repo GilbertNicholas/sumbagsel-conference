@@ -17,7 +17,6 @@ import { Profile } from '../entities/profile.entity';
 import { ArrivalSchedule } from '../entities/arrival-schedule.entity';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
-import { OtpService } from '../otp/otp.service';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
@@ -28,6 +27,7 @@ import { ShirtDataFilterDto } from './dto/shirt-data-filter.dto';
 import { ShirtDataResponseDto, ShirtDataRowDto } from './dto/shirt-data-response.dto';
 import { ChildrenFilterDto } from './dto/children-filter.dto';
 import { ChildrenResponseDto, ChildRowDto } from './dto/children-response.dto';
+import { AdminUpdateParticipantContactDto } from './dto/admin-update-participant-contact.dto';
 import { RegistrationChild } from '../entities/registration-child.entity';
 
 const CHILD_FEE = 75_000;
@@ -43,7 +43,6 @@ export class AdminService implements OnModuleInit {
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
-    private otpService: OtpService,
     private mailService: MailService,
     @InjectRepository(Registration)
     private registrationsRepository: Repository<Registration>,
@@ -62,97 +61,6 @@ export class AdminService implements OnModuleInit {
     // No runtime seeding - admins are seeded via migration
   }
 
-  private normalizePhoneNumber(phoneNumber: string): string {
-    let normalized = phoneNumber.replace(/[\s-]/g, '');
-    if (normalized.startsWith('+62')) {
-      normalized = '0' + normalized.substring(3);
-    }
-    if (!normalized.startsWith('0')) {
-      normalized = '0' + normalized;
-    }
-    return normalized;
-  }
-
-  private isEmail(identifier: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
-  }
-
-  private async findAdminByIdentifier(identifier: string): Promise<Admin | null> {
-    const trimmed = identifier.trim();
-    if (this.isEmail(trimmed)) {
-      return this.adminRepository.findOne({
-        where: { email: trimmed.toLowerCase() },
-      });
-    }
-    const normalizedPhone = this.normalizePhoneNumber(trimmed);
-    return this.adminRepository.findOne({
-      where: { phoneNumber: normalizedPhone },
-    });
-  }
-
-  async requestOtp(identifier: string): Promise<{ sent: boolean }> {
-    const admin = await this.findAdminByIdentifier(identifier);
-
-    if (!admin) {
-      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
-    }
-
-    if (!admin.isActive) {
-      throw new UnauthorizedException('Akun admin tidak aktif');
-    }
-
-    return this.otpService.create(identifier);
-  }
-
-  /** Bypass OTP - direct login with identifier. Only when OTP_BYPASS_DEV=true. */
-  async loginByIdentifier(identifier: string): Promise<AdminAuthResponseDto> {
-    const admin = await this.findAdminByIdentifier(identifier);
-
-    if (!admin) {
-      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
-    }
-
-    if (!admin.isActive) {
-      throw new UnauthorizedException('Akun admin tidak aktif');
-    }
-
-    const accessToken = this.generateToken(admin);
-    return {
-      accessToken,
-      admin: {
-        id: admin.id,
-        code: admin.code,
-        name: admin.name,
-        role: admin.role,
-      },
-    };
-  }
-
-  async verifyOtpAndLogin(identifier: string, otp: string): Promise<AdminAuthResponseDto> {
-    await this.otpService.verify(identifier, otp);
-
-    const admin = await this.findAdminByIdentifier(identifier);
-
-    if (!admin) {
-      throw new UnauthorizedException('Nomor WhatsApp atau email tidak terdaftar sebagai admin');
-    }
-
-    if (!admin.isActive) {
-      throw new UnauthorizedException('Akun admin tidak aktif');
-    }
-
-    const accessToken = this.generateToken(admin);
-    return {
-      accessToken,
-      admin: {
-        id: admin.id,
-        code: admin.code,
-        name: admin.name,
-        role: admin.role,
-      },
-    };
-  }
-
   async login(loginDto: AdminLoginDto): Promise<AdminAuthResponseDto> {
     const { code } = loginDto;
 
@@ -162,12 +70,11 @@ export class AdminService implements OnModuleInit {
     });
 
     if (!admin) {
-      throw new UnauthorizedException('Invalid admin code');
+      throw new UnauthorizedException('Admin ID tidak terdaftar');
     }
 
-    // Check if admin is active
     if (!admin.isActive) {
-      throw new UnauthorizedException('Admin account is not active');
+      throw new UnauthorizedException('Akun admin tidak aktif');
     }
 
     // Generate JWT token
@@ -439,6 +346,73 @@ export class AdminService implements OnModuleInit {
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
     };
+  }
+
+  async updateParticipantContact(
+    registrationId: string,
+    dto: AdminUpdateParticipantContactDto,
+  ): Promise<ParticipantDetailResponseDto> {
+    if (dto.email === undefined && dto.phoneNumber === undefined) {
+      throw new BadRequestException('Minimal satu field (email atau phoneNumber) harus diisi');
+    }
+
+    const registration = await this.registrationsRepository.findOne({
+      where: { id: registrationId },
+      relations: ['user', 'user.profile', 'children'],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    const user = registration.user;
+    const profile = user?.profile;
+
+    if (!user || !profile) {
+      throw new NotFoundException('User atau profil tidak ditemukan');
+    }
+
+    if (dto.email !== undefined) {
+      const trimmed = dto.email.trim();
+      user.email = trimmed || null;
+      await this.usersRepository.save(user);
+      profile.contactEmail = trimmed || null;
+      await this.profilesRepository.save(profile);
+    }
+
+    if (dto.phoneNumber !== undefined) {
+      profile.phoneNumber = dto.phoneNumber.trim() || null;
+      await this.profilesRepository.save(profile);
+    }
+
+    return this.getParticipantById(registrationId);
+  }
+
+  async setReregister(registrationId: string, admin: Admin): Promise<ParticipantDetailResponseDto> {
+    if (admin.role !== 'master') {
+      throw new ForbiddenException('Hanya Admin Master yang dapat mengubah status menjadi Daftar ulang');
+    }
+
+    const registration = await this.registrationsRepository.findOne({
+      where: { id: registrationId },
+      relations: ['user', 'user.profile', 'children'],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (registration.status !== RegistrationStatus.TERDAFTAR) {
+      throw new BadRequestException('Hanya pendaftaran dengan status Terdaftar yang dapat diubah menjadi Daftar ulang');
+    }
+
+    registration.status = RegistrationStatus.DAFTAR_ULANG;
+    registration.paymentProofUrl = null;
+    registration.rejectReason = null;
+    registration.checkedInAt = null;
+    await this.registrationsRepository.save(registration);
+
+    return this.getParticipantById(registrationId);
   }
 
   async checkInParticipant(registrationId: string): Promise<ParticipantDetailResponseDto> {

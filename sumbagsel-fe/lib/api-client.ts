@@ -387,43 +387,11 @@ class ApiClient {
     });
   }
 
-  // Admin endpoints
-  async adminLogin(code: string): Promise<AdminAuthResponse> {
+  // Admin endpoints - login dengan Admin ID (code) saja
+  async adminLogin(adminId: string): Promise<AdminAuthResponse> {
     const response = await this.request<AdminAuthResponse>('/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-    if (response.accessToken) {
-      localStorage.setItem('admin_token', response.accessToken);
-    }
-    return response;
-  }
-
-  async adminRequestOtp(identifier: string): Promise<{ sent: boolean }> {
-    return this.request<{ sent: boolean }>('/admin/request-otp', {
-      method: 'POST',
-      body: JSON.stringify({ identifier }),
-      _skipUserToken: true,
-    });
-  }
-
-  /** Bypass OTP - direct login. Only when NEXT_PUBLIC_OTP_BYPASS_DEV=true */
-  async adminLoginByIdentifier(identifier: string): Promise<AdminAuthResponse> {
-    const response = await this.request<AdminAuthResponse>('/admin/login-with-phone', {
-      method: 'POST',
-      body: JSON.stringify({ identifier }),
-      _skipUserToken: true,
-    });
-    if (response.accessToken) {
-      localStorage.setItem('admin_token', response.accessToken);
-    }
-    return response;
-  }
-
-  async adminVerifyOtp(identifier: string, otp: string): Promise<AdminAuthResponse> {
-    const response = await this.request<AdminAuthResponse>('/admin/verify-otp', {
-      method: 'POST',
-      body: JSON.stringify({ identifier, otp }),
+      body: JSON.stringify({ code: adminId.trim() }),
       _skipUserToken: true,
     });
     if (response.accessToken) {
@@ -526,6 +494,36 @@ class ApiClient {
         'Authorization': `Bearer ${adminToken}`,
       },
       body: JSON.stringify({ reason: reason.trim() }),
+    });
+  }
+
+  async updateParticipantContact(
+    id: string,
+    data: { email?: string; phoneNumber?: string },
+  ): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/contact`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async setReregister(id: string): Promise<ParticipantDetailResponse> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    return this.request<ParticipantDetailResponse>(`/admin/participants/${id}/set-reregister`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
     });
   }
 

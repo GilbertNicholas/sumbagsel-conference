@@ -9,12 +9,33 @@ import { ParticipantDetailModals } from './participant-detail-modals';
 
 const CHILD_FEE = 75_000;
 
-function DataRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DataRow({
+  label,
+  value,
+  onEdit,
+}: {
+  label: string;
+  value: React.ReactNode;
+  onEdit?: () => void;
+}) {
   return (
-    <div className="flex gap-2 py-3 border-b border-gray-100 last:border-0">
+    <div className="flex gap-2 py-3 border-b border-gray-100 last:border-0 items-center">
       <span className="font-medium text-gray-700 min-w-[220px] shrink-0 text-base lg:text-lg">{label}</span>
       <span className="text-gray-500 shrink-0">:</span>
-      <span className="text-gray-900 text-base lg:text-lg">{value ?? '-'}</span>
+      <span className="text-gray-900 text-base lg:text-lg flex-1">{value ?? '-'}</span>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          title="Edit"
+          aria-label="Edit"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -76,6 +97,11 @@ export function ParticipantDetailPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectReasonError, setRejectReasonError] = useState<string | null>(null);
   const [showPaymentProofModal, setShowPaymentProofModal] = useState(false);
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [isSavingContact, setIsSavingContact] = useState(false);
+  const [isSettingReregister, setIsSettingReregister] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -148,6 +174,53 @@ export function ParticipantDetailPage() {
     setRejectReason('');
     setRejectReasonError(null);
     setShowRejectModal(true);
+  };
+
+  const openEditContactModal = () => {
+    setEditEmail(participant?.email ?? '');
+    setEditPhone(participant?.phoneNumber ?? '');
+    setShowEditContactModal(true);
+  };
+
+  const handleSaveContact = async () => {
+    const payload: { email?: string; phoneNumber?: string } = {};
+    payload.email = editEmail.trim() || undefined;
+    payload.phoneNumber = editPhone.trim() || undefined;
+    if (!payload.email && !payload.phoneNumber) {
+      setError('Minimal satu field (email atau nomor telepon) harus diisi');
+      return;
+    }
+    try {
+      setIsSavingContact(true);
+      setError(null);
+      const updated = await apiClient.updateParticipantContact(registrationId, payload);
+      setParticipant(updated);
+      setShowEditContactModal(false);
+      setSuccess('Kontak berhasil diperbarui');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memperbarui kontak');
+    } finally {
+      setIsSavingContact(false);
+    }
+  };
+
+  const handleSetReregister = async () => {
+    if (!confirm('Yakin ingin mengubah status menjadi Daftar ulang? Peserta harus mendaftar ulang dan mengunggah bukti pembayaran baru.')) {
+      return;
+    }
+    try {
+      setIsSettingReregister(true);
+      setError(null);
+      const updated = await apiClient.setReregister(registrationId);
+      setParticipant(updated);
+      setSuccess('Status berhasil diubah menjadi Daftar ulang');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal mengubah status');
+    } finally {
+      setIsSettingReregister(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -266,7 +339,16 @@ export function ParticipantDetailPage() {
                     </button>
                   </>
                 )}
-                {participant.status === 'Terdaftar' && hasCheckedIn && (
+                {participant.status === 'Terdaftar' && canApproveReject && (
+                  <button
+                    onClick={handleSetReregister}
+                    disabled={isSettingReregister}
+                    className="px-6 py-3 lg:px-8 lg:py-4 rounded-md text-base lg:text-lg xl:text-xl font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
+                  >
+                    {isSettingReregister ? 'Memproses...' : 'Ubah ke Daftar ulang'}
+                  </button>
+                )}
+                {participant.status === 'Terdaftar' && hasCheckedIn && !canApproveReject && (
                   <span className="px-6 py-3 lg:px-8 lg:py-4 rounded-md text-base lg:text-lg xl:text-xl font-medium bg-gray-200 text-gray-600">
                     Sudah check-in
                   </span>
@@ -281,8 +363,8 @@ export function ParticipantDetailPage() {
               <DataRow label="Ministry" value={participant.ministry} />
               <DataRow label="Gender" value={participant.gender} />
               <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
-              <DataRow label="Email" value={participant.email} />
-              <DataRow label="No. Telp" value={participant.phoneNumber} />
+              <DataRow label="Email" value={participant.email} onEdit={() => openEditContactModal()} />
+              <DataRow label="No. Telp" value={participant.phoneNumber} onEdit={() => openEditContactModal()} />
               <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />
             </div>
             {participant.status === 'Daftar ulang' && participant.rejectReason && (
@@ -412,6 +494,65 @@ export function ParticipantDetailPage() {
             </div>
           </>
         )}
+
+      {/* Modal Edit Kontak */}
+      {showEditContactModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          aria-modal="true"
+          role="dialog"
+        >
+          <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Kontak</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:ring-green-500 text-base"
+                  placeholder="email@contoh.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  No. Telp / WhatsApp
+                </label>
+                <input
+                  id="edit-phone"
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:ring-green-500 text-base"
+                  placeholder="08xxxxxxxxxx"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowEditContactModal(false)}
+                className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveContact}
+                disabled={isSavingContact}
+                className="rounded-md px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+              >
+                {isSavingContact ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ParticipantDetailModals
         showConfirmModal={showConfirmModal}
