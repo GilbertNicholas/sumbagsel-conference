@@ -272,6 +272,13 @@ export class ProfilesService {
     return age >= 13 && age <= 100;
   }
 
+  /** MySQL DATE returns string; handle both Date and string */
+  private toDateOfBirthString(val: Date | string | null | undefined): string | null {
+    if (val == null) return null;
+    if (typeof val === 'string') return /^\d{4}-\d{2}-\d{2}/.test(val) ? val.slice(0, 10) : null;
+    return val.toISOString().slice(0, 10);
+  }
+
   private toResponseDto(profile: Profile): ProfileResponseDto {
     return {
       id: profile.id,
@@ -279,7 +286,7 @@ export class ProfilesService {
       churchName: profile.churchName,
       ministry: profile.ministry,
       gender: profile.gender,
-      dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+      dateOfBirth: this.toDateOfBirthString(profile.dateOfBirth),
       contactEmail: profile.contactEmail,
       phoneNumber: profile.phoneNumber,
       specialNotes: profile.specialNotes,

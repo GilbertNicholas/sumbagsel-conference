@@ -46,6 +46,13 @@ const REG_ID_PREFIX: Record<string, string> = {
 };
 const REG_ID_OTHER_PREFIX = 'EX';
 
+/** MySQL DATE returns string; handle both Date and string */
+function toDateOfBirthString(val: Date | string | null | undefined): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') return /^\d{4}-\d{2}-\d{2}/.test(val) ? val.slice(0, 10) : null;
+  return val.toISOString().slice(0, 10);
+}
+
 @Injectable()
 export class AdminService implements OnModuleInit {
   private readonly logger = new Logger(AdminService.name);
@@ -172,7 +179,7 @@ export class AdminService implements OnModuleInit {
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
         gender: profile?.gender || null,
-        dateOfBirth: profile?.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+        dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
         phoneNumber: profile?.phoneNumber || null,
         email: registration.user?.email || profile?.contactEmail || '-',
         specialNotes: profile?.specialNotes || null,
@@ -209,7 +216,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile.churchName || '-',
       ministry: profile.ministry || null,
       gender: profile.gender || null,
-      dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+      dateOfBirth: toDateOfBirthString(profile.dateOfBirth),
       phoneNumber: profile.phoneNumber || null,
       email: user.email || profile?.contactEmail || '-',
       specialNotes: profile.specialNotes || null,
@@ -303,7 +310,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      dateOfBirth: profile?.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -360,7 +367,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      dateOfBirth: profile?.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
@@ -484,7 +491,7 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      dateOfBirth: profile?.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
