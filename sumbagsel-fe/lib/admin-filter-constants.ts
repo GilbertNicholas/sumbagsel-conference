@@ -4,7 +4,7 @@ export const MAIN_CHURCH_OPTIONS = [
   'GKDI Bangka',
   'GKDI Jambi',
   'GKDI Palembang',
-  'GKDI Pekanbaru',
+  'GKDI Lampung',
 ] as const;
 
 /** Nilai filter untuk gereja "Lainnya" (custom) */

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, ChildRow, ChildrenResponse, ParticipantDetailResponse } from '@/lib/api-client';
-import { MAIN_CHURCH_OPTIONS, CHURCH_FILTER_OTHER, CHILD_AGE_OPTIONS } from '@/lib/admin-filter-constants';
+import { MAIN_CHURCH_OPTIONS, CHURCH_FILTER_OTHER } from '@/lib/admin-filter-constants';
 import { adminTableTh, adminTableTd, adminTableTdMuted, adminTableEmpty, adminTableWrapper } from '@/lib/admin-table-styles';
 
 
@@ -15,7 +15,7 @@ export function ChildrenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [churchFilter, setChurchFilter] = useState<string>('');
-  const [ageFilter, setAgeFilter] = useState<string>('');
+  const [consumptionFilter, setConsumptionFilter] = useState<string>('');
   const [checkInFilter, setCheckInFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [detailChild, setDetailChild] = useState<ChildRow | null>(null);
@@ -28,7 +28,7 @@ export function ChildrenPage() {
     try {
       const result = await apiClient.getChildren({
         church: churchFilter || undefined,
-        age: ageFilter || undefined,
+        needsConsumption: consumptionFilter || undefined,
         checkInStatus: checkInFilter || undefined,
         search: searchQuery.trim() || undefined,
       });
@@ -64,7 +64,7 @@ export function ChildrenPage() {
     }
     const t = setTimeout(() => loadData(), searchQuery ? 400 : 0);
     return () => clearTimeout(t);
-  }, [churchFilter, ageFilter, checkInFilter, searchQuery]);
+  }, [churchFilter, consumptionFilter, checkInFilter, searchQuery]);
 
   const handleLogout = () => {
     apiClient.adminLogout();
@@ -165,20 +165,19 @@ export function ChildrenPage() {
                   </select>
                 </div>
                 <div className="w-full sm:w-auto">
-                  <label htmlFor="ageFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
-                    Usia
+                  <label htmlFor="consumptionFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                    Konsumsi
                   </label>
                   <select
-                    id="ageFilter"
-                    value={ageFilter}
-                    onChange={(e) => setAgeFilter(e.target.value)}
+                    id="consumptionFilter"
+                    value={consumptionFilter}
+                    onChange={(e) => setConsumptionFilter(e.target.value)}
                     className={selectClass}
                     style={{ fontSize: '16px', WebkitAppearance: 'none', MozAppearance: 'none' }}
                   >
                     <option value="" style={{ fontSize: '16px', padding: '12px' }}>Semua</option>
-                    {CHILD_AGE_OPTIONS.map((a) => (
-                      <option key={a} value={String(a)} style={{ fontSize: '16px', padding: '12px' }}>{a} tahun</option>
-                    ))}
+                    <option value="yes" style={{ fontSize: '16px', padding: '12px' }}>Ya</option>
+                    <option value="no" style={{ fontSize: '16px', padding: '12px' }}>Tidak</option>
                   </select>
                 </div>
                 <div className="w-full sm:w-auto">
@@ -240,7 +239,6 @@ export function ChildrenPage() {
                 <tr>
                   <th className={`${adminTableTh} lg:w-[18%]`}>Nama Anak</th>
                   <th className={`${adminTableTh} lg:w-[12%]`}>Asal Gereja</th>
-                  <th className={`${adminTableTh} lg:w-[6%]`}>Usia</th>
                   <th className={`${adminTableTh} lg:w-[10%]`}>Konsumsi</th>
                   <th className={`${adminTableTh} lg:w-[14%]`}>Atas Nama</th>
                   <th className={`${adminTableTh} lg:w-[10%]`}>Check-in</th>
@@ -250,14 +248,13 @@ export function ChildrenPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {!data?.rows.length ? (
                   <tr>
-                    <td colSpan={7} className={adminTableEmpty}>Tidak ada data</td>
+                    <td colSpan={6} className={adminTableEmpty}>Tidak ada data</td>
                   </tr>
                 ) : (
                   data.rows.map((row) => (
                     <tr key={row.id} className="hover:bg-gray-50">
                       <td className={adminTableTd}>{row.childName}</td>
                       <td className={adminTableTd}>{row.churchName}</td>
-                      <td className={adminTableTd}>{row.age} tahun</td>
                       <td className={adminTableTd}>
                         <span className={`font-medium ${(row.needsConsumption ?? true) ? 'text-green-600' : 'text-red-600'}`}>
                           {(row.needsConsumption ?? true) ? 'Ya' : 'Tidak'}

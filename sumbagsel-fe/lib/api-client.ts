@@ -472,14 +472,14 @@ class ApiClient {
     });
   }
 
-  async getChildren(filter?: { church?: string; age?: string; checkInStatus?: string; search?: string }): Promise<ChildrenResponse> {
+  async getChildren(filter?: { church?: string; needsConsumption?: string; checkInStatus?: string; search?: string }): Promise<ChildrenResponse> {
     const adminToken = localStorage.getItem('admin_token');
     if (!adminToken) {
       throw new Error('No admin token found');
     }
     const params = new URLSearchParams();
     if (filter?.church?.trim()) params.append('church', filter.church.trim());
-    if (filter?.age?.trim()) params.append('age', filter.age.trim());
+    if (filter?.needsConsumption) params.append('needsConsumption', filter.needsConsumption);
     if (filter?.checkInStatus) params.append('checkInStatus', filter.checkInStatus);
     if (filter?.search?.trim()) params.append('search', filter.search.trim());
     const queryString = params.toString();

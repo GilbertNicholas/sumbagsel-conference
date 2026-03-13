@@ -71,7 +71,7 @@ export function LandingPage() {
             {/* Deskripsi */}
             <p className="text-neutral-800 font-semibold text-xs sm:text-base md:text-lg lg:text-2xl xl:text-2xl leading-relaxed mb-3 sm:mb-4 lg:mb-6 max-w-2xl lg:max-w-3xl">
               Unshaken adalah tema dari konferensi region Sumatera Bagian Selatan GKDI yang mencakup: Batam, Palembang,
-              Bangka, Jambi, Pekanbaru.
+              Bangka, Jambi, Lampung.
             </p>
 
             {/* Tombol Masuk dengan WhatsApp atau Email */}

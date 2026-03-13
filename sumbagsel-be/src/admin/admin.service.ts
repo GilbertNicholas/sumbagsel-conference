@@ -33,7 +33,7 @@ import { RegistrationChild } from '../entities/registration-child.entity';
 const CHILD_FEE = 75_000;
 
 /** Opsi gereja utama - untuk filter "Lainnya" (church NOT IN list) */
-const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Pekanbaru'];
+const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Lampung'];
 const CHURCH_FILTER_OTHER = '__lainnya__';
 
 @Injectable()
@@ -805,11 +805,12 @@ export class AdminService implements OnModuleInit {
         qb.andWhere('profile.church_name = :church', { church: filter.church.trim() });
       }
     }
-    if (filter?.age?.trim()) {
-      const ageNum = parseInt(filter.age, 10);
-      if (!isNaN(ageNum)) {
-        qb.andWhere('child.age = :age', { age: ageNum });
-      }
+    if (filter?.needsConsumption === 'yes') {
+      qb.andWhere('child.needsConsumption = :needsConsumption', { needsConsumption: true });
+    } else if (filter?.needsConsumption === 'no') {
+      qb.andWhere('(child.needsConsumption = :needsConsumption OR child.needsConsumption IS NULL)', {
+        needsConsumption: false,
+      });
     }
     if (filter?.checkInStatus === 'checked-in') {
       qb.andWhere('child.checked_in_at IS NOT NULL');
