@@ -6,6 +6,7 @@ export class RegistrationResponseDto {
   userId: string;
   paymentProofUrl: string | null;
   status: RegistrationStatus;
+  registrationId: string | null;
   uniqueCode: string | null;
   totalAmount: number | null;
   baseAmount: number | null;

@@ -276,22 +276,36 @@ export function PaymentPage() {
                 <CopyButton text={String(registration.totalAmount ?? 0)} label="nominal transfer" />
               </span>
             </div>
-            {/* Nomor rekening tujuan */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Transfer ke rekening:</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 tracking-wider">
-                  {ACCOUNT_NUMBER}
-                </span>
-                <CopyButton text={ACCOUNT_NUMBER.replace(/\s/g, '')} label="nomor rekening" />
+            {/* Registration ID (hanya ketika Terdaftar) atau Nomor rekening (sebelum Terdaftar) */}
+            {registration.status === 'Terdaftar' && registration.registrationId ? (
+              <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+                <p className="text-sm text-gray-600 mb-2">Registration ID</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="text-2xl lg:text-3xl xl:text-4xl font-bold text-green-600 tracking-wider">
+                    {registration.registrationId}
+                  </span>
+                  <CopyButton text={registration.registrationId} label="Registration ID" />
+                </div>
               </div>
-              <p className="text-base lg:text-lg xl:text-xl font-semibold text-gray-800 mt-1">
-                a.n. {ACCOUNT_NAME}
-              </p>
-            </div>
+            ) : (
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">Transfer ke rekening:</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 tracking-wider">
+                    {ACCOUNT_NUMBER}
+                  </span>
+                  <CopyButton text={ACCOUNT_NUMBER.replace(/\s/g, '')} label="nomor rekening" />
+                </div>
+                <p className="text-base lg:text-lg xl:text-xl font-semibold text-gray-800 mt-1">
+                  a.n. {ACCOUNT_NAME}
+                </p>
+              </div>
+            )}
           </div>
           <p className="mt-4 text-sm text-gray-500">
-            Transfer ke rekening yang tertera. Gunakan total transfer di atas (termasuk kode unik) agar pembayaran dapat teridentifikasi.
+            {registration.status === 'Terdaftar' && registration.registrationId
+              ? 'Simpan Registration ID Anda untuk keperluan konferensi.'
+              : 'Transfer ke rekening yang tertera. Gunakan total transfer di atas (termasuk kode unik) agar pembayaran dapat teridentifikasi.'}
           </p>
         </div>
 

@@ -328,6 +328,7 @@ export class RegistrationsService {
       userId: registration.userId,
       paymentProofUrl: registration.paymentProofUrl,
       status: registration.status,
+      registrationId: registration.registrationId ?? null,
       uniqueCode: registration.uniqueCode,
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,

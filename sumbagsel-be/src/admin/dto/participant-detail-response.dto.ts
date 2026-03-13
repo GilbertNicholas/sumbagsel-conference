@@ -18,6 +18,7 @@ export class ParticipantDetailResponseDto {
   email: string;
   specialNotes: string | null;
   status: string;
+  registrationId: string | null;
   paymentProofUrl: string | null;
   children: ParticipantDetailChildDto[];
   baseAmount: number | null;

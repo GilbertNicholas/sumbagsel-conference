@@ -62,7 +62,8 @@ export function RegistrationsPage() {
         const fullName = p.fullName?.toLowerCase() || '';
         const phoneNumber = p.phoneNumber?.toLowerCase() || '';
         const email = p.email?.toLowerCase() || '';
-        return fullName.includes(query) || phoneNumber.includes(query) || email.includes(query);
+        const registrationId = p.registrationId?.toLowerCase() || '';
+        return fullName.includes(query) || phoneNumber.includes(query) || email.includes(query) || registrationId.includes(query);
       });
     }
 
@@ -157,7 +158,7 @@ export function RegistrationsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Cari berdasarkan nama, no. telp, atau email..."
+                    placeholder="Cari berdasarkan nama, no. telp, email, atau Registration ID..."
                     className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 pl-9"
                     style={{ fontSize: '16px' }}
                   />
@@ -186,10 +187,11 @@ export function RegistrationsPage() {
           <table className="w-full min-w-[560px] divide-y divide-gray-200 lg:table-fixed lg:min-w-0">
             <thead className="bg-gray-50">
               <tr>
-                <th className={`${adminTableTh} lg:w-[16%]`}>Nama</th>
-                <th className={`${adminTableTh} lg:w-[16%]`}>Asal Gereja</th>
+                <th className={`${adminTableTh} lg:w-[10%]`}>Reg. ID</th>
+                <th className={`${adminTableTh} lg:w-[14%]`}>Nama</th>
+                <th className={`${adminTableTh} lg:w-[14%]`}>Asal Gereja</th>
                 <th className={`${adminTableTh} lg:w-[10%]`}>No. Telp</th>
-                <th className={`${adminTableTh} lg:w-[16%]`}>Email</th>
+                <th className={`${adminTableTh} lg:w-[14%]`}>Email</th>
                 <th className={`${adminTableTh} lg:w-[8%]`}>Size Baju</th>
                 <th className={`${adminTableTh} lg:w-[10%]`}>Check-in</th>
                 <th className={`${adminTableTh} lg:w-[12%]`}>Aksi</th>
@@ -198,13 +200,14 @@ export function RegistrationsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredParticipants.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={adminTableEmpty}>
+                  <td colSpan={8} className={adminTableEmpty}>
                     Tidak ada peserta yang sesuai filter
                   </td>
                 </tr>
               ) : (
                 filteredParticipants.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
+                    <td className={`${adminTableTd} font-mono font-semibold`}>{p.registrationId || '-'}</td>
                     <td className={adminTableTd}>{p.fullName}</td>
                     <td className={adminTableTd}>{p.churchName}</td>
                     <td className={adminTableTdMuted}>{p.phoneNumber || '-'}</td>

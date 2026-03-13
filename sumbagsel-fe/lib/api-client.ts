@@ -75,6 +75,7 @@ export interface RegistrationResponse {
   userId: string;
   paymentProofUrl: string | null;
   status: RegistrationStatus;
+  registrationId: string | null;
   uniqueCode: string | null;
   totalAmount: number | null;
   baseAmount: number | null;
@@ -680,6 +681,7 @@ export interface ParticipantResponse {
   phoneNumber: string | null;
   email: string;
   status: string;
+  registrationId: string | null;
   paymentProofUrl: string | null;
   checkedInAt: string | null;
   shirtSize: string | null;
@@ -707,6 +709,7 @@ export interface ParticipantDetailResponse {
   email: string;
   specialNotes: string | null;
   status: string;
+  registrationId?: string | null;
   paymentProofUrl: string | null;
   children?: ParticipantDetailChild[];
   baseAmount: number | null;
