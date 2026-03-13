@@ -1,11 +1,10 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
-import { AdminRequestOtpDto } from './dto/admin-request-otp.dto';
-import { AdminVerifyOtpDto } from './dto/admin-verify-otp.dto';
 import { AdminAuthResponseDto } from './dto/admin-auth-response.dto';
 import { AdminRejectDto } from './dto/admin-reject.dto';
+import { AdminUpdateParticipantContactDto } from './dto/admin-update-participant-contact.dto';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
 import { ParticipantDetailResponseDto } from './dto/participant-detail-response.dto';
 import { ArrivalScheduleFilterDto } from './dto/arrival-schedule-filter.dto';
@@ -25,28 +24,6 @@ export class AdminController {
   @Post('login')
   async login(@Body() loginDto: AdminLoginDto): Promise<AdminAuthResponseDto> {
     return this.adminService.login(loginDto);
-  }
-
-  @Post('request-otp')
-  async requestOtp(@Body() dto: AdminRequestOtpDto): Promise<{ sent: boolean }> {
-    return this.adminService.requestOtp(dto.identifier);
-  }
-
-  @Post('verify-otp')
-  async verifyOtp(@Body() dto: AdminVerifyOtpDto): Promise<AdminAuthResponseDto> {
-    return this.adminService.verifyOtpAndLogin(dto.identifier, dto.otp);
-  }
-
-  /**
-   * Bypass OTP - direct login with identifier (phone or email). Only works when OTP_BYPASS_DEV=true.
-   * For development/testing only.
-   */
-  @Post('login-with-phone')
-  async loginWithPhone(@Body() dto: AdminRequestOtpDto): Promise<AdminAuthResponseDto> {
-    if (process.env.OTP_BYPASS_DEV !== 'true') {
-      throw new ForbiddenException('OTP bypass hanya tersedia di mode development');
-    }
-    return this.adminService.loginByIdentifier(dto.identifier);
   }
 
   @Get('me')
@@ -101,6 +78,24 @@ export class AdminController {
     @CurrentAdmin() admin: Admin,
   ): Promise<ParticipantDetailResponseDto> {
     return this.adminService.rejectRegistration(id, dto.reason, admin);
+  }
+
+  @Patch('participants/:id/contact')
+  @UseGuards(AdminAuthGuard)
+  async updateParticipantContact(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateParticipantContactDto,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.updateParticipantContact(id, dto);
+  }
+
+  @Patch('participants/:id/set-reregister')
+  @UseGuards(AdminAuthGuard)
+  async setReregister(
+    @Param('id') id: string,
+    @CurrentAdmin() admin: Admin,
+  ): Promise<ParticipantDetailResponseDto> {
+    return this.adminService.setReregister(id, admin);
   }
 
   @Patch('participants/:id/check-in')

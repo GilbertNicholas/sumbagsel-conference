@@ -1,28 +1,35 @@
 import { DataSource } from 'typeorm';
 import { Admin } from '../entities/admin.entity';
 
+const ADMIN_SEEDS = [
+  { code: 'adminGBT', name: 'Gilbert', role: 'master' as const },
+  { code: 'adminIRS', name: 'Iros', role: 'master' as const },
+  { code: 'adminMLH', name: 'Milihana', role: 'biasa' as const },
+  { code: 'adminCRT', name: 'Cresta', role: 'biasa' as const },
+];
+
 export async function seedAdmins(dataSource: DataSource): Promise<void> {
   const adminRepository = dataSource.getRepository(Admin);
 
-  // Check if admin already exists
-  const existingAdmin = await adminRepository.findOne({
-    where: { code: 'ADMIN123' },
-  });
-
-  if (existingAdmin) {
-    console.log('Admin already exists, skipping seed');
-    return;
+  for (const seed of ADMIN_SEEDS) {
+    let admin = await adminRepository.findOne({
+      where: { code: seed.code },
+    });
+    if (admin) {
+      admin.name = seed.name;
+      admin.role = seed.role;
+      admin.isActive = true;
+      await adminRepository.save(admin);
+      console.log(`✅ Admin updated: ${seed.name} (${seed.code}) - ${seed.role}`);
+    } else {
+      admin = adminRepository.create({
+        ...seed,
+        isActive: true,
+      });
+      await adminRepository.save(admin);
+      console.log(`✅ Admin created: ${seed.name} (${seed.code}) - ${seed.role}`);
+    }
   }
 
-  // Create default admin (master)
-  const admin = adminRepository.create({
-    code: 'ADMIN123',
-    name: 'Admin Master',
-    phoneNumber: '081234567890',
-    role: 'master',
-    isActive: true,
-  });
-
-  await adminRepository.save(admin);
-  console.log('Admin seeded successfully');
+  console.log('✅ Admin seed selesai');
 }

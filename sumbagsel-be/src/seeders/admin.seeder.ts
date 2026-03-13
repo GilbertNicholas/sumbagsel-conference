@@ -10,20 +10,10 @@ config({ path: '.env.local' });
 config({ path: '.env' });
 
 const ADMIN_SEEDS = [
-  {
-    code: 'ADMIN_MASTER_001',
-    phoneNumber: '087780271525',
-    email: 'gilbertnicholas09@gmail.com',
-    name: 'Admin Master',
-    role: 'master' as const,
-  },
-  {
-    code: 'ADMIN_BIASA_001',
-    phoneNumber: '087780271526',
-    email: 'gilbertnicholas34@gmail.com',
-    name: 'Admin Biasa',
-    role: 'biasa' as const,
-  },
+  { code: 'adminGBT', name: 'Gilbert', role: 'master' as const },
+  { code: 'adminIRS', name: 'Iros', role: 'master' as const },
+  { code: 'adminMLH', name: 'Milihana', role: 'biasa' as const },
+  { code: 'adminCRT', name: 'Cresta', role: 'biasa' as const },
 ];
 
 async function seed() {
@@ -43,24 +33,21 @@ async function seed() {
 
     for (const seed of ADMIN_SEEDS) {
       let admin = await adminRepository.findOne({
-        where: [{ phoneNumber: seed.phoneNumber }, { email: seed.email }],
+        where: { code: seed.code },
       });
       if (admin) {
-        admin.code = seed.code;
-        admin.phoneNumber = seed.phoneNumber;
-        admin.email = seed.email;
         admin.name = seed.name;
         admin.role = seed.role;
         admin.isActive = true;
         await adminRepository.save(admin);
-        console.log(`✅ Admin updated: ${seed.email} (${seed.role})`);
+        console.log(`✅ Admin updated: ${seed.name} (${seed.code}) - ${seed.role}`);
       } else {
         admin = adminRepository.create({
           ...seed,
           isActive: true,
         });
         await adminRepository.save(admin);
-        console.log(`✅ Admin created: ${seed.email} (${seed.role})`);
+        console.log(`✅ Admin created: ${seed.name} (${seed.code}) - ${seed.role}`);
       }
     }
 
