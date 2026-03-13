@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class ChildrenFilterDto {
   @IsOptional()
@@ -6,8 +6,8 @@ export class ChildrenFilterDto {
   church?: string;
 
   @IsOptional()
-  @IsString()
-  age?: string;
+  @IsIn(['yes', 'no'])
+  needsConsumption?: 'yes' | 'no';
 
   @IsOptional()
   @IsString()

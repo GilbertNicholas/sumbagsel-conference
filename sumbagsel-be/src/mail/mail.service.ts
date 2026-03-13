@@ -48,8 +48,6 @@ export class MailService {
     }
 
     const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID').format(n);
-    const ACCOUNT_NUMBER = '7195 300 500';
-    const ACCOUNT_NAME = 'Yayasan Gema Kristus Damai Indonesia';
 
     await this.mailerService.sendMail({
       to,
@@ -61,8 +59,6 @@ export class MailService {
         baseAmountFormatted: formatRupiah(context.baseAmount),
         totalAmountFormatted: formatRupiah(context.totalAmount),
         childFeeFormatted: formatRupiah(75000),
-        accountNumber: ACCOUNT_NUMBER,
-        accountName: ACCOUNT_NAME,
       },
     });
     this.logger.debug(`Registration confirmation email sent to ${to}`);

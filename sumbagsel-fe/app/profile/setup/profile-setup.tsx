@@ -14,7 +14,7 @@ const CHURCH_OPTIONS = [
   'GKDI Bangka',
   'GKDI Jambi',
   'GKDI Palembang',
-  'GKDI Pekanbaru',
+  'GKDI Lampung',
 ] as const;
 
 const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
