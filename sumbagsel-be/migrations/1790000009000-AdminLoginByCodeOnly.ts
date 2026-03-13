@@ -1,26 +1,76 @@
-import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
 /**
- * Admin login hanya dengan adminID (code). Hapus phone_number dan email.
+ * Admin login hanya dengan adminID (code). Drop table admins dan recreate tanpa phone_number/email.
  * Seed: Gilbert (adminGBT/master), Iros (adminIRS/master), Milihana (adminMLH/biasa), Cresta (adminCRT/biasa).
  */
 export class AdminLoginByCodeOnly1790000009000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // MySQL: drop unique constraints/indexes before dropping columns
-    const table = await queryRunner.getTable('admins');
-    const dropIndexForCol = async (col: string) => {
-      const idx = table?.indices?.find((i) => i.columnNames?.includes(col));
-      const unq = table?.uniques?.find((u) => u.columnNames?.includes(col));
-      const name = idx?.name || unq?.name;
-      if (name) await queryRunner.query(`ALTER TABLE admins DROP INDEX \`${name}\``);
-    };
-    await dropIndexForCol('phone_number');
-    await dropIndexForCol('email');
-    await queryRunner.dropColumn('admins', 'phone_number');
-    await queryRunner.dropColumn('admins', 'email');
+    await queryRunner.dropTable('admins', true);
 
-    // Replace with new admin seeds
-    await queryRunner.query(`DELETE FROM admins`);
+    await queryRunner.createTable(
+      new Table({
+        name: 'admins',
+        columns: [
+          {
+            name: 'id',
+            type: 'varchar',
+            length: '36',
+            isPrimary: true,
+            default: '(UUID())',
+          },
+          {
+            name: 'code',
+            type: 'varchar',
+            length: '100',
+            isNullable: false,
+            isUnique: true,
+          },
+          {
+            name: 'name',
+            type: 'varchar',
+            length: '150',
+            isNullable: true,
+          },
+          {
+            name: 'role',
+            type: 'varchar',
+            length: '20',
+            default: "'biasa'",
+            isNullable: false,
+          },
+          {
+            name: 'is_active',
+            type: 'boolean',
+            default: true,
+            isNullable: false,
+          },
+          {
+            name: 'created_at',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+          {
+            name: 'updated_at',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+        ],
+      }),
+      true,
+    );
+
+    await queryRunner.createIndex(
+      'admins',
+      new TableIndex({
+        name: 'IDX_admins_code',
+        columnNames: ['code'],
+        isUnique: true,
+      }),
+    );
+
     await queryRunner.query(`
       INSERT INTO admins (id, code, name, role, is_active, created_at, updated_at)
       VALUES
@@ -32,28 +82,85 @@ export class AdminLoginByCodeOnly1790000009000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.addColumn(
-      'admins',
-      new TableColumn({
-        name: 'phone_number',
-        type: 'varchar',
-        length: '20',
-        isNullable: true,
-        isUnique: true,
+    await queryRunner.dropTable('admins', true);
+
+    await queryRunner.createTable(
+      new Table({
+        name: 'admins',
+        columns: [
+          {
+            name: 'id',
+            type: 'varchar',
+            length: '36',
+            isPrimary: true,
+            default: '(UUID())',
+          },
+          {
+            name: 'code',
+            type: 'varchar',
+            length: '100',
+            isNullable: false,
+            isUnique: true,
+          },
+          {
+            name: 'phone_number',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+            isUnique: true,
+          },
+          {
+            name: 'email',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+            isUnique: true,
+          },
+          {
+            name: 'name',
+            type: 'varchar',
+            length: '150',
+            isNullable: true,
+          },
+          {
+            name: 'role',
+            type: 'varchar',
+            length: '20',
+            default: "'biasa'",
+            isNullable: false,
+          },
+          {
+            name: 'is_active',
+            type: 'boolean',
+            default: true,
+            isNullable: false,
+          },
+          {
+            name: 'created_at',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+          {
+            name: 'updated_at',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+        ],
       }),
+      true,
     );
-    await queryRunner.addColumn(
+
+    await queryRunner.createIndex(
       'admins',
-      new TableColumn({
-        name: 'email',
-        type: 'varchar',
-        length: '255',
-        isNullable: true,
+      new TableIndex({
+        name: 'IDX_admins_code',
+        columnNames: ['code'],
         isUnique: true,
       }),
     );
 
-    await queryRunner.query(`DELETE FROM admins`);
     await queryRunner.query(`
       INSERT INTO admins (id, code, phone_number, email, name, role, is_active, created_at, updated_at)
       VALUES
