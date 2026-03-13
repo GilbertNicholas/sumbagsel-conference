@@ -191,14 +191,19 @@ async function seedParticipants() {
       });
       await identityRepository.save(identity);
 
-      const age = Math.floor(13 + Math.random() * 88);
+      // dateOfBirth: random date 13–100 tahun lalu
+      const yearsAgo = 13 + Math.floor(Math.random() * 88);
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - yearsAgo);
+      birthDate.setMonth(Math.floor(Math.random() * 12));
+      birthDate.setDate(1 + Math.floor(Math.random() * 28));
       const profile = profileRepository.create({
         userId: savedUser.id,
         fullName,
         churchName,
         ministry,
         gender,
-        age,
+        dateOfBirth: birthDate,
         contactEmail: email,
         phoneNumber,
         specialNotes,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { formatDateOfBirthDisplay } from '@/lib/utils';
 import { apiClient, ProfileResponse, RegistrationResponse, RegistrationStatus as ApiRegistrationStatus } from '@/lib/api-client';
 import { DashboardLayout } from '@/components/dashboard-layout';
 
@@ -211,8 +212,8 @@ export function RegisterPage() {
               <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.gender || '-'}</p>
             </div>
             <div>
-              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Usia</label>
-              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.age != null ? `${profile.age} tahun` : '-'}</p>
+              <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Tanggal Lahir</label>
+              <p className="text-sm lg:text-base xl:text-lg text-gray-900">{profile?.dateOfBirth ? formatDateOfBirthDisplay(profile.dateOfBirth) : '-'}</p>
             </div>
             <div>
               <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">Email</label>

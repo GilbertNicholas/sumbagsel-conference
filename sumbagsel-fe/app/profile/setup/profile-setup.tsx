@@ -9,6 +9,16 @@ import Image from 'next/image';
 import { apiClient } from '@/lib/api-client';
 import { capitalizeWords } from '@/lib/utils';
 
+function computeAgeFromDate(dateStr: string): number | null {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+  return age;
+}
+
 const CHURCH_OPTIONS = [
   'GKDI Batam',
   'GKDI Bangka',
@@ -26,11 +36,10 @@ const profileSetupSchema = z
     churchName: z.string().min(1, 'Pilih nama gereja'),
     ministry: z.string().refine((val) => val !== '' && MINISTRY_OPTIONS.includes(val as (typeof MINISTRY_OPTIONS)[number]), { message: 'Pilih Ministry' }),
     gender: z.string().refine((val) => val !== '' && GENDER_OPTIONS.includes(val as (typeof GENDER_OPTIONS)[number]), { message: 'Pilih Gender' }),
-    age: z.union([z.string(), z.number()]).refine((val) => {
-      if (val === '' || val === undefined || val === null) return false;
-      const n = typeof val === 'string' ? parseInt(val, 10) : val;
-      return !isNaN(n) && n >= 13 && n <= 100;
-    }, { message: 'Usia wajib diisi, minimal 13 dan maksimal 100 tahun' }),
+    dateOfBirth: z.string().min(1, 'Tanggal lahir wajib diisi').refine((val) => {
+      const age = computeAgeFromDate(val);
+      return age != null && age >= 13 && age <= 100;
+    }, { message: 'Tanggal lahir harus menghasilkan usia 13–100 tahun' }),
     customChurchName: z.string().optional(),
     phoneNumber: z
       .string()
@@ -66,7 +75,7 @@ export function ProfileSetupPage() {
     formState: { errors },
   } =   useForm<ProfileSetupFormData>({
     resolver: zodResolver(profileSetupSchema),
-    defaultValues: { ministry: '', gender: '', age: '' },
+    defaultValues: { ministry: '', gender: '', dateOfBirth: '' },
   });
 
   const churchName = watch('churchName');
@@ -81,10 +90,10 @@ export function ProfileSetupPage() {
         const hasValidChurchName = profileData.churchName && profileData.churchName.trim() !== '' && profileData.churchName !== 'Belum diisi';
         const hasValidMinistry = profileData.ministry && profileData.ministry.trim() !== '';
         const hasValidGender = (profileData as { gender?: string }).gender && (profileData as { gender?: string }).gender!.trim() !== '';
-        const hasValidAge = (profileData as { age?: number | null }).age != null && (profileData as { age?: number | null }).age! >= 13 && (profileData as { age?: number | null }).age! <= 100;
+        const hasValidDateOfBirth = profileData.dateOfBirth && computeAgeFromDate(profileData.dateOfBirth) != null && (computeAgeFromDate(profileData.dateOfBirth) ?? 0) >= 13 && (computeAgeFromDate(profileData.dateOfBirth) ?? 0) <= 100;
         const hasValidPhone = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
         const hasValidEmail = profileData.contactEmail && profileData.contactEmail.trim() !== '';
-        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender && hasValidAge && hasValidPhone && hasValidEmail;
+        const isProfileValid = hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidGender && hasValidDateOfBirth && hasValidPhone && hasValidEmail;
 
         // Tentukan credential login: email jika contactEmail ada & phone kosong, phone jika sebaliknya
         const hasEmail = !!profileData.contactEmail?.trim();
@@ -106,8 +115,8 @@ export function ProfileSetupPage() {
           setValue('ministry', ministry);
           const profileGender = (profileData as { gender?: string }).gender;
           setValue('gender', profileGender && GENDER_OPTIONS.includes(profileGender as (typeof GENDER_OPTIONS)[number]) ? profileGender as (typeof GENDER_OPTIONS)[number] : '');
-          const profileAge = (profileData as { age?: number | null }).age;
-          setValue('age', profileAge != null && profileAge >= 13 && profileAge <= 100 ? String(profileAge) : '');
+          const dateOfBirth = profileData.dateOfBirth;
+          setValue('dateOfBirth', dateOfBirth && computeAgeFromDate(dateOfBirth) != null && (computeAgeFromDate(dateOfBirth) ?? 0) >= 13 && (computeAgeFromDate(dateOfBirth) ?? 0) <= 100 ? dateOfBirth : '');
           const hasValidPhoneVal = profileData.phoneNumber && profileData.phoneNumber.trim() !== '' && profileData.phoneNumber !== 'Belum diisi';
           const hasValidEmailVal = profileData.contactEmail && profileData.contactEmail.trim() !== '';
           setValue('contactEmail', hasValidEmailVal ? profileData.contactEmail! : '');
@@ -127,16 +136,13 @@ export function ProfileSetupPage() {
       setError(null);
       setIsLoading(true);
 
-      const ageVal = data.age;
-      const ageNum = ageVal === '' || ageVal === undefined || ageVal === null
-        ? undefined
-        : (typeof ageVal === 'string' ? parseInt(ageVal, 10) : ageVal);
+      const dateOfBirth = data.dateOfBirth?.trim();
       const profileData = {
         fullName: capitalizeWords(data.fullName.trim()),
         churchName: data.churchName === 'Lainnya' ? (data.customChurchName || '') : data.churchName,
         ministry: data.ministry,
         gender: data.gender,
-        age: ageNum != null && !isNaN(ageNum) && ageNum >= 13 && ageNum <= 100 ? ageNum : undefined,
+        dateOfBirth: dateOfBirth && computeAgeFromDate(dateOfBirth) != null && (computeAgeFromDate(dateOfBirth) ?? 0) >= 13 && (computeAgeFromDate(dateOfBirth) ?? 0) <= 100 ? dateOfBirth : undefined,
         contactEmail: data.contactEmail?.trim() || undefined,
         phoneNumber: data.phoneNumber?.trim() || undefined,
       };
@@ -149,10 +155,10 @@ export function ProfileSetupPage() {
         if (msg.includes('sudah terdaftar')) {
           throw updateError;
         }
-        if (profileData.age == null) {
-          throw new Error('Usia wajib diisi');
+        if (profileData.dateOfBirth == null) {
+          throw new Error('Tanggal lahir wajib diisi');
         }
-        await apiClient.createProfile({ ...profileData, age: profileData.age });
+        await apiClient.createProfile({ ...profileData, dateOfBirth: profileData.dateOfBirth });
       }
 
       window.location.href = '/dashboard';
@@ -341,19 +347,16 @@ export function ProfileSetupPage() {
               )}
             </div>
             <div>
-              <label htmlFor="age" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                Usia (tahun) *
+              <label htmlFor="dateOfBirth" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                Tanggal Lahir *
               </label>
               <input
-                {...register('age')}
-                type="number"
-                min={13}
-                max={100}
+                {...register('dateOfBirth')}
+                type="date"
                 className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg"
-                placeholder="Contoh: 25"
               />
-              {errors.age && (
-                <p className="mt-2 text-sm lg:text-base text-red-600">{errors.age.message}</p>
+              {errors.dateOfBirth && (
+                <p className="mt-2 text-sm lg:text-base text-red-600">{errors.dateOfBirth.message}</p>
               )}
             </div>
             <div>

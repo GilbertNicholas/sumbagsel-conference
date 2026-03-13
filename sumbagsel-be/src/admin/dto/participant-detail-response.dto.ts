@@ -13,7 +13,7 @@ export class ParticipantDetailResponseDto {
   churchName: string;
   ministry: string | null;
   gender: string | null;
-  age: number | null;
+  dateOfBirth: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;

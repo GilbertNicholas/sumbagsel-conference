@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse, AdminInfo } from '@/lib/api-client';
+import { formatDateOfBirthDisplay } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
 import { ParticipantDetailModals } from './participant-detail-modals';
 
@@ -362,7 +363,7 @@ export function ParticipantDetailPage() {
               <DataRow label="Asal Gereja" value={participant.churchName} />
               <DataRow label="Ministry" value={participant.ministry} />
               <DataRow label="Gender" value={participant.gender} />
-              <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
+              <DataRow label="Tanggal Lahir" value={formatDateOfBirthDisplay(participant.dateOfBirth ?? null)} />
               <DataRow label="Email" value={participant.email} onEdit={() => openEditContactModal()} />
               <DataRow label="No. Telp" value={participant.phoneNumber} onEdit={() => openEditContactModal()} />
               <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />

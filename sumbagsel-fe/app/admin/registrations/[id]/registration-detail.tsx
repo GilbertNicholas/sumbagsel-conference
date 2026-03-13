@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { apiClient, ParticipantDetailResponse } from '@/lib/api-client';
+import { formatDateOfBirthDisplay } from '@/lib/utils';
 
 function DataRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -198,7 +199,7 @@ export function RegistrationDetailPage() {
             <DataRow label="Asal Gereja" value={participant.churchName} />
             <DataRow label="Ministry" value={participant.ministry} />
             <DataRow label="Gender" value={participant.gender} />
-            <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
+            <DataRow label="Tanggal Lahir" value={formatDateOfBirthDisplay(participant.dateOfBirth ?? null)} />
             <DataRow label="Email" value={participant.email} />
             <DataRow label="No. Telp" value={participant.phoneNumber} />
             <DataRow label="Size Baju" value={participant.shirtSize} />

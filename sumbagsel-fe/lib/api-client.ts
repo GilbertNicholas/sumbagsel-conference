@@ -29,7 +29,7 @@ export interface ProfileResponse {
   churchName: string;
   ministry: string | null;
   gender: string | null;
-  age: number | null;
+  dateOfBirth: string | null;
   contactEmail: string | null;
   phoneNumber: string | null;
   photoUrl: string | null;
@@ -42,7 +42,7 @@ export interface CreateProfileDto {
   churchName: string;
   ministry?: string;
   gender?: string;
-  age: number;
+  dateOfBirth: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -54,7 +54,7 @@ export interface UpdateProfileDto {
   churchName?: string;
   ministry?: string;
   gender?: string;
-  age?: number;
+  dateOfBirth?: string;
   contactEmail?: string;
   phoneNumber?: string;
   photoUrl?: string;
@@ -704,7 +704,7 @@ export interface ParticipantDetailResponse {
   churchName: string;
   ministry?: string | null;
   gender?: string | null;
-  age?: number | null;
+  dateOfBirth?: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;
