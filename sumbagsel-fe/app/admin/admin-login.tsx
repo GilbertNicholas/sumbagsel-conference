@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,11 @@ export function AdminLoginPage() {
   const sessionExpired = searchParams.get('sessionExpired') === '1';
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Bersihkan token lama saat membuka halaman login agar tidak ada session "nyangkut"
+  useEffect(() => {
+    apiClient.adminLogout();
+  }, []);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
