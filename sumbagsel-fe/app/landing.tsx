@@ -9,11 +9,11 @@ const conferencePhotos = [
   '/images/landing/2.png',
   '/images/landing/3.png',
   '/images/landing/4.png',
-  '/images/landing/5.JPG',
+  '/images/landing/5.png',
   '/images/landing/6.JPG',
   '/images/landing/7.JPG',
   '/images/landing/8.JPG',
-  '/images/landing/9.JPG',
+  '/images/landing/9.png',
   '/images/landing/10.png',
 ];
 

@@ -261,8 +261,8 @@ export class AdminService implements OnModuleInit {
       throw new NotFoundException('Registration not found');
     }
 
-    if (registration.status !== RegistrationStatus.PENDING) {
-      throw new BadRequestException('Hanya pendaftaran dengan status Pending yang dapat disetujui');
+    if (registration.status !== RegistrationStatus.PENDING && registration.status !== RegistrationStatus.BELUM_TERDAFTAR) {
+      throw new BadRequestException('Hanya pendaftaran dengan status Pending atau Belum terdaftar yang dapat disetujui');
     }
 
     const churchName = registration.user?.profile?.churchName ?? '';

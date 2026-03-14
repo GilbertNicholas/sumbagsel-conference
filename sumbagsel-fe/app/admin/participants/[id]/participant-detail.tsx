@@ -239,9 +239,11 @@ export function ParticipantDetailPage() {
     }
   };
 
-  const isPending = participant?.status === 'Pending';
-  const hasCheckedIn = participant?.checkedInAt;
   const canApproveReject = adminInfo?.role === 'master';
+  const isPending = participant?.status === 'Pending';
+  const isBelumTerdaftarWithInvoice = participant?.status === 'Belum terdaftar' && (participant?.baseAmount != null || participant?.totalAmount != null);
+  const canShowApproveReject = (isPending || isBelumTerdaftarWithInvoice) && canApproveReject;
+  const hasCheckedIn = participant?.checkedInAt;
 
   if (isLoading) {
     return (
@@ -322,7 +324,7 @@ export function ParticipantDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {isPending && canApproveReject && (
+                {canShowApproveReject && (
                   <>
                     <button
                       onClick={() => setShowConfirmModal(true)}
@@ -385,8 +387,8 @@ export function ParticipantDetailPage() {
           </div>
         </div>
 
-        {/* Section 2: Invoice - tampil ketika bukti pembayaran sudah dikirim dan status Pending atau Terdaftar */}
-        {participant.paymentProofUrl && (participant.status === 'Pending' || participant.status === 'Terdaftar') && (participant.baseAmount != null || participant.totalAmount != null) && (
+        {/* Section 2: Invoice - tampil ketika invoice sudah di-generate (baseAmount/totalAmount ada), walaupun belum submit */}
+        {(participant.baseAmount != null || participant.totalAmount != null) && (
           <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
               Invoice
