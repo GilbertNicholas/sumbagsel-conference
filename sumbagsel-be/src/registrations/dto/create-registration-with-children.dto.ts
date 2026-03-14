@@ -42,6 +42,14 @@ export class CreateRegistrationWithChildrenDto {
   shirtSize?: string;
 
   @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @IsIn(SHIRT_SIZE_OPTIONS, { each: true, message: 'Each shirt size must be XS, S, M, L, XL, XXL, or XXXL' })
+  @ArrayMinSize(0)
+  @ArrayMaxSize(20, { message: 'Maksimal 20 baju' })
+  shirtSizes?: string[];
+
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ChildDto)
   @ArrayMinSize(0)

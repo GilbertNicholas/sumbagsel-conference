@@ -396,7 +396,7 @@ export function ParticipantDetailPage() {
             <div className="space-y-3">
               {participant.baseAmount != null && (
                 <>
-                  <div>
+                    <div>
                     <div className="flex justify-between text-sm lg:text-base">
                       <span className="text-gray-700">
                         Biaya pendaftaran ({participant.ministry || '-'}) a/n {participant.fullName}
@@ -404,14 +404,21 @@ export function ParticipantDetailPage() {
                       <span className="text-gray-900">
                         Rp {formatRupiah(
                           participant.baseAmount -
-                            (participant.children ?? []).reduce((sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0), 0)
+                            (participant.children ?? []).reduce((sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0), 0) -
+                            (() => {
+                              const shirts = participant.shirtSizes ?? (participant.shirtSize ? [participant.shirtSize] : []);
+                              return shirts.length > 1 ? (shirts.length - 1) * CHILD_FEE : 0;
+                            })()
                         )}
                       </span>
                     </div>
-                    {participant.shirtSize && (
-                      <p className="text-sm lg:text-base text-gray-700 mt-0.5">Size baju: {participant.shirtSize}</p>
-                    )}
                   </div>
+                  {(participant.shirtSizes ?? (participant.shirtSize ? [participant.shirtSize] : [])).filter(Boolean).map((size, idx) => (
+                    <div key={`shirt-${idx}`} className="flex justify-between text-sm lg:text-base">
+                      <span className="text-gray-700">Baju {size || '-'}{idx === 0 ? ' (termasuk pendaftaran)' : ''}</span>
+                      <span className="text-gray-900">Rp {formatRupiah(idx === 0 ? 0 : CHILD_FEE)}</span>
+                    </div>
+                  ))}
                   {(participant.children ?? []).map((c) => (
                     <div key={c.id} className="flex justify-between text-sm lg:text-base">
                       <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun){(c.needsConsumption ?? true) ? '' : ' - tanpa konsumsi'}</span>

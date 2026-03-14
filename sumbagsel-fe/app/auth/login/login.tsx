@@ -162,34 +162,43 @@ export function LoginPage() {
   };
 
   return (
-    <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col bg-gray-50">
-      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl space-y-5 sm:space-y-6 lg:space-y-10">
-          <div>
-            <div className="flex justify-center mb-4 sm:mb-6 lg:mb-8">
-              <Image
-                src="/images/sumbagsel-logo.png"
-                alt="SumBagSel Conference Logo"
-                width={1800}
-                height={120}
-                className="h-auto w-auto max-w-[240px] sm:max-w-[320px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px] drop-shadow-lg"
-                priority
-              />
-            </div>
-            <h2 className="mt-4 sm:mt-6 lg:mt-8 text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900">
-              Login Peserta
-            </h2>
-            <p className="mt-1.5 sm:mt-2 lg:mt-3 text-center text-sm lg:text-base xl:text-lg text-gray-600">
+    <div className="h-[100dvh] min-h-[100svh] overflow-hidden flex flex-col relative">
+      {/* Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/dashboard-bg-batam.png')" }}
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_140%_140%_at_50%_50%,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.3)_50%,transparent_70%)]"
+        aria-hidden
+      />
+      <div className="relative z-10 flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
+        {/* Logo - di luar card, responsive di layar kecil */}
+        <div className="flex justify-center w-full min-w-0 mb-4 sm:mb-6">
+          <Image
+            src="/images/sumbagsel-logo.png"
+            alt="SumBagSel Conference Logo"
+            width={800}
+            height={160}
+            className="h-auto w-full max-w-[90vw] sm:max-w-[480px] md:max-w-[600px] lg:max-w-[750px] xl:max-w-[900px] object-contain drop-shadow-lg"
+            priority
+          />
+        </div>
+        {/* Card - mulai dari Login Peserta ke bawah */}
+        <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl bg-[#F5F5F0]/70 rounded-lg shadow-md p-6 lg:p-8 space-y-4 sm:space-y-5">
+          <h2 className="text-center text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
+            Login Peserta
+          </h2>
+          <p className="text-center text-sm lg:text-base text-gray-600">
             {OTP_BYPASS_DEV
               ? 'Mode dev: Masukkan nomor atau email untuk langsung masuk (OTP bypass)'
               : 'Masukkan nomor WhatsApp atau email untuk menerima kode verifikasi'}
           </p>
-        </div>
-
-        <form
-          className="mt-5 sm:mt-6 lg:mt-8 space-y-4 sm:space-y-6"
-          onSubmit={loginForm.handleSubmit(onRequestOtp)}
-        >
+          <form
+            className="mt-4 sm:mt-5 space-y-4 sm:space-y-5"
+            onSubmit={loginForm.handleSubmit(onRequestOtp)}
+          >
           {sessionExpired && (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-4 lg:p-5">
               <p className="text-sm lg:text-base text-amber-800">Session peserta telah berakhir. Silakan login kembali.</p>
@@ -228,7 +237,7 @@ export function LoginPage() {
               {isLoading ? (OTP_BYPASS_DEV ? 'Memproses...' : 'Mengirim...') : (OTP_BYPASS_DEV ? 'Masuk' : 'Kirim Kode Verifikasi')}
             </button>
           </div>
-        </form>
+          </form>
         </div>
       </div>
 

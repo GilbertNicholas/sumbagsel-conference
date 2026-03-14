@@ -57,6 +57,9 @@ export class Registration {
   @Column({ type: 'varchar', length: 10, nullable: true, name: 'shirt_size' })
   shirtSize: string | null;
 
+  @Column({ type: 'json', nullable: true, name: 'shirt_sizes' })
+  shirtSizes: string[] | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

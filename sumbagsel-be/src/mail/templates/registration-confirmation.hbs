@@ -14,7 +14,9 @@
       <span style="color: #4b5563;">Biaya pendaftaran ({{ministry}}) a/n {{fullName}}</span>
       <span style="font-weight: 500;">Rp {{ministryFeeFormatted}}</span>
     </div>
-    {{#if shirtSize}}
+    {{#if shirtSizes}}
+    <p style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563;">Size baju: {{#each shirtSizes}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</p>
+    {{else if shirtSize}}
     <p style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563;">Size baju: {{shirtSize}}</p>
     {{/if}}
     {{#each children}}
