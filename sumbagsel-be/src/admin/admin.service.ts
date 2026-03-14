@@ -384,6 +384,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       shirtSize: registration.shirtSize ?? null,
+      shirtSizes: registration.shirtSizes ?? (registration.shirtSize ? [registration.shirtSize] : null),
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       rejectReason: registration.rejectReason,
       createdAt: registration.createdAt.toISOString(),
