@@ -11,6 +11,7 @@ import {
   MinLength,
   IsIn,
   IsOptional,
+  Allow,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
@@ -36,13 +37,15 @@ class ChildDto {
 }
 
 export class CreateRegistrationWithChildrenDto {
-  @IsString()
+  @Allow()
   @IsOptional()
+  @IsString()
   @IsIn(SHIRT_SIZE_OPTIONS, { message: 'Shirt size must be XS, S, M, L, XL, XXL, or XXXL' })
   shirtSize?: string;
 
-  @IsArray()
+  @Allow()
   @IsOptional()
+  @IsArray()
   @IsString({ each: true })
   @IsIn(SHIRT_SIZE_OPTIONS, { each: true, message: 'Each shirt size must be XS, S, M, L, XL, XXL, or XXXL' })
   @ArrayMinSize(0)
