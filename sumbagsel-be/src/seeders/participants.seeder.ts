@@ -23,6 +23,16 @@ config({ path: '.env' });
 
 const CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Lampung', 'GKDI Siantar', 'GKDI Jakarta'];
 
+/** Prefix Registration ID berdasarkan asal gereja */
+const REG_ID_PREFIX: Record<string, string> = {
+  'GKDI Batam': 'BT',
+  'GKDI Lampung': 'LM',
+  'GKDI Bangka': 'BK',
+  'GKDI Palembang': 'PL',
+  'GKDI Jambi': 'JB',
+};
+const REG_ID_OTHER_PREFIX = 'EX';
+
 const CHILD_NAMES = ['Andi', 'Bella', 'Cahya', 'Dina', 'Eko', 'Fitri', 'Gilang', 'Hana', 'Indra', 'Jasmine', 'Kevin', 'Luna', 'Mario', 'Nadia', 'Oscar', 'Putri', 'Rizki', 'Sari', 'Tono', 'Umi'];
 
 const FIRST_NAMES = [
@@ -103,6 +113,23 @@ function getRandomEmail(firstName: string, lastName: string, index: number): str
   return `participant${index + 1}.${firstName.toLowerCase()}${lastName.toLowerCase()}${randomNumber}@${randomDomain}`;
 }
 
+function generateRegistrationId(churchName: string, usedIds: Set<string>): string {
+  const prefix = REG_ID_PREFIX[churchName] ?? REG_ID_OTHER_PREFIX;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const num = Math.floor(100 + Math.random() * 900);
+    const regId = `${prefix}${num}`;
+    if (!usedIds.has(regId)) {
+      usedIds.add(regId);
+      return regId;
+    }
+  }
+  // Fallback: angka unik dari counter (sangat jarang terjadi)
+  const fallbackNum = (100 + (usedIds.size % 900)) % 1000;
+  const fallback = `${prefix}${String(fallbackNum).padStart(3, '0')}`;
+  usedIds.add(fallback);
+  return fallback;
+}
+
 async function seedParticipants() {
   const dataSource = new DataSource({
     type: 'mysql',
@@ -121,6 +148,10 @@ async function seedParticipants() {
     const profileRepository = dataSource.getRepository(Profile);
     const registrationRepository = dataSource.getRepository(Registration);
     const registrationChildRepository = dataSource.getRepository(RegistrationChild);
+
+    // Load existing registration IDs untuk memastikan uniqueness
+    const existingRegs = await registrationRepository.find({ where: {}, select: ['registrationId'] });
+    const usedIds = new Set<string>(existingRegs.map((r) => r.registrationId).filter(Boolean) as string[]);
 
     for (let i = 0; i < 30; i++) {
       const firstName = getRandomElement(FIRST_NAMES);
@@ -160,14 +191,19 @@ async function seedParticipants() {
       });
       await identityRepository.save(identity);
 
-      const age = Math.floor(13 + Math.random() * 88);
+      // dateOfBirth: random date 13–100 tahun lalu
+      const yearsAgo = 13 + Math.floor(Math.random() * 88);
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - yearsAgo);
+      birthDate.setMonth(Math.floor(Math.random() * 12));
+      birthDate.setDate(1 + Math.floor(Math.random() * 28));
       const profile = profileRepository.create({
         userId: savedUser.id,
         fullName,
         churchName,
         ministry,
         gender,
-        age,
+        dateOfBirth: birthDate,
         contactEmail: email,
         phoneNumber,
         specialNotes,
@@ -198,9 +234,13 @@ async function seedParticipants() {
       // Check-in peserta: hanya untuk sebagian Terdaftar (~40%)
       const participantCheckedIn = status === RegistrationStatus.TERDAFTAR && Math.random() < 0.4;
 
+      // Registration ID: hanya untuk status Terdaftar
+      const registrationId = status === RegistrationStatus.TERDAFTAR ? generateRegistrationId(churchName, usedIds) : null;
+
       const registration = registrationRepository.create({
         userId: savedUser.id,
         status,
+        registrationId,
         paymentProofUrl: hasPaymentProof ? `https://example.com/payment-proof-${savedUser.id}.jpg` : null,
         baseAmount,
         totalAmount,
@@ -229,7 +269,7 @@ async function seedParticipants() {
         await registrationChildRepository.save(children);
       }
 
-      console.log(`✅ Created participant ${i + 1}: ${fullName} (${email}) - Status: ${status}, Church: ${churchName}, Size: ${shirtSize ?? '-'}, Children: ${childCount}`);
+      console.log(`✅ Created participant ${i + 1}: ${fullName} (${email}) - Status: ${status}, Church: ${churchName}, RegID: ${registrationId ?? '-'}, Size: ${shirtSize ?? '-'}, Children: ${childCount}`);
     }
 
     console.log('\n✅ Seeding completed successfully!');

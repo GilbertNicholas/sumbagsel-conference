@@ -13,11 +13,12 @@ export class ParticipantDetailResponseDto {
   churchName: string;
   ministry: string | null;
   gender: string | null;
-  age: number | null;
+  dateOfBirth: string | null;
   phoneNumber: string | null;
   email: string;
   specialNotes: string | null;
   status: string;
+  registrationId: string | null;
   paymentProofUrl: string | null;
   children: ParticipantDetailChildDto[];
   baseAmount: number | null;

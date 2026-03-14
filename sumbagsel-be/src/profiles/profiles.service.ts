@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
@@ -54,16 +55,20 @@ export class ProfilesService {
       throw new NotFoundException('User not found');
     }
 
-    const { fullName, churchName, ministry, contactEmail, phoneNumber, gender, age, specialNotes } = createProfileDto;
+    const { fullName, churchName, ministry, contactEmail, phoneNumber, gender, dateOfBirth, specialNotes } = createProfileDto;
 
-    // Determine if profile is completed (phone + email + age wajib)
+    if (dateOfBirth && !this.isValidDateOfBirth(dateOfBirth)) {
+      throw new BadRequestException('Tanggal lahir harus menghasilkan usia 13–100 tahun');
+    }
+
+    // Determine if profile is completed (phone + email + dateOfBirth wajib)
     const hasValidFullName = fullName && fullName.trim() !== '' && fullName !== 'Belum diisi';
     const hasValidChurchName = churchName && churchName.trim() !== '' && churchName !== 'Belum diisi';
     const hasValidMinistry = ministry && ministry.trim() !== '';
-    const hasValidAge = age != null && age >= 13 && age <= 100;
+    const hasValidDateOfBirth = dateOfBirth != null && this.isValidDateOfBirth(dateOfBirth);
     const hasValidPhone = phoneNumber && phoneNumber.trim() !== '' && phoneNumber !== 'Belum diisi';
     const hasValidEmail = (contactEmail || user.email) && (contactEmail || user.email)!.trim() !== '';
-    const isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidAge && hasValidPhone && hasValidEmail);
+    const isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidDateOfBirth && hasValidPhone && hasValidEmail);
     const completedAt = isCompleted ? new Date() : null;
 
     // Check if phone/email already registered by another user
@@ -88,7 +93,7 @@ export class ProfilesService {
       churchName,
       ministry: ministry || null,
       gender: gender || null,
-      age: age != null ? age : null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       contactEmail: contactEmail || user.email,
       phoneNumber: phoneNumber || null,
       specialNotes: specialNotes || null,
@@ -135,8 +140,12 @@ export class ProfilesService {
     if (updateProfileDto.gender !== undefined) {
       profile.gender = updateProfileDto.gender || null;
     }
-    if (updateProfileDto.age !== undefined) {
-      profile.age = updateProfileDto.age ?? null;
+    if (updateProfileDto.dateOfBirth !== undefined) {
+      const dob = updateProfileDto.dateOfBirth;
+      if (dob && !this.isValidDateOfBirth(dob)) {
+        throw new BadRequestException('Tanggal lahir harus menghasilkan usia 13–100 tahun');
+      }
+      profile.dateOfBirth = dob ? new Date(dob) : null;
     }
     if (updateProfileDto.contactEmail !== undefined) {
       const existingEmail = (profile.contactEmail || user.email)?.trim().toLowerCase();
@@ -184,11 +193,11 @@ export class ProfilesService {
       profile.churchName.trim() !== '' && 
       profile.churchName !== 'Belum diisi';
     const hasValidMinistry = profile.ministry && profile.ministry.trim() !== '';
-    const hasValidAge = profile.age != null && profile.age >= 13 && profile.age <= 100;
+    const hasValidDateOfBirth = profile.dateOfBirth != null && this.isValidDateOfBirth(profile.dateOfBirth);
     const hasValidPhone = profile.phoneNumber && profile.phoneNumber.trim() !== '' && profile.phoneNumber !== 'Belum diisi';
     const hasValidEmail = (profile.contactEmail || user.email) && (profile.contactEmail || user.email)!.trim() !== '';
     
-    profile.isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidAge && hasValidPhone && hasValidEmail);
+    profile.isCompleted = !!(hasValidFullName && hasValidChurchName && hasValidMinistry && hasValidDateOfBirth && hasValidPhone && hasValidEmail);
     
     if (profile.isCompleted && !wasCompleted) {
       profile.completedAt = new Date();
@@ -253,6 +262,23 @@ export class ProfilesService {
     return !!profile;
   }
 
+  private isValidDateOfBirth(dob: Date | string): boolean {
+    const d = typeof dob === 'string' ? new Date(dob) : dob;
+    if (isNaN(d.getTime())) return false;
+    const today = new Date();
+    let age = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+    return age >= 13 && age <= 100;
+  }
+
+  /** MySQL DATE returns string; handle both Date and string */
+  private toDateOfBirthString(val: Date | string | null | undefined): string | null {
+    if (val == null) return null;
+    if (typeof val === 'string') return /^\d{4}-\d{2}-\d{2}/.test(val) ? val.slice(0, 10) : null;
+    return val.toISOString().slice(0, 10);
+  }
+
   private toResponseDto(profile: Profile): ProfileResponseDto {
     return {
       id: profile.id,
@@ -260,7 +286,7 @@ export class ProfilesService {
       churchName: profile.churchName,
       ministry: profile.ministry,
       gender: profile.gender,
-      age: profile.age ?? null,
+      dateOfBirth: this.toDateOfBirthString(profile.dateOfBirth),
       contactEmail: profile.contactEmail,
       phoneNumber: profile.phoneNumber,
       specialNotes: profile.specialNotes,

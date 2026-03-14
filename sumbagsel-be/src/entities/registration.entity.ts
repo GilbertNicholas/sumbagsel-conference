@@ -26,6 +26,9 @@ export class Registration {
   @Column({ type: 'uuid', unique: true, name: 'user_id' })
   userId: string;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, unique: true, name: 'registration_id' })
+  registrationId: string | null;
+
   @Column({ type: 'text', nullable: true, name: 'payment_proof_url' })
   paymentProofUrl: string | null;
 

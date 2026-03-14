@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiClient, ProfileResponse, RegistrationResponse } from '@/lib/api-client';
-import { capitalizeWords } from '@/lib/utils';
+import { capitalizeWords, computeAgeFromDate, formatDateOfBirthDisplay } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard-layout';
 
 const CHURCH_OPTIONS = [
@@ -25,11 +25,10 @@ const profileFormSchema = z.object({
   churchName: z.string().min(1, 'Pilih asal gereja'),
   ministry: z.enum(MINISTRY_OPTIONS, { message: 'Pilih Ministry' }),
   gender: z.enum(GENDER_OPTIONS, { message: 'Pilih gender' }).optional().or(z.literal('')),
-  age: z.union([z.string(), z.number()]).refine((val) => {
-    if (val === '' || val === undefined || val === null) return false;
-    const n = typeof val === 'string' ? parseInt(val, 10) : val;
-    return !isNaN(n) && n >= 13 && n <= 100;
-  }, { message: 'Usia wajib diisi, minimal 13 dan maksimal 100 tahun' }),
+  dateOfBirth: z.string().min(1, 'Tanggal lahir wajib diisi').refine((val) => {
+    const age = computeAgeFromDate(val);
+    return age != null && age >= 13 && age <= 100;
+  }, { message: 'Tanggal lahir harus menghasilkan usia 13–100 tahun' }),
   customChurchName: z.string().optional(),
   contactEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
@@ -107,7 +106,7 @@ export function ProfileMePage() {
         const ministryVal = profileData.ministry;
         setValue('ministry', MINISTRY_OPTIONS.includes(ministryVal as typeof MINISTRY_OPTIONS[number]) ? ministryVal as typeof MINISTRY_OPTIONS[number] : MINISTRY_OPTIONS[0]);
         setValue('gender', profileData.gender && GENDER_OPTIONS.includes(profileData.gender as typeof GENDER_OPTIONS[number]) ? profileData.gender as typeof GENDER_OPTIONS[number] : '');
-        setValue('age', profileData.age != null && profileData.age >= 13 && profileData.age <= 100 ? String(profileData.age) : '');
+        setValue('dateOfBirth', profileData.dateOfBirth && computeAgeFromDate(profileData.dateOfBirth) != null && (computeAgeFromDate(profileData.dateOfBirth) ?? 0) >= 13 && (computeAgeFromDate(profileData.dateOfBirth) ?? 0) <= 100 ? profileData.dateOfBirth : '');
         setValue('contactEmail', profileData.contactEmail || '');
         setValue('phoneNumber', profileData.phoneNumber || '');
         setValue('specialNotes', profileData.specialNotes || '');
@@ -137,16 +136,13 @@ export function ProfileMePage() {
         : data.churchName;
       
       // Update profile
-      const ageVal = data.age;
-      const ageNum = ageVal === '' || ageVal === undefined || ageVal === null
-        ? undefined
-        : (typeof ageVal === 'string' ? parseInt(ageVal, 10) : ageVal);
+      const dateOfBirth = data.dateOfBirth?.trim();
       const profileData = {
         fullName: capitalizeWords(data.fullName.trim()),
         churchName: finalChurchName,
         ministry: data.ministry,
         gender: data.gender || undefined,
-        age: ageNum != null && !isNaN(ageNum) && ageNum >= 13 && ageNum <= 100 ? ageNum : undefined,
+        dateOfBirth: dateOfBirth && computeAgeFromDate(dateOfBirth) != null && (computeAgeFromDate(dateOfBirth) ?? 0) >= 13 && (computeAgeFromDate(dateOfBirth) ?? 0) <= 100 ? dateOfBirth : undefined,
         contactEmail: data.contactEmail || undefined,
         phoneNumber: data.phoneNumber || undefined,
         specialNotes: data.specialNotes || undefined,
@@ -392,21 +388,18 @@ export function ProfileMePage() {
                   )}
                 </div>
 
-                {/* Usia */}
+                {/* Tanggal Lahir */}
                 <div>
-                  <label htmlFor="age" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Usia (tahun) *
+                  <label htmlFor="dateOfBirth" className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
+                    Tanggal Lahir *
                   </label>
                   <input
-                    {...register('age')}
-                    type="number"
-                    min={13}
-                    max={100}
+                    {...register('dateOfBirth')}
+                    type="date"
                     className="block w-full rounded-lg border border-gray-300 px-4 py-3 lg:px-5 lg:py-3.5 xl:px-6 xl:py-4 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all text-sm lg:text-base xl:text-lg bg-white"
-                    placeholder="Contoh: 25"
                   />
-                  {errors.age && (
-                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.age.message}</p>
+                  {errors.dateOfBirth && (
+                    <p className="mt-2 text-sm lg:text-base text-red-600">{errors.dateOfBirth.message}</p>
                   )}
                 </div>
 
@@ -517,13 +510,13 @@ export function ProfileMePage() {
                   </p>
                 </div>
 
-                {/* Usia */}
+                {/* Tanggal Lahir */}
                 <div>
                   <label className="block mb-2 text-sm lg:text-base xl:text-lg font-medium text-gray-700">
-                    Usia
+                    Tanggal Lahir
                   </label>
                   <p className="text-sm lg:text-base xl:text-lg text-gray-900">
-                    {profile?.age != null ? `${profile.age} tahun` : '-'}
+                    {profile?.dateOfBirth ? formatDateOfBirthDisplay(profile.dateOfBirth) : '-'}
                   </p>
                 </div>
 

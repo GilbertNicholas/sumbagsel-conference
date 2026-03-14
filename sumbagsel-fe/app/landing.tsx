@@ -6,8 +6,8 @@ import { HeroCarousel } from '@/components/hero-carousel';
 
 const conferencePhotos = [
   '/images/landing/1.png',
-  '/images/landing/2.JPG',
-  '/images/landing/3.JPG',
+  '/images/landing/2.png',
+  '/images/landing/3.png',
   '/images/landing/4.png',
   '/images/landing/5.JPG',
   '/images/landing/6.JPG',
@@ -57,7 +57,7 @@ export function LandingPage() {
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <div className="w-full max-w-4xl xl:max-w-5xl 2xl:max-w-6xl px-4 sm:px-6 md:px-12 lg:px-20 xl:px-24 py-6 sm:py-12 lg:py-20 flex flex-col items-center text-center">
             {/* Logo Unshaken */}
-            <div className="mb-3 sm:mb-4 lg:mb-5">
+            <div className="mb-1 sm:mb-2 lg:mb-2">
               <Image
                 src="/images/theme-logo.png"
                 alt="Unshaken"
@@ -68,16 +68,21 @@ export function LandingPage() {
               />
             </div>
 
-            {/* Deskripsi */}
-            <p className="text-neutral-800 font-semibold text-xs sm:text-base md:text-lg lg:text-2xl xl:text-2xl leading-relaxed mb-3 sm:mb-4 lg:mb-6 max-w-2xl lg:max-w-3xl">
-              Unshaken adalah tema dari konferensi region Sumatera Bagian Selatan GKDI yang mencakup: Batam, Palembang,
-              Bangka, Jambi, Lampung.
-            </p>
+            {/* Theme note - gambar pengganti deskripsi */}
+            <div className="mb-3 sm:mb-4 lg:mb-6 w-full max-w-2xl lg:max-w-3xl">
+              <Image
+                src="/images/theme-note.png"
+                alt="Unshaken adalah tema dari konferensi region Sumatera Bagian Selatan GKDI yang mencakup: Batam, Palembang, Bangka, Jambi, Lampung"
+                width={800}
+                height={200}
+                className="h-auto w-full object-contain drop-shadow-sm"
+              />
+            </div>
 
             {/* Tombol Masuk dengan WhatsApp atau Email */}
             <Link
               href="/auth/login"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-3 sm:px-8 sm:py-4 text-sm sm:text-base lg:text-lg font-semibold text-white hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 sm:px-8 sm:py-4 text-sm sm:text-base lg:text-lg font-semibold text-white transition-colors shadow-lg hover:shadow-xl whitespace-nowrap bg-[#043f6a] hover:bg-[#032d4d]"
             >
               Masuk menggunakan WhatsApp atau Email
             </Link>

@@ -39,6 +39,7 @@ export class MailService {
       baseAmount: number;
       uniqueCode: string | null;
       totalAmount: number;
+      registrationId: string | null;
     },
   ): Promise<void> {
     const smtpHost = this.configService.get<string>('SMTP_HOST');
@@ -59,6 +60,7 @@ export class MailService {
         baseAmountFormatted: formatRupiah(context.baseAmount),
         totalAmountFormatted: formatRupiah(context.totalAmount),
         childFeeFormatted: formatRupiah(75000),
+        registrationId: context.registrationId ?? null,
       },
     });
     this.logger.debug(`Registration confirmation email sent to ${to}`);

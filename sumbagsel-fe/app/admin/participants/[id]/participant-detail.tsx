@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { apiClient, getPaymentProofFullUrl, ParticipantDetailResponse, AdminInfo } from '@/lib/api-client';
+import { formatDateOfBirthDisplay } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
 import { ParticipantDetailModals } from './participant-detail-modals';
 
@@ -362,11 +363,19 @@ export function ParticipantDetailPage() {
               <DataRow label="Asal Gereja" value={participant.churchName} />
               <DataRow label="Ministry" value={participant.ministry} />
               <DataRow label="Gender" value={participant.gender} />
-              <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
+              <DataRow label="Tanggal Lahir" value={formatDateOfBirthDisplay(participant.dateOfBirth ?? null)} />
               <DataRow label="Email" value={participant.email} onEdit={() => openEditContactModal()} />
               <DataRow label="No. Telp" value={participant.phoneNumber} onEdit={() => openEditContactModal()} />
               <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />
             </div>
+            {participant.status === 'Terdaftar' && participant.registrationId && (
+              <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                <p className="text-sm text-gray-600 mb-2">Registration ID</p>
+                <p className="text-2xl lg:text-3xl xl:text-4xl font-bold text-green-600 tracking-wider">
+                  {participant.registrationId}
+                </p>
+              </div>
+            )}
             {participant.status === 'Daftar ulang' && participant.rejectReason && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <p className="text-sm font-medium text-red-700 mb-2">Alasan penolakan pendaftaran</p>

@@ -36,6 +36,23 @@ const CHILD_FEE = 75_000;
 const MAIN_CHURCH_OPTIONS = ['GKDI Batam', 'GKDI Bangka', 'GKDI Jambi', 'GKDI Palembang', 'GKDI Lampung'];
 const CHURCH_FILTER_OTHER = '__lainnya__';
 
+/** Prefix Registration ID berdasarkan asal gereja */
+const REG_ID_PREFIX: Record<string, string> = {
+  'GKDI Batam': 'BT',
+  'GKDI Lampung': 'LM',
+  'GKDI Bangka': 'BK',
+  'GKDI Palembang': 'PL',
+  'GKDI Jambi': 'JB',
+};
+const REG_ID_OTHER_PREFIX = 'EX';
+
+/** MySQL DATE returns string; handle both Date and string */
+function toDateOfBirthString(val: Date | string | null | undefined): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') return /^\d{4}-\d{2}-\d{2}/.test(val) ? val.slice(0, 10) : null;
+  return val.toISOString().slice(0, 10);
+}
+
 @Injectable()
 export class AdminService implements OnModuleInit {
   private readonly logger = new Logger(AdminService.name);
@@ -128,6 +145,7 @@ export class AdminService implements OnModuleInit {
         phoneNumber: profile?.phoneNumber || null,
         email: user.email || profile?.contactEmail || '-',
         status: registration?.status ?? 'Belum terdaftar',
+        registrationId: registration?.registrationId ?? null,
         paymentProofUrl: registration?.paymentProofUrl ?? null,
         checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
         shirtSize: registration?.shirtSize ?? null,
@@ -161,11 +179,12 @@ export class AdminService implements OnModuleInit {
         churchName: profile?.churchName || '-',
         ministry: profile?.ministry || null,
         gender: profile?.gender || null,
-        age: profile?.age ?? null,
+        dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
         phoneNumber: profile?.phoneNumber || null,
         email: registration.user?.email || profile?.contactEmail || '-',
         specialNotes: profile?.specialNotes || null,
         status: registration.status,
+        registrationId: registration.registrationId ?? null,
         paymentProofUrl: registration.paymentProofUrl,
         children,
         baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
@@ -197,11 +216,12 @@ export class AdminService implements OnModuleInit {
       churchName: profile.churchName || '-',
       ministry: profile.ministry || null,
       gender: profile.gender || null,
-      age: profile.age ?? null,
+      dateOfBirth: toDateOfBirthString(profile.dateOfBirth),
       phoneNumber: profile.phoneNumber || null,
       email: user.email || profile?.contactEmail || '-',
       specialNotes: profile.specialNotes || null,
       status: 'Belum terdaftar',
+      registrationId: null,
       paymentProofUrl: null,
       children: [],
       baseAmount: null,
@@ -213,6 +233,19 @@ export class AdminService implements OnModuleInit {
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };
+  }
+
+  private async generateRegistrationId(churchName: string): Promise<string> {
+    const prefix = REG_ID_PREFIX[churchName] ?? REG_ID_OTHER_PREFIX;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const num = Math.floor(100 + Math.random() * 900);
+      const regId = `${prefix}${num}`;
+      const existing = await this.registrationsRepository.findOne({
+        where: { registrationId: regId },
+      });
+      if (!existing) return regId;
+    }
+    throw new BadRequestException('Gagal generate Registration ID, coba lagi');
   }
 
   async approveRegistration(registrationId: string, admin: Admin): Promise<ParticipantDetailResponseDto> {
@@ -232,6 +265,8 @@ export class AdminService implements OnModuleInit {
       throw new BadRequestException('Hanya pendaftaran dengan status Pending yang dapat disetujui');
     }
 
+    const churchName = registration.user?.profile?.churchName ?? '';
+    registration.registrationId = await this.generateRegistrationId(churchName);
     registration.status = RegistrationStatus.TERDAFTAR;
     await this.registrationsRepository.save(registration);
 
@@ -252,6 +287,7 @@ export class AdminService implements OnModuleInit {
           baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : 0,
           uniqueCode: registration.uniqueCode,
           totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : 0,
+          registrationId: registration.registrationId ?? null,
         })
         .catch((err) => {
           this.logger.error('Failed to send registration confirmation email', err);
@@ -274,11 +310,12 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      age: profile?.age ?? null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
+      registrationId: registration.registrationId ?? null,
       paymentProofUrl: registration.paymentProofUrl,
       children,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
@@ -330,11 +367,12 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      age: profile?.age ?? null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
+      registrationId: registration.registrationId ?? null,
       paymentProofUrl: registration.paymentProofUrl,
       children,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
@@ -407,6 +445,7 @@ export class AdminService implements OnModuleInit {
     }
 
     registration.status = RegistrationStatus.DAFTAR_ULANG;
+    registration.registrationId = null;
     registration.paymentProofUrl = null;
     registration.rejectReason = null;
     registration.checkedInAt = null;
@@ -452,11 +491,12 @@ export class AdminService implements OnModuleInit {
       churchName: profile?.churchName || '-',
       ministry: profile?.ministry || null,
       gender: profile?.gender || null,
-      age: profile?.age ?? null,
+      dateOfBirth: toDateOfBirthString(profile?.dateOfBirth),
       phoneNumber: profile?.phoneNumber || null,
       email: registration.user?.email || profile?.contactEmail || '-',
       specialNotes: profile?.specialNotes || null,
       status: registration.status,
+      registrationId: registration.registrationId ?? null,
       paymentProofUrl: registration.paymentProofUrl,
       children,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,

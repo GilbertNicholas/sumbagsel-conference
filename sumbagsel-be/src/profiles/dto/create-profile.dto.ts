@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, IsEmail, IsIn, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsEmail, IsIn, IsDateString } from 'class-validator';
 
 export const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as const;
 export const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
@@ -34,10 +34,8 @@ export class CreateProfileDto {
   @IsIn(GENDER_OPTIONS, { message: 'Gender must be Pria or Wanita' })
   gender?: string;
 
-  @IsInt()
-  @Min(13, { message: 'Usia minimal 13 tahun' })
-  @Max(100, { message: 'Usia maksimal 100 tahun' })
-  age: number;
+  @IsDateString()
+  dateOfBirth: string;
 
   @IsString()
   @IsOptional()

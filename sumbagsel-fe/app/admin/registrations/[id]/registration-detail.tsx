@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { apiClient, ParticipantDetailResponse } from '@/lib/api-client';
+import { formatDateOfBirthDisplay } from '@/lib/utils';
 
 function DataRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -185,12 +186,20 @@ export function RegistrationDetailPage() {
           </div>
         </div>
         <div className="px-6 py-6 lg:px-8 lg:py-8">
+          {participant.registrationId && (
+            <div className="mb-6 pb-6 border-b border-gray-200 text-center">
+              <p className="text-sm text-gray-600 mb-2">Registration ID</p>
+              <p className="text-2xl lg:text-3xl xl:text-4xl font-bold text-green-600 tracking-wider">
+                {participant.registrationId}
+              </p>
+            </div>
+          )}
           <div className="space-y-0 divide-y divide-gray-100">
             <DataRow label="Nama Lengkap" value={participant.fullName} />
             <DataRow label="Asal Gereja" value={participant.churchName} />
             <DataRow label="Ministry" value={participant.ministry} />
             <DataRow label="Gender" value={participant.gender} />
-            <DataRow label="Usia" value={participant.age != null ? `${participant.age} tahun` : '-'} />
+            <DataRow label="Tanggal Lahir" value={formatDateOfBirthDisplay(participant.dateOfBirth ?? null)} />
             <DataRow label="Email" value={participant.email} />
             <DataRow label="No. Telp" value={participant.phoneNumber} />
             <DataRow label="Size Baju" value={participant.shirtSize} />
