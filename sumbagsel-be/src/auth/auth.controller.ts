@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -44,10 +45,15 @@ export class AuthController {
 
   /**
    * @deprecated Use request-otp + verify-otp flow instead.
-   * Direct login without OTP (kept for backward compatibility).
+   * Direct login without OTP - disabled in production.
    */
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException(
+        'Direct login is disabled in production. Use request-otp + verify-otp.',
+      );
+    }
     return this.authService.loginWithPhone(loginDto.phoneNumber);
   }
 }

@@ -686,6 +686,7 @@ export interface ParticipantResponse {
   paymentProofUrl: string | null;
   checkedInAt: string | null;
   shirtSize: string | null;
+  totalAmount: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -38,6 +38,10 @@ export function RegistrationsPage() {
   }, [router]);
 
   const registeredOnly = useMemo(() => participants.filter((p) => p.status === 'Terdaftar'), [participants]);
+  const totalFeesReceived = useMemo(
+    () => registeredOnly.reduce((sum, p) => sum + (p.totalAmount ?? 0), 0),
+    [registeredOnly],
+  );
 
   const filteredParticipants = useMemo(() => {
     let result = [...registeredOnly];
@@ -108,6 +112,9 @@ export function RegistrationsPage() {
               </h2>
               <p className="mt-1 text-sm lg:text-base text-gray-500">
                 Total: {filteredParticipants.length} dari {registeredOnly.length} peserta (status Terdaftar)
+              </p>
+              <p className="mt-1 text-sm lg:text-base font-medium text-gray-700">
+                Total biaya yang sudah didapatkan: Rp {new Intl.NumberFormat('id-ID').format(totalFeesReceived)}
               </p>
             </div>
 

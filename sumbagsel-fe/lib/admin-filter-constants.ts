@@ -16,8 +16,8 @@ export const MINISTRY_OPTIONS = ['Teens/Campus', 'Single/S2', 'Married'] as cons
 /** Opsi gender */
 export const GENDER_OPTIONS = ['Pria', 'Wanita'] as const;
 
-/** Opsi usia anak (7-12 tahun sesuai ketentuan) */
-export const CHILD_AGE_OPTIONS = [7, 8, 9, 10, 11, 12] as const;
+/** Opsi usia anak (3-12 tahun sesuai ketentuan) */
+export const CHILD_AGE_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 /** Opsi size baju */
 export const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const;
