@@ -35,11 +35,6 @@ import { MailModule } from './mail/mail.module';
         ttl: minutes(15),
         limit: 15,
       },
-      {
-        name: 'admin-login',
-        ttl: minutes(15),
-        limit: 5,
-      },
     ]),
     ConfigModule.forRoot({
       isGlobal: true,

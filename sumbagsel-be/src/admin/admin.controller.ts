@@ -1,5 +1,4 @@
 import { Controller, Post, Body, UseGuards, Get, Param, Patch, Query, Res } from '@nestjs/common';
-import { ThrottlerGuard, Throttle, SkipThrottle, minutes } from '@nestjs/throttler';
 import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
@@ -22,9 +21,6 @@ import { Admin } from '../entities/admin.entity';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @UseGuards(ThrottlerGuard)
-  @SkipThrottle({ 'otp-request': true, 'otp-verify': true }) // Hanya cek admin-login
-  @Throttle({ 'admin-login': { limit: 5, ttl: minutes(15) } })
   @Post('login')
   async login(@Body() loginDto: AdminLoginDto): Promise<AdminAuthResponseDto> {
     return this.adminService.login(loginDto);
