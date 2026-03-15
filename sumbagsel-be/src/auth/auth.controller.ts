@@ -6,7 +6,7 @@ import {
   ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
-import { ThrottlerGuard, Throttle, hours, minutes } from '@nestjs/throttler';
+import { ThrottlerGuard, Throttle, SkipThrottle, hours, minutes } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
@@ -33,6 +33,7 @@ export class AuthController {
    * Identifier: phone number or email. Rate limited per identifier + IP.
    */
   @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ 'otp-verify': true, 'admin-login': true })
   @Throttle({ 'otp-request': { limit: 20, ttl: hours(1) } })
   @Post('request-otp')
   async requestOtp(@Body() dto: RequestOtpDto): Promise<{ sent: boolean }> {
@@ -43,6 +44,7 @@ export class AuthController {
    * Verify OTP and login. Returns JWT on success.
    */
   @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ 'otp-request': true, 'admin-login': true })
   @Throttle({ 'otp-verify': { limit: 15, ttl: minutes(15) } })
   @Post('verify-otp')
   async verifyOtp(@Body() dto: VerifyOtpDto): Promise<AuthResponseDto> {
