@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard, hours, minutes } from '@nestjs/throttler';
+import { ThrottlerModule, hours, minutes } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
@@ -27,9 +26,19 @@ import { MailModule } from './mail/mail.module';
   imports: [
     ThrottlerModule.forRoot([
       {
-        name: 'default',
+        name: 'otp-request',
         ttl: hours(1),
         limit: 20,
+      },
+      {
+        name: 'otp-verify',
+        ttl: minutes(15),
+        limit: 15,
+      },
+      {
+        name: 'admin-login',
+        ttl: minutes(15),
+        limit: 5,
       },
     ]),
     ConfigModule.forRoot({
@@ -81,12 +90,6 @@ import { MailModule } from './mail/mail.module';
     UploadsModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}
