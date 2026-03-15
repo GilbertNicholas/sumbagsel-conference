@@ -239,9 +239,11 @@ export function ParticipantDetailPage() {
     }
   };
 
-  const isPending = participant?.status === 'Pending';
-  const hasCheckedIn = participant?.checkedInAt;
   const canApproveReject = adminInfo?.role === 'master';
+  const isPending = participant?.status === 'Pending';
+  const isBelumTerdaftarWithInvoice = participant?.status === 'Belum terdaftar' && (participant?.baseAmount != null || participant?.totalAmount != null);
+  const canShowApproveReject = (isPending || isBelumTerdaftarWithInvoice) && canApproveReject;
+  const hasCheckedIn = participant?.checkedInAt;
 
   if (isLoading) {
     return (
@@ -322,7 +324,7 @@ export function ParticipantDetailPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {isPending && canApproveReject && (
+                {canShowApproveReject && (
                   <>
                     <button
                       onClick={() => setShowConfirmModal(true)}
@@ -385,8 +387,8 @@ export function ParticipantDetailPage() {
           </div>
         </div>
 
-        {/* Section 2: Invoice - tampil ketika bukti pembayaran sudah dikirim dan status Pending atau Terdaftar */}
-        {participant.paymentProofUrl && (participant.status === 'Pending' || participant.status === 'Terdaftar') && (participant.baseAmount != null || participant.totalAmount != null) && (
+        {/* Section 2: Invoice - tampil ketika invoice sudah di-generate (baseAmount/totalAmount ada), walaupun belum submit */}
+        {(participant.baseAmount != null || participant.totalAmount != null) && (
           <div className="bg-white rounded-lg shadow-md p-6 lg:p-8 xl:p-10 mb-6 lg:mb-8">
             <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-6">
               Invoice
@@ -394,7 +396,7 @@ export function ParticipantDetailPage() {
             <div className="space-y-3">
               {participant.baseAmount != null && (
                 <>
-                  <div>
+                    <div>
                     <div className="flex justify-between text-sm lg:text-base">
                       <span className="text-gray-700">
                         Biaya pendaftaran ({participant.ministry || '-'}) a/n {participant.fullName}
@@ -402,14 +404,21 @@ export function ParticipantDetailPage() {
                       <span className="text-gray-900">
                         Rp {formatRupiah(
                           participant.baseAmount -
-                            (participant.children ?? []).reduce((sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0), 0)
+                            (participant.children ?? []).reduce((sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0), 0) -
+                            (() => {
+                              const shirts = participant.shirtSizes ?? (participant.shirtSize ? [participant.shirtSize] : []);
+                              return shirts.length > 1 ? (shirts.length - 1) * CHILD_FEE : 0;
+                            })()
                         )}
                       </span>
                     </div>
-                    {participant.shirtSize && (
-                      <p className="text-sm lg:text-base text-gray-700 mt-0.5">Size baju: {participant.shirtSize}</p>
-                    )}
                   </div>
+                  {(participant.shirtSizes ?? (participant.shirtSize ? [participant.shirtSize] : [])).filter(Boolean).map((size, idx) => (
+                    <div key={`shirt-${idx}`} className="flex justify-between text-sm lg:text-base">
+                      <span className="text-gray-700">Baju {size || '-'}{idx === 0 ? ' (termasuk pendaftaran)' : ''}</span>
+                      <span className="text-gray-900">Rp {formatRupiah(idx === 0 ? 0 : CHILD_FEE)}</span>
+                    </div>
+                  ))}
                   {(participant.children ?? []).map((c) => (
                     <div key={c.id} className="flex justify-between text-sm lg:text-base">
                       <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun){(c.needsConsumption ?? true) ? '' : ' - tanpa konsumsi'}</span>

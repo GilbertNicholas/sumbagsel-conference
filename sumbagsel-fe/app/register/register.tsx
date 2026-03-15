@@ -18,7 +18,7 @@ export function RegisterPage() {
   const [registration, setRegistration] = useState<RegistrationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shirtSize, setShirtSize] = useState<string>('');
+  const [shirtSizes, setShirtSizes] = useState<string[]>(['']);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showSizeChartModal, setShowSizeChartModal] = useState(false);
@@ -38,8 +38,10 @@ export function RegisterPage() {
         const registrationData = await apiClient.getMyRegistration();
         if (registrationData) {
           setRegistration(registrationData);
-          if (registrationData.shirtSize && SHIRT_SIZES.includes(registrationData.shirtSize as (typeof SHIRT_SIZES)[number])) {
-            setShirtSize(registrationData.shirtSize);
+          if (registrationData.shirtSizes?.length) {
+            setShirtSizes(registrationData.shirtSizes.filter((s) => SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number])));
+          } else if (registrationData.shirtSize && SHIRT_SIZES.includes(registrationData.shirtSize as (typeof SHIRT_SIZES)[number])) {
+            setShirtSizes([registrationData.shirtSize]);
           }
         }
       } catch (err) {
@@ -87,15 +89,15 @@ export function RegisterPage() {
   const handleLanjut = async () => {
     setError(null);
 
-    const hasValidShirtSize = shirtSize && SHIRT_SIZES.includes(shirtSize as (typeof SHIRT_SIZES)[number]);
-    if (!hasValidShirtSize) {
-      setError('Pilih size baju terlebih dahulu');
+    const validSizes = shirtSizes.filter((s) => s && SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number]));
+    if (validSizes.length === 0) {
+      setError('Pilih minimal 1 size baju');
       return;
     }
 
     if (canAddChildren) {
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('registerShirtSize', shirtSize);
+        sessionStorage.setItem('registerShirtSizes', JSON.stringify(validSizes));
       }
       router.push('/register/children');
       return;
@@ -103,7 +105,7 @@ export function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const payload = { shirtSize, children: [] };
+      const payload = { shirtSizes: validSizes, children: [] };
       const updated = await apiClient.createRegistrationWithChildren(payload);
       setRegistration(updated);
       if (typeof window !== 'undefined') {
@@ -168,7 +170,7 @@ export function RegisterPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-12 sm:pb-16 lg:pb-0">
+      <div className="mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#F5F5F0]/80 rounded-lg shadow-md p-6 lg:p-8 pb-12 sm:pb-16 lg:pb-8">
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
           Pendaftaran Konferensi
         </h1>
@@ -243,8 +245,11 @@ export function RegisterPage() {
           <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 mb-2">
             Pilih size baju Sumbagsel <span className="text-red-600">*</span>
           </h2>
-          <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-4">
+          <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2">
             Baju hanya diberikan untuk peserta yang terdaftar pada data diri di atas.
+          </p>
+          <p className="text-xs sm:text-sm lg:text-base text-amber-700 bg-amber-50 rounded-lg p-3 mb-4">
+            Harga baju pertama termasuk biaya pendaftaran, namun untuk baju kedua dan seterusnya (jika membeli lebih) dikenakan biaya Rp 75.000 per baju.
           </p>
           <div className="mb-4 overflow-x-auto">
             <button
@@ -301,19 +306,55 @@ export function RegisterPage() {
               </div>
             </>
           )}
-          <div>
-            <label className="block mb-2 text-sm lg:text-base font-medium text-gray-700">Size baju</label>
-            <select
-              value={shirtSize}
-              onChange={(e) => setShirtSize(e.target.value)}
-              className="block w-full sm:max-w-xs rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 appearance-none bg-white"
-              style={{ fontSize: '16px' }}
+          <div className="space-y-3">
+            <div className="mb-4">
+              <p className="text-base font-semibold text-gray-900">
+                Terdaftar: {shirtSizes.filter((s) => s && SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number])).length} baju
+              </p>
+            </div>
+            <label className="block text-sm lg:text-base font-medium text-gray-700">Size baju (minimal 1)</label>
+            {shirtSizes.map((size, idx) => (
+              <div key={idx} className="flex gap-1 items-center">
+                <span className="text-sm font-medium text-gray-600 min-w-[4rem] shrink-0">Baju {idx + 1}</span>
+                <select
+                  value={size}
+                  onChange={(e) => {
+                    const next = [...shirtSizes];
+                    next[idx] = e.target.value;
+                    setShirtSizes(next);
+                  }}
+                  className="block flex-1 sm:max-w-xs rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 appearance-none bg-white"
+                  style={{ fontSize: '16px' }}
+                >
+                  <option value="">Pilih size</option>
+                  {SHIRT_SIZES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {shirtSizes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShirtSizes((p) => p.filter((_, i) => i !== idx))}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    aria-label="Hapus baju"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setShirtSizes((p) => [...p, ''])}
+              className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
             >
-              <option value="">Pilih size</option>
-              {SHIRT_SIZES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Tambah baju
+            </button>
           </div>
         </div>
 

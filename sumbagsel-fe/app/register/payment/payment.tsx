@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { FEATURES } from '@/lib/features';
 
 const CHILD_FEE = 75_000;
+const SHIRT_EXTRA_FEE = 75_000;
 const ACCOUNT_NUMBER = '7195 300 500';
 const ACCOUNT_NAME = 'Yayasan Gema Kristus Damai Indonesia';
 
@@ -159,10 +160,26 @@ export function PaymentPage() {
     (sum, c) => sum + ((c.needsConsumption ?? true) ? CHILD_FEE : 0),
     0,
   );
+  const shirtCount = (registration?.shirtSizes ?? (registration?.shirtSize ? [registration.shirtSize] : [])).length;
+  const shirtExtraFees = shirtCount > 1 ? (shirtCount - 1) * SHIRT_EXTRA_FEE : 0;
   const ministryFee =
     registration?.baseAmount != null
-      ? registration.baseAmount - childFeesTotal
+      ? registration.baseAmount - childFeesTotal - shirtExtraFees
       : 0;
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'Terdaftar':
+        return 'bg-green-100 text-green-800';
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Daftar ulang':
+        return 'bg-blue-100 text-blue-800';
+      case 'Belum terdaftar':
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const handleUbahDataPendaftaran = async () => {
     if (!registration) return;
@@ -199,9 +216,9 @@ export function PaymentPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl">
-        <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
-          Pembayaran
+      <div className="mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#F5F5F0]/80 rounded-lg shadow-md p-6 lg:p-8">
+        <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left flex flex-wrap items-center gap-2">
+          Pembayaran <span className={`inline-block px-3 py-1 rounded-full text-lg lg:text-xl font-semibold ${getStatusStyle(registration.status)}`}>{registration.status}</span>
         </h1>
 
         {showUbahData && (
@@ -251,10 +268,15 @@ export function PaymentPage() {
                 </span>
                 <span className="text-gray-900">Rp {formatRupiah(ministryFee)}</span>
               </div>
-              {registration.shirtSize && (
-                <p className="text-sm lg:text-base text-gray-700 mt-0.5">Size baju: {registration.shirtSize}</p>
-              )}
             </div>
+            {(registration.shirtSizes ?? (registration.shirtSize ? [registration.shirtSize] : [])).filter(Boolean).map((size, idx) => (
+              <div key={idx} className="flex justify-between text-sm lg:text-base">
+                <span className="text-gray-700">
+                  Baju {size || '-'}{idx === 0 ? ' (termasuk pendaftaran)' : ''}
+                </span>
+                <span className="text-gray-900">Rp {formatRupiah(idx === 0 ? 0 : SHIRT_EXTRA_FEE)}</span>
+              </div>
+            ))}
             {registration.children?.map((c) => (
               <div key={c.id} className="flex justify-between text-sm lg:text-base">
                 <span className="text-gray-700">Anak: {c.name} (usia {c.age} tahun){!(c.needsConsumption ?? true) && ' - tanpa konsumsi'}</span>

@@ -34,6 +34,7 @@ export class MailService {
       fullName: string;
       ministry: string;
       shirtSize: string | null;
+      shirtSizes: string[] | null;
       children: Array<{ name: string; age: number; needsConsumption: boolean }>;
       ministryFee: number;
       baseAmount: number;

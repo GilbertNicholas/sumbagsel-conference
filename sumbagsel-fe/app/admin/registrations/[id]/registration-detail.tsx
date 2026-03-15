@@ -202,7 +202,7 @@ export function RegistrationDetailPage() {
             <DataRow label="Tanggal Lahir" value={formatDateOfBirthDisplay(participant.dateOfBirth ?? null)} />
             <DataRow label="Email" value={participant.email} />
             <DataRow label="No. Telp" value={participant.phoneNumber} />
-            <DataRow label="Size Baju" value={participant.shirtSize} />
+            <DataRow label="Size Baju" value={(participant.shirtSizes ?? (participant.shirtSize ? [participant.shirtSize] : [])).length > 0 ? (participant.shirtSizes ?? [participant.shirtSize!]).join(', ') : '-'} />
             <DataRow label="Catatan Khusus" value={participant.specialNotes ? <span className="whitespace-pre-wrap">{participant.specialNotes}</span> : '-'} />
           </div>
         </div>

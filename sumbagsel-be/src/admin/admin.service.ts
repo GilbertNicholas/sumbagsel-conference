@@ -149,6 +149,7 @@ export class AdminService implements OnModuleInit {
         paymentProofUrl: registration?.paymentProofUrl ?? null,
         checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
         shirtSize: registration?.shirtSize ?? null,
+        shirtSizes: registration?.shirtSizes ?? null,
         createdAt: registration?.createdAt?.toISOString() ?? user.createdAt.toISOString(),
         updatedAt: registration?.updatedAt?.toISOString() ?? user.updatedAt.toISOString(),
       };
@@ -191,6 +192,7 @@ export class AdminService implements OnModuleInit {
         totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
         uniqueCode: registration.uniqueCode,
         shirtSize: registration.shirtSize ?? null,
+        shirtSizes: registration.shirtSizes ?? null,
         checkedInAt: registration.checkedInAt?.toISOString() ?? null,
         rejectReason: registration.rejectReason ?? null,
         createdAt: registration.createdAt.toISOString(),
@@ -228,6 +230,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: null,
       uniqueCode: null,
       shirtSize: null,
+      shirtSizes: null,
       checkedInAt: null,
       rejectReason: null,
       createdAt: user.createdAt.toISOString(),
@@ -261,8 +264,8 @@ export class AdminService implements OnModuleInit {
       throw new NotFoundException('Registration not found');
     }
 
-    if (registration.status !== RegistrationStatus.PENDING) {
-      throw new BadRequestException('Hanya pendaftaran dengan status Pending yang dapat disetujui');
+    if (registration.status !== RegistrationStatus.PENDING && registration.status !== RegistrationStatus.BELUM_TERDAFTAR) {
+      throw new BadRequestException('Hanya pendaftaran dengan status Pending atau Belum terdaftar yang dapat disetujui');
     }
 
     const churchName = registration.user?.profile?.churchName ?? '';
@@ -282,6 +285,7 @@ export class AdminService implements OnModuleInit {
           fullName: profile?.fullName || '-',
           ministry: profile?.ministry || '-',
           shirtSize: registration.shirtSize ?? null,
+          shirtSizes: registration.shirtSizes ?? null,
           children: (registration.children || []).map((c) => ({ name: c.name, age: c.age, needsConsumption: c.needsConsumption ?? true })),
           ministryFee,
           baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : 0,
@@ -322,6 +326,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       shirtSize: registration.shirtSize ?? null,
+      shirtSizes: registration.shirtSizes ?? null,
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),
@@ -379,6 +384,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       shirtSize: registration.shirtSize ?? null,
+      shirtSizes: registration.shirtSizes ?? (registration.shirtSize ? [registration.shirtSize] : null),
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       rejectReason: registration.rejectReason,
       createdAt: registration.createdAt.toISOString(),
@@ -503,6 +509,7 @@ export class AdminService implements OnModuleInit {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       uniqueCode: registration.uniqueCode,
       shirtSize: registration.shirtSize ?? null,
+      shirtSizes: registration.shirtSizes ?? null,
       checkedInAt: registration.checkedInAt.toISOString(),
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt.toISOString(),

@@ -6,34 +6,6 @@ import { apiClient, ProfileResponse, RegistrationResponse, ArrivalScheduleRespon
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { FEATURES } from '@/lib/features';
 
-// Dummy sessions data
-const dummySessions = [
-  {
-    id: 1,
-    title: 'Opening Keynote: Faith Forward',
-    speaker: 'Pastor David Chen',
-    date: 'Day 1',
-    time: '9:00 AM - 10:30 AM',
-    location: 'Main Auditorium',
-  },
-  {
-    id: 2,
-    title: 'Workshop: Leading Through Change',
-    speaker: 'Dr. Sarah Williams',
-    date: 'Day 1',
-    time: '11:00 AM - 12:30 PM',
-    location: 'Room 201',
-  },
-  {
-    id: 3,
-    title: 'Panel: Youth Ministry in 2026',
-    speaker: 'Multiple Speakers',
-    date: 'Day 1',
-    time: '2:00 PM - 3:30 PM',
-    location: 'Conference Hall B',
-  },
-];
-
 export function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -125,7 +97,7 @@ export function DashboardPage() {
           </div>
         </div>
       ) : (
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-7xl bg-[#F5F5F0]/70 rounded-lg shadow-md p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6 lg:mb-8">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
@@ -253,11 +225,6 @@ export function DashboardPage() {
               <h2 className="text-lg lg:text-xl font-semibold text-gray-900">Sesi yang akan datang</h2>
               <p className="text-xs lg:text-sm text-gray-600 mt-1">Sessions you might be interested in</p>
             </div>
-            {registrationStatus === 'Terdaftar' && (
-              <button className="text-xs lg:text-sm font-medium text-[#C84343] hover:text-[#A73535] transition-colors self-start sm:self-auto">
-                View All &gt;
-              </button>
-            )}
           </div>
           {registrationStatus !== 'Terdaftar' ? (
             <div className="flex flex-col items-center justify-center py-10 lg:py-14">
@@ -276,35 +243,8 @@ export function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-3 lg:space-y-4">
-              {dummySessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-start gap-3 lg:gap-4 p-3 lg:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm lg:text-base font-semibold text-gray-900 mb-1">{session.title}</h3>
-                          <p className="text-xs lg:text-sm text-gray-600 mb-2">by {session.speaker}</p>
-                          <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm text-gray-500">
-                            <span>{session.time}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span>{session.location}</span>
-                          </div>
-                        </div>
-                        <span className="px-2 lg:px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full flex-shrink-0 self-start sm:self-auto">
-                          {session.date}
-                        </span>
-                      </div>
-                    </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-10 lg:py-14">
+              <p className="text-xl lg:text-2xl font-semibold text-gray-600">Coming Soon!</p>
             </div>
           )}
         </div>

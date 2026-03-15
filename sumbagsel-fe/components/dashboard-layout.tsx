@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo, useCallback, useMemo } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Sidebar, SidebarItem } from '@/components/sidebar';
@@ -81,10 +81,13 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
     setIsSidebarOpen(false);
   }, []);
 
-  const bgColor = useMemo(() => pathname === '/dashboard' ? 'bg-[#F5F5F0]' : 'bg-gray-50', [pathname]);
+  const isDashboard = pathname === '/dashboard';
+  const isRegister = pathname?.startsWith('/register') ?? false;
+  const isProfile = pathname?.startsWith('/profile') ?? false;
+  const hasBgImage = isDashboard || isRegister || isProfile;
 
   return (
-    <div className={`flex min-h-screen ${bgColor}`}>
+    <div className={`flex min-h-screen ${hasBgImage ? '' : 'bg-gray-50'}`}>
       {/* Navbar untuk Mobile */}
       <nav className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
@@ -124,8 +127,21 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
       />
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 min-h-screen overflow-x-hidden overflow-y-auto transition-all duration-300 flex items-center">
-        <div className="w-full pt-24 lg:pt-8 lg:py-8 p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 lg:ml-64 min-h-screen overflow-x-hidden overflow-y-auto transition-all duration-300 flex items-center relative">
+        {hasBgImage && (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url('/images/${isDashboard ? 'dashboard' : isProfile ? 'profile' : 'register'}-bg${isProfile ? '' : '-batam'}.png')` }}
+              aria-hidden
+            />
+            <div
+              className="absolute inset-0 bg-[radial-gradient(ellipse_140%_140%_at_50%_50%,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.3)_50%,transparent_70%)]"
+              aria-hidden
+            />
+          </>
+        )}
+        <div className="relative z-10 w-full pt-24 lg:pt-8 lg:py-8 p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </div>

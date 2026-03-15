@@ -25,6 +25,7 @@ export class ParticipantDetailResponseDto {
   totalAmount: number | null;
   uniqueCode: string | null;
   shirtSize: string | null;
+  shirtSizes: string[] | null;
   checkedInAt: string | null;
   rejectReason: string | null;
   createdAt: string;

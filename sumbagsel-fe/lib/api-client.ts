@@ -80,6 +80,7 @@ export interface RegistrationResponse {
   totalAmount: number | null;
   baseAmount: number | null;
   shirtSize: string | null;
+  shirtSizes: string[] | null;
   children: RegistrationChildResponse[];
   rejectReason: string | null;
   createdAt: string;
@@ -299,7 +300,7 @@ class ApiClient {
     });
   }
 
-  async createRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
+  async createRegistrationWithChildren(data: { shirtSize?: string; shirtSizes?: string[]; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/with-children', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -307,7 +308,7 @@ class ApiClient {
     });
   }
 
-  async updateRegistrationWithChildren(data: { shirtSize?: string; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
+  async updateRegistrationWithChildren(data: { shirtSize?: string; shirtSizes?: string[]; children: { name: string; age: number; needsConsumption: boolean }[] }): Promise<RegistrationResponse> {
     return this.request<RegistrationResponse>('/registrations/me/with-children', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -716,6 +717,7 @@ export interface ParticipantDetailResponse {
   totalAmount: number | null;
   uniqueCode: string | null;
   shirtSize?: string | null;
+  shirtSizes?: string[] | null;
   checkedInAt?: string | null;
   rejectReason: string | null;
   createdAt: string;

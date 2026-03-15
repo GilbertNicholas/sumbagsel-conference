@@ -20,7 +20,7 @@ export function RegisterChildrenPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [registration, setRegistration] = useState<RegistrationResponse | null>(null);
-  const [shirtSize, setShirtSize] = useState<string>('');
+  const [shirtSizes, setShirtSizes] = useState<string[]>(['']);
   const [children, setChildren] = useState<ChildInput[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,15 +39,24 @@ export function RegisterChildrenPage() {
         }
         setProfile(profileData);
 
-        const storedShirtSize = typeof window !== 'undefined' ? sessionStorage.getItem('registerShirtSize') : null;
-        if (storedShirtSize && SHIRT_SIZES.includes(storedShirtSize as (typeof SHIRT_SIZES)[number])) {
-          setShirtSize(storedShirtSize);
+        const storedShirtSizes = typeof window !== 'undefined' ? sessionStorage.getItem('registerShirtSizes') : null;
+        if (storedShirtSizes) {
+          try {
+            const parsed = JSON.parse(storedShirtSizes) as string[];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setShirtSizes(parsed.filter((s) => SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number])));
+            }
+          } catch {}
         }
 
         const registrationData = await apiClient.getMyRegistration();
         if (registrationData) {
           setRegistration(registrationData);
-          if (registrationData.shirtSize) setShirtSize(registrationData.shirtSize);
+          if (registrationData.shirtSizes?.length) {
+            setShirtSizes(registrationData.shirtSizes.filter((s) => SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number])));
+          } else if (registrationData.shirtSize) {
+            setShirtSizes([registrationData.shirtSize]);
+          }
           if (registrationData.children?.length > 0) {
             setChildren(
               registrationData.children.map((c) => ({
@@ -101,7 +110,8 @@ export function RegisterChildrenPage() {
     setError(null);
     setFieldErrors({});
 
-    if (!shirtSize || !SHIRT_SIZES.includes(shirtSize as (typeof SHIRT_SIZES)[number])) {
+    const validSizes = shirtSizes.filter((s) => s && SHIRT_SIZES.includes(s as (typeof SHIRT_SIZES)[number]));
+    if (validSizes.length === 0) {
       setError('Size baju tidak valid. Kembali ke halaman sebelumnya.');
       return;
     }
@@ -138,7 +148,7 @@ export function RegisterChildrenPage() {
 
     try {
       setIsSubmitting(true);
-      const payload = { shirtSize, children: childrenPayload };
+      const payload = { shirtSizes: validSizes, children: childrenPayload };
       let updated: RegistrationResponse;
       if (registration) {
         updated = await apiClient.updateRegistrationWithChildren(payload);
@@ -146,7 +156,7 @@ export function RegisterChildrenPage() {
         updated = await apiClient.createRegistrationWithChildren(payload);
       }
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('registerShirtSize');
+        sessionStorage.removeItem('registerShirtSizes');
         sessionStorage.setItem('registrationFromRegister', JSON.stringify(updated));
       }
       router.push('/register/payment?t=' + Date.now());
@@ -178,7 +188,7 @@ export function RegisterChildrenPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-12 sm:pb-16 lg:pb-0">
+      <div className="mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#F5F5F0]/80 rounded-lg shadow-md p-6 lg:p-8 pb-12 sm:pb-16 lg:pb-8">
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
           Daftarkan anak usia 7-12 tahun (jika ada)
         </h1>

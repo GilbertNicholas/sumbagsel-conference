@@ -197,7 +197,7 @@ export function ProfileMePage() {
           </div>
         </div>
       ) : (
-      <div className="mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl">
+      <div className="mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#F5F5F0]/80 rounded-lg shadow-md p-6 lg:p-8">
           {/* Judul */}
           <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
             Profil Saya

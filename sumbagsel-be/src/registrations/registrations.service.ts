@@ -18,6 +18,7 @@ const MINISTRY_FEE_TEENS = 150_000;
 const MINISTRY_FEE_SINGLE_MARRIED_BATAM = 150_000;
 const MINISTRY_FEE_SINGLE_MARRIED_OTHER = 300_000;
 const CHILD_FEE = 75_000;
+const SHIRT_EXTRA_FEE = 75_000; // Baju pertama gratis, baju ke-2 dst Rp 75.000
 const GKDI_BATAM = 'GKDI Batam';
 
 @Injectable()
@@ -89,6 +90,13 @@ export class RegistrationsService {
     const childFees = (dto.children ?? []).reduce((sum, c) => sum + (c.needsConsumption ? CHILD_FEE : 0), 0);
     baseAmount += childFees;
 
+    const shirtSizes = dto.shirtSizes && dto.shirtSizes.length > 0
+      ? dto.shirtSizes
+      : (dto.shirtSize ? [dto.shirtSize] : null);
+    const shirtCount = shirtSizes?.length ?? 0;
+    const shirtExtraFees = shirtCount > 1 ? (shirtCount - 1) * SHIRT_EXTRA_FEE : 0;
+    baseAmount += shirtExtraFees;
+
     const uniqueCode = String(Math.floor(100 + Math.random() * 900));
     const totalAmount = baseAmount + parseInt(uniqueCode, 10);
 
@@ -98,7 +106,8 @@ export class RegistrationsService {
       uniqueCode,
       totalAmount,
       baseAmount,
-      shirtSize: dto.shirtSize || null,
+      shirtSize: shirtSizes?.[0] ?? dto.shirtSize ?? null,
+      shirtSizes: shirtSizes ?? null,
     });
     const savedRegistration = await this.registrationsRepository.save(registration);
 
@@ -182,6 +191,13 @@ export class RegistrationsService {
     const childFees = (dto.children ?? []).reduce((sum, c) => sum + (c.needsConsumption ? CHILD_FEE : 0), 0);
     baseAmount += childFees;
 
+    const shirtSizes = dto.shirtSizes && dto.shirtSizes.length > 0
+      ? dto.shirtSizes
+      : (dto.shirtSize ? [dto.shirtSize] : (registration.shirtSizes ?? (registration.shirtSize ? [registration.shirtSize] : null)));
+    const shirtCount = shirtSizes?.length ?? 0;
+    const shirtExtraFees = shirtCount > 1 ? (shirtCount - 1) * SHIRT_EXTRA_FEE : 0;
+    baseAmount += shirtExtraFees;
+
     // Daftar ulang: hapus bukti pembayaran dan generate invoice baru (uniqueCode baru)
     const isDaftarUlang = registration.status === RegistrationStatus.DAFTAR_ULANG;
     const uniqueCode = isDaftarUlang
@@ -192,8 +208,12 @@ export class RegistrationsService {
     registration.baseAmount = baseAmount;
     registration.totalAmount = totalAmount;
     registration.uniqueCode = uniqueCode;
-    if (dto.shirtSize) {
+    if (shirtSizes && shirtSizes.length > 0) {
+      registration.shirtSizes = shirtSizes;
+      registration.shirtSize = shirtSizes[0];
+    } else if (dto.shirtSize) {
       registration.shirtSize = dto.shirtSize;
+      registration.shirtSizes = [dto.shirtSize];
     }
     if (isDaftarUlang) {
       registration.paymentProofUrl = null;
@@ -333,6 +353,7 @@ export class RegistrationsService {
       totalAmount: registration.totalAmount != null ? Number(registration.totalAmount) : null,
       baseAmount: registration.baseAmount != null ? Number(registration.baseAmount) : null,
       shirtSize: registration.shirtSize ?? null,
+      shirtSizes: registration.shirtSizes ?? null,
       children,
       rejectReason: registration.rejectReason ?? null,
       createdAt: registration.createdAt,
