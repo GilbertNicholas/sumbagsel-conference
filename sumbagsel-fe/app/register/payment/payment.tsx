@@ -63,14 +63,23 @@ export function PaymentPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPreviewZoomModal, setShowPreviewZoomModal] = useState(false);
+  const [showUploadedProofZoomModal, setShowUploadedProofZoomModal] = useState(false);
 
   const canUpload = registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang';
   const showUbahData =
     (registration?.status === 'Belum terdaftar' || registration?.status === 'Daftar ulang') &&
     registration?.baseAmount != null;
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     async function loadData() {
@@ -114,10 +123,24 @@ export function PaymentPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setUploadedFile(file);
+    if (file) {
+      setUploadedFile(file);
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      } else {
+        setPreviewUrl(null);
+      }
+    }
   };
 
-  const handleRemoveFile = () => setUploadedFile(null);
+  const handleRemoveFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    setUploadedFile(null);
+  };
 
   const handleDaftarkanSayaClick = () => {
     if (!uploadedFile) {
@@ -147,6 +170,10 @@ export function PaymentPage() {
 
       const updated = await apiClient.getMyRegistration();
       setRegistration(updated);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
       setUploadedFile(null);
       setSuccess('Bukti pembayaran berhasil diunggah. Menunggu verifikasi admin.');
     } catch (err) {
@@ -360,21 +387,42 @@ export function PaymentPage() {
               </div>
             ) : (
               <div className="border border-gray-300 rounded-lg p-4 lg:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <svg className="w-8 h-8 lg:w-10 lg:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm lg:text-base xl:text-lg font-medium text-gray-900">{uploadedFile.name}</p>
-                      <p className="text-xs lg:text-sm text-gray-500">
-                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {previewUrl ? (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowPreviewZoomModal(true)}
+                          className="block w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg overflow-hidden text-left"
+                        >
+                          <img
+                            src={previewUrl}
+                            alt="Preview bukti pembayaran"
+                            className="max-h-48 lg:max-h-64 w-auto max-w-full rounded-lg border border-gray-200 object-contain hover:opacity-90 transition-opacity"
+                          />
+                        </button>
+                        <p className="mt-2 text-xs lg:text-sm text-gray-500 truncate">
+                          {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB) · Klik untuk memperbesar
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <svg className="w-8 h-8 lg:w-10 lg:h-10 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div className="min-w-0">
+                          <p className="text-sm lg:text-base xl:text-lg font-medium text-gray-900 truncate">{uploadedFile.name}</p>
+                          <p className="text-xs lg:text-sm text-gray-500">
+                            {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={handleRemoveFile}
-                    className="rounded-md px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                    className="rounded-md px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors flex-shrink-0 self-start sm:self-center"
                   >
                     Hapus
                   </button>
@@ -382,6 +430,44 @@ export function PaymentPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Modal zoom preview bukti pembayaran (saat file baru diupload) */}
+        {showPreviewZoomModal && previewUrl && (
+          <>
+            <div
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+              onClick={() => setShowPreviewZoomModal(false)}
+              aria-hidden
+            />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+              onClick={() => setShowPreviewZoomModal(false)}
+            >
+              <div className="relative max-h-[90dvh] max-w-[95vw] w-full">
+                <div
+                  className="relative bg-white rounded-lg shadow-2xl overflow-auto max-h-[90dvh]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewZoomModal(false)}
+                    className="absolute top-2 right-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 z-10"
+                    aria-label="Tutup"
+                  >
+                    <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <img
+                    src={previewUrl}
+                    alt="Preview bukti pembayaran"
+                    className="w-full h-auto object-contain max-h-[85dvh]"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Tombol Daftarkan saya - di luar section upload */}
@@ -444,18 +530,20 @@ export function PaymentPage() {
               </h2>
               <p className="text-sm text-gray-600 mb-2">Status: {registration.status}</p>
               {isImage ? (
-                <a
-                  href={fullUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <img
-                    src={fullUrl}
-                    alt="Bukti pembayaran"
-                    className="max-w-md rounded-lg border border-gray-200"
-                  />
-                </a>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadedProofZoomModal(true)}
+                    className="block w-full max-w-md cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg overflow-hidden text-left"
+                  >
+                    <img
+                      src={fullUrl}
+                      alt="Bukti pembayaran"
+                      className="w-full max-w-md rounded-lg border border-gray-200 object-contain hover:opacity-90 transition-opacity"
+                    />
+                  </button>
+                  <p className="mt-1 text-xs lg:text-sm text-gray-500">Klik gambar untuk memperbesar</p>
+                </>
               ) : (
                 <a
                   href={fullUrl}
@@ -467,6 +555,50 @@ export function PaymentPage() {
                 </a>
               )}
             </div>
+          );
+        })()}
+
+        {/* Modal zoom bukti pembayaran (sudah terupload - Pending/Terdaftar) */}
+        {showUploadedProofZoomModal && registration.paymentProofUrl && (() => {
+          const fullUrl = getPaymentProofFullUrl(registration.paymentProofUrl);
+          if (!fullUrl) return null;
+          const isImage = registration.paymentProofUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+          if (!isImage) return null;
+          return (
+            <>
+              <div
+                className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+                onClick={() => setShowUploadedProofZoomModal(false)}
+                aria-hidden
+              />
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+                onClick={() => setShowUploadedProofZoomModal(false)}
+              >
+                <div className="relative max-h-[90dvh] max-w-[95vw] w-full">
+                  <div
+                    className="relative bg-white rounded-lg shadow-2xl overflow-auto max-h-[90dvh]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadedProofZoomModal(false)}
+                      className="absolute top-2 right-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 z-10"
+                      aria-label="Tutup"
+                    >
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <img
+                      src={fullUrl}
+                      alt="Bukti pembayaran"
+                      className="w-full h-auto object-contain max-h-[85dvh]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
           );
         })()}
 
