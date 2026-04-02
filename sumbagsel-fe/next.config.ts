@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+/** Folder `sumbagsel-fe` — stabil untuk `turbopack.root` (hindari inferensi workspace ke parent yang punya `yarn.lock`). */
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // Fail build if OTP bypass is enabled in production
 if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_OTP_BYPASS_DEV === 'true') {
@@ -10,6 +15,9 @@ if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_OTP_BYPASS_
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  turbopack: {
+    root: projectRoot,
+  },
   images: {
     remotePatterns: [
       {
