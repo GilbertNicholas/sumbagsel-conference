@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -62,6 +60,8 @@ services:
         condition: service_healthy
     volumes:
       - ./sumbagsel-be:/app
+      # Named volume overrides host node_modules (avoids macOS/Windows native binaries in Linux container).
+      # After changing package.json/package-lock: docker compose exec api npm ci
       - node_modules_dev:/app/node_modules
     command: npm run start:dev
     restart: unless-stopped

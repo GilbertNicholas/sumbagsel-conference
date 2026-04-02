@@ -29,6 +29,12 @@ import { ChildrenFilterDto } from './dto/children-filter.dto';
 import { ChildrenResponseDto, ChildRowDto } from './dto/children-response.dto';
 import { AdminUpdateParticipantContactDto } from './dto/admin-update-participant-contact.dto';
 import { RegistrationChild } from '../entities/registration-child.entity';
+import ExcelJS from 'exceljs';
+import {
+  cellText,
+  styleDataSheetHeader,
+  workbookToBuffer,
+} from './admin-xlsx.util';
 
 const CHILD_FEE = 75_000;
 
@@ -868,5 +874,308 @@ export class AdminService implements OnModuleInit {
     });
 
     return { total: rows.length, rows };
+  }
+
+  /**
+   * Filter peserta Terdaftar seperti halaman Registrasi Peserta (church, check-in, search).
+   */
+  private filterRegisteredParticipantsForExport(
+    participants: ParticipantResponseDto[],
+    filter?: { church?: string; checkIn?: string; search?: string },
+  ): ParticipantResponseDto[] {
+    let result = participants.filter((p) => p.status === 'Terdaftar');
+
+    const churchFilter = filter?.church?.trim();
+    if (churchFilter) {
+      if (churchFilter === CHURCH_FILTER_OTHER) {
+        result = result.filter(
+          (p) => !MAIN_CHURCH_OPTIONS.some((opt) => opt === (p.churchName || '')),
+        );
+      } else {
+        result = result.filter((p) => p.churchName === churchFilter);
+      }
+    }
+
+    if (filter?.checkIn === 'checked-in') {
+      result = result.filter((p) => !!p.checkedInAt);
+    } else if (filter?.checkIn === 'not-checked-in') {
+      result = result.filter((p) => !p.checkedInAt);
+    }
+
+    if (filter?.search?.trim()) {
+      const q = filter.search.toLowerCase().trim();
+      result = result.filter((p) => {
+        const fullName = String(p.fullName ?? '').toLowerCase();
+        const phoneNumber = String(p.phoneNumber ?? '').toLowerCase();
+        const email = String(p.email ?? '').toLowerCase();
+        const registrationId = String(p.registrationId ?? '').toLowerCase();
+        return (
+          fullName.includes(q) ||
+          phoneNumber.includes(q) ||
+          email.includes(q) ||
+          registrationId.includes(q)
+        );
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Filter + urutan sama dengan halaman Data Peserta Konferensi (admin dashboard).
+   */
+  private filterConferenceParticipantsForExport(
+    participants: ParticipantResponseDto[],
+    filter?: {
+      status?: string;
+      ministry?: string;
+      church?: string;
+      gender?: string;
+      checkIn?: string;
+      search?: string;
+    },
+  ): ParticipantResponseDto[] {
+    let result = [...participants];
+
+    if (filter?.status?.trim()) {
+      result = result.filter((p) => p.status === filter.status!.trim());
+    }
+
+    if (filter?.ministry?.trim()) {
+      result = result.filter((p) => p.ministry === filter.ministry!.trim());
+    }
+
+    if (filter?.church?.trim()) {
+      const church = filter.church.trim();
+      if (church === CHURCH_FILTER_OTHER) {
+        result = result.filter(
+          (p) => !MAIN_CHURCH_OPTIONS.some((opt) => opt === (p.churchName || '')),
+        );
+      } else {
+        result = result.filter((p) => p.churchName === church);
+      }
+    }
+
+    if (filter?.gender?.trim()) {
+      result = result.filter((p) => p.gender === filter.gender!.trim());
+    }
+
+    if (filter?.checkIn === 'checked-in') {
+      result = result.filter((p) => !!p.checkedInAt);
+    } else if (filter?.checkIn === 'not-checked-in') {
+      result = result.filter((p) => p.status === 'Terdaftar' && !p.checkedInAt);
+    }
+
+    if (filter?.search?.trim()) {
+      const query = filter.search.toLowerCase().trim();
+      result = result.filter((p) => {
+        const fullName = String(p.fullName ?? '').toLowerCase();
+        const phoneNumber = String(p.phoneNumber ?? '').toLowerCase();
+        return fullName.includes(query) || phoneNumber.includes(query);
+      });
+    }
+
+    return result;
+  }
+
+  private sortConferenceParticipants(
+    rows: ParticipantResponseDto[],
+    sort?: string,
+  ): ParticipantResponseDto[] {
+    const result = [...rows];
+    if (sort === 'date-desc') {
+      result.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+    } else if (sort === 'status') {
+      const statusOrder: Record<string, number> = {
+        'Belum terdaftar': 1,
+        Pending: 2,
+        Terdaftar: 3,
+        'Daftar ulang': 4,
+      };
+      result.sort((a, b) => {
+        const orderA = statusOrder[a.status] ?? 999;
+        const orderB = statusOrder[b.status] ?? 999;
+        return orderA - orderB;
+      });
+    }
+    return result;
+  }
+
+  async exportParticipantsToXlsx(filter?: {
+    status?: string;
+    ministry?: string;
+    church?: string;
+    gender?: string;
+    checkIn?: string;
+    sort?: string;
+    search?: string;
+  }): Promise<Buffer> {
+    const all = await this.getAllParticipants();
+    let rows = this.filterConferenceParticipantsForExport(all, filter);
+    rows = this.sortConferenceParticipants(rows, filter?.sort);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SumBagSel Admin';
+    const sheet = workbook.addWorksheet('Data Peserta Konferensi');
+
+    sheet.columns = [
+      { header: 'Nama', key: 'fullName', width: 34 },
+      { header: 'Asal Gereja', key: 'churchName', width: 34 },
+      { header: 'Ministry', key: 'ministry', width: 22 },
+      { header: 'Gender', key: 'gender', width: 12 },
+      { header: 'No. Telp', key: 'phoneNumber', width: 22 },
+      { header: 'Email', key: 'email', width: 42 },
+      { header: 'Status', key: 'status', width: 18 },
+      { header: 'Check-in', key: 'checkIn', width: 14 },
+    ];
+
+    for (const p of rows) {
+      let checkInLabel = '-';
+      if (p.status === 'Terdaftar') {
+        checkInLabel = p.checkedInAt ? 'Sudah' : 'Belum';
+      }
+
+      sheet.addRow({
+        fullName: cellText(p.fullName),
+        churchName: cellText(p.churchName),
+        ministry: cellText(p.ministry ?? ''),
+        gender: cellText(p.gender ?? ''),
+        phoneNumber: cellText(p.phoneNumber),
+        email: cellText(p.email),
+        status: cellText(p.status),
+        checkIn: cellText(checkInLabel),
+      });
+    }
+
+    styleDataSheetHeader(sheet, 8);
+    return workbookToBuffer(workbook);
+  }
+
+  async exportChildrenToXlsx(filter?: ChildrenFilterDto): Promise<Buffer> {
+    const data = await this.getChildren(filter);
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SumBagSel Admin';
+    const sheet = workbook.addWorksheet('Data Anak');
+
+    sheet.columns = [
+      { header: 'Nama Anak', key: 'childName', width: 28 },
+      { header: 'Usia', key: 'age', width: 8 },
+      { header: 'Asal Gereja', key: 'churchName', width: 34 },
+      { header: 'Konsumsi', key: 'needsConsumption', width: 12 },
+      { header: 'Atas Nama', key: 'parentName', width: 28 },
+      { header: 'Reg. ID', key: 'registrationId', width: 18 },
+      { header: 'Check-in', key: 'checkIn', width: 14 },
+    ];
+
+    for (const row of data.rows) {
+      sheet.addRow({
+        childName: cellText(row.childName),
+        age: typeof row.age === 'number' && Number.isFinite(row.age) ? row.age : '',
+        churchName: cellText(row.churchName),
+        needsConsumption: row.needsConsumption ? 'Ya' : 'Tidak',
+        parentName: cellText(row.parentName),
+        registrationId: cellText(row.registrationId),
+        checkIn: cellText(row.checkedInAt ? 'Sudah' : 'Belum'),
+      });
+    }
+
+    styleDataSheetHeader(sheet, 7);
+    return workbookToBuffer(workbook);
+  }
+
+  async exportShirtDataToXlsx(filter?: ShirtDataFilterDto): Promise<Buffer> {
+    const data = await this.getShirtData(filter);
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SumBagSel Admin';
+    const sheet = workbook.addWorksheet('Data Baju');
+
+    sheet.columns = [
+      { header: 'Nama', key: 'fullName', width: 34 },
+      { header: 'Asal Gereja', key: 'churchName', width: 34 },
+      { header: 'Size Baju', key: 'shirtSize', width: 14 },
+      { header: 'No. Telp', key: 'phoneNumber', width: 22 },
+      { header: 'Email', key: 'email', width: 42 },
+    ];
+
+    data.rows.forEach((row) => {
+      sheet.addRow({
+        fullName: cellText(row.fullName),
+        churchName: cellText(row.churchName),
+        shirtSize: cellText(row.shirtSize),
+        phoneNumber: cellText(row.phoneNumber),
+        email: cellText(row.email),
+      });
+    });
+
+    styleDataSheetHeader(sheet, 5);
+    return workbookToBuffer(workbook);
+  }
+
+  async exportRegistrationsToXlsx(filter?: {
+    church?: string;
+    checkIn?: string;
+    search?: string;
+  }): Promise<Buffer> {
+    const all = await this.getAllParticipants();
+    const rows = this.filterRegisteredParticipantsForExport(all, filter);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SumBagSel Admin';
+    const sheet = workbook.addWorksheet('Registrasi Peserta');
+
+    sheet.columns = [
+      { header: 'Reg. ID', key: 'registrationId', width: 18 },
+      { header: 'Nama', key: 'fullName', width: 34 },
+      { header: 'Asal Gereja', key: 'churchName', width: 34 },
+      { header: 'No. Telp', key: 'phoneNumber', width: 22 },
+      { header: 'Email', key: 'email', width: 42 },
+      { header: 'Size Baju', key: 'shirtSize', width: 18 },
+      { header: 'Check-in', key: 'checkIn', width: 14 },
+      { header: 'Total Biaya (Rp)', key: 'totalAmount', width: 18 },
+    ];
+
+    type RowWithSizes = ParticipantResponseDto & { shirtSizes?: string[] | null };
+    for (const p of rows) {
+      const pr = p as RowWithSizes;
+      let shirtLabel = '-';
+      if (pr.shirtSizes && Array.isArray(pr.shirtSizes) && pr.shirtSizes.length > 0) {
+        shirtLabel = pr.shirtSizes.filter(Boolean).join(', ');
+      } else if (pr.shirtSize) {
+        shirtLabel = String(pr.shirtSize);
+      }
+
+      const rawAmount = pr.totalAmount;
+      const numAmount =
+        rawAmount != null ? Number(rawAmount) : NaN;
+      const totalCell: number | string =
+        Number.isFinite(numAmount) ? numAmount : '';
+
+      sheet.addRow({
+        registrationId: cellText(pr.registrationId),
+        fullName: cellText(pr.fullName),
+        churchName: cellText(pr.churchName),
+        phoneNumber: cellText(pr.phoneNumber),
+        email: cellText(pr.email),
+        shirtSize: cellText(shirtLabel),
+        checkIn: pr.checkedInAt ? 'Sudah' : 'Belum',
+        totalAmount: totalCell,
+      });
+    }
+
+    styleDataSheetHeader(sheet, 8);
+
+    const totalCol = 8;
+    for (let r = 2; r <= sheet.rowCount; r++) {
+      const cell = sheet.getRow(r).getCell(totalCol);
+      if (typeof cell.value === 'number') {
+        cell.numFmt = '#,##0';
+      }
+    }
+
+    return workbookToBuffer(workbook);
   }
 }

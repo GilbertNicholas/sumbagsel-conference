@@ -620,6 +620,95 @@ class ApiClient {
     
     return response.blob();
   }
+
+  async exportShirtDataToXlsx(filter?: { church?: string; size?: string }): Promise<Blob> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.size?.trim()) params.append('size', filter.size.trim());
+    const response = await fetch(
+      `${this.baseUrl}/admin/shirt-data/export?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (!response.ok) throw new Error('Gagal export Excel');
+    return response.blob();
+  }
+
+  async exportRegistrationsToXlsx(filter?: {
+    church?: string;
+    checkIn?: string;
+    search?: string;
+  }): Promise<Blob> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.checkIn?.trim()) params.append('checkIn', filter.checkIn.trim());
+    if (filter?.search?.trim()) params.append('search', filter.search.trim());
+    const response = await fetch(
+      `${this.baseUrl}/admin/registrations/export?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (!response.ok) throw new Error('Gagal export Excel');
+    return response.blob();
+  }
+
+  async exportParticipantsToXlsx(filter?: {
+    status?: string;
+    ministry?: string;
+    church?: string;
+    gender?: string;
+    checkIn?: string;
+    sort?: string;
+    search?: string;
+  }): Promise<Blob> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.status?.trim()) params.append('status', filter.status.trim());
+    if (filter?.ministry?.trim()) params.append('ministry', filter.ministry.trim());
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.gender?.trim()) params.append('gender', filter.gender.trim());
+    if (filter?.checkIn?.trim()) params.append('checkIn', filter.checkIn.trim());
+    if (filter?.sort?.trim()) params.append('sort', filter.sort.trim());
+    if (filter?.search?.trim()) params.append('search', filter.search.trim());
+    const response = await fetch(
+      `${this.baseUrl}/admin/participants/export?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (!response.ok) throw new Error('Gagal export Excel');
+    return response.blob();
+  }
+
+  async exportChildrenToXlsx(filter?: {
+    church?: string;
+    needsConsumption?: string;
+    checkInStatus?: string;
+    search?: string;
+  }): Promise<Blob> {
+    const adminToken = localStorage.getItem('admin_token');
+    if (!adminToken) {
+      throw new Error('No admin token found');
+    }
+    const params = new URLSearchParams();
+    if (filter?.church?.trim()) params.append('church', filter.church.trim());
+    if (filter?.needsConsumption) params.append('needsConsumption', filter.needsConsumption);
+    if (filter?.checkInStatus) params.append('checkInStatus', filter.checkInStatus);
+    if (filter?.search?.trim()) params.append('search', filter.search.trim());
+    const response = await fetch(
+      `${this.baseUrl}/admin/children/export?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (!response.ok) throw new Error('Gagal export Excel');
+    return response.blob();
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

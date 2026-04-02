@@ -23,6 +23,7 @@ export function AdminDashboardPage() {
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -136,6 +137,30 @@ export function AdminDashboardPage() {
     return result;
   }, [participants, filterBy, checkInFilter, sortBy, searchQuery, ministryFilter, churchFilter, genderFilter]);
 
+  const handleExportXlsx = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await apiClient.exportParticipantsToXlsx({
+        status: filterBy !== 'none' ? filterBy : undefined,
+        ministry: ministryFilter || undefined,
+        church: churchFilter || undefined,
+        gender: genderFilter || undefined,
+        checkIn: checkInFilter !== 'none' ? checkInFilter : undefined,
+        sort: sortBy !== 'none' ? sortBy : undefined,
+        search: searchQuery.trim() || undefined,
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'data-peserta-konferensi.xlsx';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Gagal export Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -176,15 +201,37 @@ export function AdminDashboardPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-8 xl:px-8 border-b border-gray-200">
             <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-900">
-                  Data Peserta Konferensi
-                </h2>
-                <p className="mt-1 text-sm lg:text-base text-gray-500">
-                  Total: {filteredAndSortedParticipants.length} dari {participants.length} peserta
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-900">
+                    Data Peserta Konferensi
+                  </h2>
+                  <p className="mt-1 text-sm lg:text-base text-gray-500">
+                    Total: {filteredAndSortedParticipants.length} dari {participants.length} peserta
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExportXlsx}
+                  disabled={isExporting}
+                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-md border border-green-700 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm hover:bg-green-100 disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <>
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+                      Mengekspor...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export Excel (.xlsx)
+                    </>
+                  )}
+                </button>
               </div>
-                
+
                 {/* Filter and Sort Controls - flex-wrap agar tidak tembus di layar medium */}
                 <div className="flex flex-wrap gap-3">
                 {/* Filter Dropdown */}

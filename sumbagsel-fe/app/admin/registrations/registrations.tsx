@@ -16,6 +16,7 @@ export function RegistrationsPage() {
   const [churchFilter, setChurchFilter] = useState<string>('');
   const [checkInFilter, setCheckInFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -74,6 +75,26 @@ export function RegistrationsPage() {
     return result;
   }, [registeredOnly, churchFilter, checkInFilter, searchQuery]);
 
+  const handleExportXlsx = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await apiClient.exportRegistrationsToXlsx({
+        church: churchFilter || undefined,
+        checkIn: checkInFilter || undefined,
+        search: searchQuery || undefined,
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'registrasi-peserta.xlsx';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Gagal export Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -106,19 +127,41 @@ export function RegistrationsPage() {
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-8 xl:px-8 border-b border-gray-200">
           <div className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-900">
-                Registrasi Peserta
-              </h2>
-              <p className="mt-1 text-sm lg:text-base text-gray-500">
-                Total: {filteredParticipants.length} dari {registeredOnly.length} peserta (status Terdaftar)
-              </p>
-              <p className="mt-1 text-sm lg:text-base font-medium text-gray-700">
-                Total biaya yang sudah didapatkan: Rp {new Intl.NumberFormat('id-ID').format(totalFeesReceived)}
-              </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-900">
+                  Registrasi Peserta
+                </h2>
+                <p className="mt-1 text-sm lg:text-base text-gray-500">
+                  Total: {filteredParticipants.length} dari {registeredOnly.length} peserta (status Terdaftar)
+                </p>
+                <p className="mt-1 text-sm lg:text-base font-medium text-gray-700">
+                  Total biaya yang sudah didapatkan: Rp {new Intl.NumberFormat('id-ID').format(totalFeesReceived)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleExportXlsx}
+                disabled={isExporting}
+                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-md border border-green-700 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm hover:bg-green-100 disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <>
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+                    Mengekspor...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Excel (.xlsx)
+                  </>
+                )}
+              </button>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-end">
               <div className="w-full sm:w-auto">
                 <label htmlFor="churchFilter" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
                   Asal Gereja
@@ -154,37 +197,37 @@ export function RegistrationsPage() {
                   <option value="not-checked-in" style={{ fontSize: '16px', padding: '12px' }}>Belum check-in</option>
                 </select>
               </div>
+            </div>
 
-              <div className="w-full">
-                <label htmlFor="search" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                  Cari
-                </label>
-                <div className="relative">
-                  <input
-                    id="search"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Cari berdasarkan nama, no. telp, email, atau Registration ID..."
-                    className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 pl-9"
-                    style={{ fontSize: '16px' }}
-                  />
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
+            <div className="w-full">
+              <label htmlFor="search" className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                Cari
+              </label>
+              <div className="relative">
+                <input
+                  id="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari berdasarkan nama, no. telp, email, atau Registration ID..."
+                  className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm px-3 py-2 pl-9"
+                  style={{ fontSize: '16px' }}
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </div>

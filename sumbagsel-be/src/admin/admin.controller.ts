@@ -43,16 +43,108 @@ export class AdminController {
     return this.adminService.getAllParticipants();
   }
 
+  @Get('participants/export')
+  @UseGuards(AdminAuthGuard)
+  async exportParticipantsXlsx(
+    @Res() res: Response,
+    @Query('status') status?: string,
+    @Query('ministry') ministry?: string,
+    @Query('church') church?: string,
+    @Query('gender') gender?: string,
+    @Query('checkIn') checkIn?: string,
+    @Query('sort') sort?: string,
+    @Query('search') search?: string,
+  ) {
+    const buffer = await this.adminService.exportParticipantsToXlsx({
+      status,
+      ministry,
+      church,
+      gender,
+      checkIn,
+      sort,
+      search,
+    });
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="data-peserta-konferensi.xlsx"',
+    );
+    res.send(buffer);
+  }
+
   @Get('shirt-data')
   @UseGuards(AdminAuthGuard)
   async getShirtData(@Query() filter: ShirtDataFilterDto): Promise<ShirtDataResponseDto> {
     return this.adminService.getShirtData(filter);
   }
 
+  @Get('shirt-data/export')
+  @UseGuards(AdminAuthGuard)
+  async exportShirtDataXlsx(
+    @Query() filter: ShirtDataFilterDto,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.adminService.exportShirtDataToXlsx(filter);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="data-baju.xlsx"',
+    );
+    res.send(buffer);
+  }
+
+  @Get('registrations/export')
+  @UseGuards(AdminAuthGuard)
+  async exportRegistrationsXlsx(
+    @Res() res: Response,
+    @Query('church') church?: string,
+    @Query('checkIn') checkIn?: string,
+    @Query('search') search?: string,
+  ) {
+    const buffer = await this.adminService.exportRegistrationsToXlsx({
+      church,
+      checkIn,
+      search,
+    });
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="registrasi-peserta.xlsx"',
+    );
+    res.send(buffer);
+  }
+
   @Get('children')
   @UseGuards(AdminAuthGuard)
   async getChildren(@Query() filter: ChildrenFilterDto): Promise<ChildrenResponseDto> {
     return this.adminService.getChildren(filter);
+  }
+
+  @Get('children/export')
+  @UseGuards(AdminAuthGuard)
+  async exportChildrenXlsx(
+    @Query() filter: ChildrenFilterDto,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.adminService.exportChildrenToXlsx(filter);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="data-anak.xlsx"',
+    );
+    res.send(buffer);
   }
 
   @Get('participants/:id')

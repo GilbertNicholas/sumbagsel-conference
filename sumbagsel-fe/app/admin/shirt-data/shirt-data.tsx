@@ -15,6 +15,7 @@ export function ShirtDataPage() {
   const [error, setError] = useState<string | null>(null);
   const [churchFilter, setChurchFilter] = useState<string>('');
   const [sizeFilter, setSizeFilter] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -38,6 +39,25 @@ export function ShirtDataPage() {
 
     loadData();
   }, [router, churchFilter, sizeFilter]);
+
+  const handleExportXlsx = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await apiClient.exportShirtDataToXlsx({
+        church: churchFilter || undefined,
+        size: sizeFilter || undefined,
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'data-baju.xlsx';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Gagal export Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const totalsBySizeAll = SIZE_OPTIONS.map((s) => ({
     size: s,
@@ -76,11 +96,33 @@ export function ShirtDataPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-6 lg:py-10 xl:px-8 border-b border-gray-200">
             <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900">Data Baju</h2>
-                <p className="mt-2 text-base lg:text-lg xl:text-xl text-gray-500">
-                  Hanya peserta dengan status Terdaftar. Total: {data?.rows.length ?? 0} peserta
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900">Data Baju</h2>
+                  <p className="mt-2 text-base lg:text-lg xl:text-xl text-gray-500">
+                    Hanya peserta dengan status Terdaftar. Total: {data?.rows.length ?? 0} peserta
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExportXlsx}
+                  disabled={isExporting}
+                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-md border border-green-700 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm hover:bg-green-100 disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <>
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+                      Mengekspor...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export Excel (.xlsx)
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Total per size - tampilkan semua size (XS, S, M, L, XL, XXL, XXXL) */}
@@ -95,8 +137,7 @@ export function ShirtDataPage() {
                 ))}
               </div>
 
-              {/* Filters - styling sama dengan Data Konferensi */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
                 <div className="w-full sm:w-auto">
                   <label htmlFor="churchFilter" className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
                     Asal Gereja
