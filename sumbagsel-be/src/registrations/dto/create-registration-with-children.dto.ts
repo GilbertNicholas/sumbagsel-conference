@@ -23,7 +23,7 @@ class ChildDto {
   name: string;
 
   @IsNumber()
-  @Min(7)
+  @Min(3)
   @Max(12)
   age: number;
 

@@ -150,6 +150,7 @@ export class AdminService implements OnModuleInit {
         checkedInAt: registration?.checkedInAt?.toISOString() ?? null,
         shirtSize: registration?.shirtSize ?? null,
         shirtSizes: registration?.shirtSizes ?? null,
+        totalAmount: registration?.totalAmount != null ? Number(registration.totalAmount) : null,
         createdAt: registration?.createdAt?.toISOString() ?? user.createdAt.toISOString(),
         updatedAt: registration?.updatedAt?.toISOString() ?? user.updatedAt.toISOString(),
       };

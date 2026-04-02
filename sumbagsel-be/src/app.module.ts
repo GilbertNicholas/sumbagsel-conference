@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, hours, minutes } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
@@ -23,6 +24,18 @@ import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'otp-request',
+        ttl: hours(1),
+        limit: 20,
+      },
+      {
+        name: 'otp-verify',
+        ttl: minutes(15),
+        limit: 15,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [

@@ -12,7 +12,7 @@ const conferencePhotos = [
   '/images/landing/5.png',
   '/images/landing/6.JPG',
   '/images/landing/7.JPG',
-  '/images/landing/8.JPG',
+  '/images/landing/8.png',
   '/images/landing/9.png',
   '/images/landing/10.png',
 ];

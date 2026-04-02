@@ -121,7 +121,7 @@ export function RegisterChildrenPage() {
 
     children.forEach((child) => {
       const hasName = !!child.name.trim();
-      const hasValidAge = child.age >= 7 && child.age <= 12;
+      const hasValidAge = child.age >= 3 && child.age <= 12;
       const hasNeedsConsumption = child.needsConsumption === true || child.needsConsumption === false;
 
       if (hasName && hasValidAge && !hasNeedsConsumption) {
@@ -143,7 +143,7 @@ export function RegisterChildrenPage() {
     }
 
     const childrenPayload = children
-      .filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false))
+      .filter((c) => c.name.trim() && c.age >= 3 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false))
       .map((c) => ({ name: capitalizeWords(c.name.trim()), age: c.age, needsConsumption: c.needsConsumption! }));
 
     try {
@@ -184,13 +184,13 @@ export function RegisterChildrenPage() {
     return null;
   }
 
-  const validChildrenCount = children.filter((c) => c.name.trim() && c.age >= 7 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false)).length;
+  const validChildrenCount = children.filter((c) => c.name.trim() && c.age >= 3 && c.age <= 12 && (c.needsConsumption === true || c.needsConsumption === false)).length;
 
   return (
     <DashboardLayout>
       <div className="mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#F5F5F0]/80 rounded-lg shadow-md p-6 lg:p-8 pb-12 sm:pb-16 lg:pb-8">
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8 text-center lg:text-left">
-          Daftarkan anak usia 7-12 tahun (jika ada)
+          Daftarkan anak usia 3-12 tahun (jika ada)
         </h1>
 
         <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
@@ -198,7 +198,7 @@ export function RegisterChildrenPage() {
             <strong>Biaya konsumsi Rp{new Intl.NumberFormat('id-ID').format(CHILD_FEE)} / anak</strong> jika anak perlu konsumsi
           </p>
           <p className="mt-2 text-sm lg:text-base text-amber-800">
-            Anak usia 7-12 Tahun tidak mendapatkan baju Sumbagsel (jika ingin dapat dibeli secara terpisah)
+            Anak usia 3-12 Tahun tidak mendapatkan baju Sumbagsel (jika ingin dapat dibeli di halaman sebelumnya)
           </p>
         </div>
 
@@ -253,7 +253,7 @@ export function RegisterChildrenPage() {
                   }}
                 >
                   <option value={0}>Pilih usia anak</option>
-                  {[7, 8, 9, 10, 11, 12].map((a) => (
+                  {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((a) => (
                     <option key={a} value={a}>
                       {a} tahun
                     </option>
