@@ -15,6 +15,8 @@ if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_OTP_BYPASS_
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  /** Samakan root tracing dengan app — kurangi salah inferensi saat ada `yarn.lock` di parent `httpdocs`. */
+  outputFileTracingRoot: projectRoot,
   turbopack: {
     root: projectRoot,
   },

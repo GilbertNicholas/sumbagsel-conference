@@ -7,9 +7,10 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build --webpack",
+    "build": "node scripts/build-production.js",
     "build:turbo": "next build",
-    "start": "next start -p 3001",
+    "start": "node server.js",
+    "start:next": "next start -p 3001",
     "lint": "eslint"
   },
   "dependencies": {
@@ -27,7 +28,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
